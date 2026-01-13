@@ -207,6 +207,89 @@ function displaySummary(summary) {
     document.getElementById('eur-expenses').textContent = `€${formatNumber(eurData.expenses)}`;
     document.getElementById('eur-net').textContent = `€${formatNumber(eurData.net)}`;
     document.getElementById('eur-net').className = `amount ${eurData.net >= 0 ? 'income' : 'expense'}`;
+
+    // Calculate and display conversions
+    displayConversions(summary);
+}
+
+async function displayConversions(summary) {
+    const container = document.getElementById('conversion-display');
+
+    try {
+        // Calculate total in each original currency
+        const totals = {
+            NGN: (summary.NGN?.net || 0),
+            USD: (summary.USD?.net || 0),
+            GBP: (summary.GBP?.net || 0),
+            EUR: (summary.EUR?.net || 0)
+        };
+
+        // Fetch conversion rates
+        const conversions = await Promise.all([
+            convertCurrency(totals.USD, 'USD', 'NGN'),
+            convertCurrency(totals.GBP, 'GBP', 'NGN'),
+            convertCurrency(totals.EUR, 'EUR', 'NGN'),
+            convertCurrency(totals.NGN, 'NGN', 'USD'),
+            convertCurrency(totals.GBP, 'GBP', 'USD'),
+            convertCurrency(totals.EUR, 'EUR', 'USD'),
+            convertCurrency(totals.NGN, 'NGN', 'GBP'),
+            convertCurrency(totals.USD, 'USD', 'GBP'),
+            convertCurrency(totals.EUR, 'EUR', 'GBP'),
+            convertCurrency(totals.NGN, 'NGN', 'EUR'),
+            convertCurrency(totals.USD, 'USD', 'EUR'),
+            convertCurrency(totals.GBP, 'GBP', 'EUR'),
+        ]);
+
+        // Calculate totals in each currency
+        const totalInNGN = totals.NGN + (conversions[0] || 0) + (conversions[1] || 0) + (conversions[2] || 0);
+        const totalInUSD = totals.USD + (conversions[3] || 0) + (conversions[4] || 0) + (conversions[5] || 0);
+        const totalInGBP = totals.GBP + (conversions[6] || 0) + (conversions[7] || 0) + (conversions[8] || 0);
+        const totalInEUR = totals.EUR + (conversions[9] || 0) + (conversions[10] || 0) + (conversions[11] || 0);
+
+        container.innerHTML = `
+            <div class="balance-item" style="background: linear-gradient(135deg, #28a74520 0%, #20c99720 100%); border: 2px solid #28a745;">
+                <span class="label">Total in NGN</span>
+                <span class="amount ${totalInNGN >= 0 ? 'income' : 'expense'}">₦${formatNumber(totalInNGN)}</span>
+            </div>
+            <div class="balance-item" style="background: linear-gradient(135deg, #007bff20 0%, #0056b320 100%); border: 2px solid #007bff;">
+                <span class="label">Total in USD</span>
+                <span class="amount ${totalInUSD >= 0 ? 'income' : 'expense'}">$${formatNumber(totalInUSD)}</span>
+            </div>
+            <div class="balance-item" style="background: linear-gradient(135deg, #6610f220 0%, #520de220 100%); border: 2px solid #6610f2;">
+                <span class="label">Total in GBP</span>
+                <span class="amount ${totalInGBP >= 0 ? 'income' : 'expense'}">£${formatNumber(totalInGBP)}</span>
+            </div>
+            <div class="balance-item" style="background: linear-gradient(135deg, #fd7e1420 0%, #ff671f20 100%); border: 2px solid #fd7e14;">
+                <span class="label">Total in EUR</span>
+                <span class="amount ${totalInEUR >= 0 ? 'income' : 'expense'}">€${formatNumber(totalInEUR)}</span>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Failed to calculate conversions:', error);
+        container.innerHTML = '<div style="text-align: center; color: #6c757d; padding: 20px;">Unable to load currency conversions. Please update exchange rates.</div>';
+    }
+}
+
+async function convertCurrency(amount, from, to) {
+    if (amount === 0 || from === to) return amount;
+
+    try {
+        const response = await fetch(`${API_BASE}/exchange-rates/convert`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount, from, to })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            return data.data.converted_amount;
+        }
+        return null;
+    } catch (error) {
+        console.error(`Failed to convert ${from} to ${to}:`, error);
+        return null;
+    }
 }
 
 function displayCategorySummary(data) {

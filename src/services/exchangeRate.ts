@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 
 /**
  * Exchange Rate Service
- * Manages currency conversion rates between NGN and USD
+ * Manages currency conversion rates between NGN, USD, GBP, and EUR
  */
 export class ExchangeRateService {
   /**
@@ -18,50 +18,124 @@ export class ExchangeRateService {
 
     if (!apiKey) {
       console.warn('EXCHANGE_RATE_API_KEY not set. Using default rates.');
-      // Set default rates if no API key
+      // Set default rates if no API key (approximate rates)
       const today = format(new Date(), 'yyyy-MM-dd');
-      ExchangeRateModel.create({
-        from_currency: 'USD',
-        to_currency: 'NGN',
-        rate: 1500, // Default rate - should be updated
-        date: today,
+      const defaultRates = {
+        'USD-NGN': 1500,
+        'USD-GBP': 0.79,
+        'USD-EUR': 0.92,
+        'GBP-NGN': 1900,
+        'GBP-EUR': 1.16,
+        'EUR-NGN': 1630,
+      };
+
+      // Create rates for all currency pairs
+      Object.entries(defaultRates).forEach(([pair, rate]) => {
+        const [from, to] = pair.split('-');
+        ExchangeRateModel.create({
+          from_currency: from,
+          to_currency: to,
+          rate,
+          date: today,
+        });
+        // Create reverse rate
+        ExchangeRateModel.create({
+          from_currency: to,
+          to_currency: from,
+          rate: 1 / rate,
+          date: today,
+        });
       });
-      ExchangeRateModel.create({
-        from_currency: 'NGN',
-        to_currency: 'USD',
-        rate: 1 / 1500,
-        date: today,
-      });
+
+      console.log('Using default exchange rates');
       return;
     }
 
     try {
-      // Example with exchangerate-api.com
+      // Fetch rates with USD as base
       const response = await fetch(
         `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`
       );
 
       const data = await response.json();
 
-      if (data.result === 'success' && data.conversion_rates.NGN) {
+      if (data.result === 'success') {
         const today = format(new Date(), 'yyyy-MM-dd');
-        const usdToNgn = data.conversion_rates.NGN;
+        const rates = data.conversion_rates;
 
-        ExchangeRateModel.create({
-          from_currency: 'USD',
-          to_currency: 'NGN',
-          rate: usdToNgn,
-          date: today,
+        // Store all relevant currency pairs
+        const currencies = ['NGN', 'GBP', 'EUR'];
+
+        currencies.forEach(currency => {
+          if (rates[currency]) {
+            // USD to other currency
+            ExchangeRateModel.create({
+              from_currency: 'USD',
+              to_currency: currency,
+              rate: rates[currency],
+              date: today,
+            });
+
+            // Other currency to USD
+            ExchangeRateModel.create({
+              from_currency: currency,
+              to_currency: 'USD',
+              rate: 1 / rates[currency],
+              date: today,
+            });
+          }
         });
 
-        ExchangeRateModel.create({
-          from_currency: 'NGN',
-          to_currency: 'USD',
-          rate: 1 / usdToNgn,
-          date: today,
-        });
+        // Cross rates (NGN-GBP, NGN-EUR, GBP-EUR, etc.)
+        if (rates.NGN && rates.GBP) {
+          const ngnToGbp = rates.GBP / rates.NGN;
+          ExchangeRateModel.create({
+            from_currency: 'NGN',
+            to_currency: 'GBP',
+            rate: ngnToGbp,
+            date: today,
+          });
+          ExchangeRateModel.create({
+            from_currency: 'GBP',
+            to_currency: 'NGN',
+            rate: 1 / ngnToGbp,
+            date: today,
+          });
+        }
 
-        console.log(`Exchange rates updated: 1 USD = ${usdToNgn} NGN`);
+        if (rates.NGN && rates.EUR) {
+          const ngnToEur = rates.EUR / rates.NGN;
+          ExchangeRateModel.create({
+            from_currency: 'NGN',
+            to_currency: 'EUR',
+            rate: ngnToEur,
+            date: today,
+          });
+          ExchangeRateModel.create({
+            from_currency: 'EUR',
+            to_currency: 'NGN',
+            rate: 1 / ngnToEur,
+            date: today,
+          });
+        }
+
+        if (rates.GBP && rates.EUR) {
+          const gbpToEur = rates.EUR / rates.GBP;
+          ExchangeRateModel.create({
+            from_currency: 'GBP',
+            to_currency: 'EUR',
+            rate: gbpToEur,
+            date: today,
+          });
+          ExchangeRateModel.create({
+            from_currency: 'EUR',
+            to_currency: 'GBP',
+            rate: 1 / gbpToEur,
+            date: today,
+          });
+        }
+
+        console.log('Exchange rates updated for USD, NGN, GBP, EUR');
       }
     } catch (error) {
       console.error('Failed to fetch exchange rates:', error);
