@@ -16,7 +16,32 @@ document.addEventListener('DOMContentLoaded', () => {
     setupForms();
     setupFilters();
     setDefaultDate();
+    setupModal();
 });
+
+function setupModal() {
+    const modal = document.getElementById('transaction-modal');
+    const closeBtn = document.querySelector('.modal-close');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+}
 
 // Tab Navigation
 function initializeTabs() {
@@ -141,7 +166,7 @@ function displayTransactionList(items, container) {
         const sourceText = source === 'gmail' ? 'Gmail' : 'Manual';
 
         return `
-            <div class="transaction-item">
+            <div class="transaction-item" onclick="showTransactionDetails(${tx.id})" style="cursor: pointer;">
                 <div class="transaction-info">
                     <div class="transaction-description">${icon} ${tx.description}</div>
                     <div class="transaction-meta">${category} • ${date} • ${tx.currency} • ${sourceIcon} ${sourceText}</div>
@@ -149,7 +174,7 @@ function displayTransactionList(items, container) {
                 <div class="transaction-amount ${tx.transaction_type}">
                     ${tx.transaction_type === 'income' ? '+' : '-'}${symbol}${formatNumber(tx.amount)}
                 </div>
-                <div class="transaction-actions">
+                <div class="transaction-actions" onclick="event.stopPropagation()">
                     <button class="btn btn-danger" onclick="deleteTransaction(${tx.id})">Delete</button>
                 </div>
             </div>
@@ -545,6 +570,81 @@ async function deleteTransaction(id) {
     } catch (error) {
         showNotification('Failed to delete transaction', 'error');
     }
+}
+
+// Transaction Detail Modal
+function showTransactionDetails(id) {
+    const transaction = transactions.find(tx => tx.id === id);
+    if (!transaction) return;
+
+    const modal = document.getElementById('transaction-modal');
+    const modalBody = document.getElementById('modal-body');
+    const symbol = getCurrencySymbol(transaction.currency);
+    const date = new Date(transaction.transaction_date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    const category = transaction.category ? transaction.category.name : 'Uncategorized';
+    const categoryIcon = transaction.category ? transaction.category.icon : '📌';
+    const source = transaction.source || 'manual';
+    const sourceIcon = source === 'gmail' ? '📧' : '✍️';
+    const sourceText = source === 'gmail' ? 'Gmail' : 'Manual Entry';
+
+    const typeText = transaction.transaction_type === 'income' ? 'Income' : 'Expense';
+    const sign = transaction.transaction_type === 'income' ? '+' : '-';
+
+    modalBody.innerHTML = `
+        <div class="detail-row">
+            <span class="detail-label">Amount</span>
+            <span class="detail-value amount ${transaction.transaction_type}">${sign}${symbol}${formatNumber(transaction.amount)}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Type</span>
+            <span class="detail-value"><span class="detail-badge ${transaction.transaction_type}">${typeText}</span></span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Description</span>
+            <span class="detail-value">${transaction.description}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Category</span>
+            <span class="detail-value">${categoryIcon} ${category}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Date</span>
+            <span class="detail-value">${date}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Currency</span>
+            <span class="detail-value">${transaction.currency} (${symbol})</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Source</span>
+            <span class="detail-value"><span class="detail-badge source">${sourceIcon} ${sourceText}</span></span>
+        </div>
+        ${transaction.notes ? `
+        <div class="detail-row">
+            <span class="detail-label">Notes</span>
+            <span class="detail-value">${transaction.notes}</span>
+        </div>
+        ` : ''}
+        ${transaction.tags && transaction.tags.length > 0 ? `
+        <div class="detail-row">
+            <span class="detail-label">Tags</span>
+            <span class="detail-value">${transaction.tags.map(tag => tag.name).join(', ')}</span>
+        </div>
+        ` : ''}
+    `;
+
+    modal.classList.add('show');
+}
+
+function closeModal() {
+    const modal = document.getElementById('transaction-modal');
+    modal.classList.remove('show');
 }
 
 // Utility Functions
