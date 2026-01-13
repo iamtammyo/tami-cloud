@@ -196,16 +196,37 @@ export class GmailService {
     let currency: 'NGN' | 'USD' | 'GBP' | 'EUR' = 'NGN';
     let transactionType: 'income' | 'expense' = 'expense';
 
-    // Determine transaction type from keywords
+    // Determine transaction type from keywords - be more specific
     const combinedText = `${emailText} ${subject}`.toLowerCase();
 
-    // Check for credit/income indicators
-    if (/credit|credited|deposit|received|incoming|payment received|salary|refund/i.test(combinedText)) {
-      transactionType = 'income';
-    }
+    // Count occurrences of income vs expense keywords
+    const incomeKeywords = ['credit alert', 'credited', 'credit transaction', 'deposit', 'received', 'incoming', 'payment received', 'salary', 'refund', 'income'];
+    const expenseKeywords = ['debit alert', 'debited', 'debit transaction', 'sent', 'paid', 'transferred', 'purchase', 'withdrawal', 'payment'];
 
-    // Check for debit/expense indicators (Kuda specific)
-    if (/sent|paid|transferred|purchase|withdrawal|debit|debited/i.test(combinedText)) {
+    let incomeScore = 0;
+    let expenseScore = 0;
+
+    // Score based on keyword matches
+    incomeKeywords.forEach(keyword => {
+      if (combinedText.includes(keyword)) {
+        incomeScore++;
+        // Give extra weight to "credit alert" and "credited" in subject
+        if (subject.toLowerCase().includes(keyword)) incomeScore += 2;
+      }
+    });
+
+    expenseKeywords.forEach(keyword => {
+      if (combinedText.includes(keyword)) {
+        expenseScore++;
+        // Give extra weight to "debit alert" and "debited" in subject
+        if (subject.toLowerCase().includes(keyword)) expenseScore += 2;
+      }
+    });
+
+    // Determine type based on score
+    if (incomeScore > expenseScore) {
+      transactionType = 'income';
+    } else {
       transactionType = 'expense';
     }
 
@@ -338,9 +359,13 @@ export class GmailService {
           const parsed = this.parseTransaction(text, subject);
 
           if (!parsed) {
+            console.log(`Skipped email (no transaction found): ${subject.substring(0, 50)}`);
             stats.skipped++;
             continue;
           }
+
+          // Log what we parsed for debugging
+          console.log(`Parsed transaction: ${parsed.transaction_type} ${parsed.currency} ${parsed.amount} - ${parsed.description.substring(0, 30)}`);
 
           // Try to categorize
           let categoryId: number | undefined;

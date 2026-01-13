@@ -135,11 +135,16 @@ function displayTransactionList(items, container) {
         const category = tx.category ? tx.category.name : 'Uncategorized';
         const icon = tx.category ? tx.category.icon : '📌';
 
+        // Determine source icon and text
+        const source = tx.source || 'manual';
+        const sourceIcon = source === 'gmail' ? '📧' : '✍️';
+        const sourceText = source === 'gmail' ? 'Gmail' : 'Manual';
+
         return `
             <div class="transaction-item">
                 <div class="transaction-info">
                     <div class="transaction-description">${icon} ${tx.description}</div>
-                    <div class="transaction-meta">${category} • ${date} • ${tx.currency}</div>
+                    <div class="transaction-meta">${category} • ${date} • ${tx.currency} • ${sourceIcon} ${sourceText}</div>
                 </div>
                 <div class="transaction-amount ${tx.transaction_type}">
                     ${tx.transaction_type === 'income' ? '+' : '-'}${symbol}${formatNumber(tx.amount)}
