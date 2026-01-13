@@ -334,7 +334,7 @@ export class GmailService {
       // Search for transaction emails (including Standard Chartered and Kuda Bank)
       // Only search emails from January 1st, 2026 onwards
       const messages = await this.searchTransactionEmails(
-        'after:2026/01/01 ((transaction OR payment OR debit OR credit OR purchase) OR (from:standardchartered.com) OR (from:kuda.com) OR (from:kudabank.com) OR (subject:alert))',
+        'after:2026/01/01 ((transaction OR "transaction alert" OR "transaction notification" OR payment OR debit OR credit OR purchase OR alert OR notification) OR (from:standardchartered.com) OR (from:kuda.com) OR (from:kudabank.com))',
         maxEmails
       );
 
