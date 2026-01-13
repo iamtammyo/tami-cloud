@@ -11,7 +11,7 @@
         <!-- Header -->
         <header class="header">
             <h1>💰 Tami Cloud Budget Tracker</h1>
-            <p class="tagline">Track your spending across NGN and USD</p>
+            <p class="tagline">Track your spending across multiple currencies (NGN, USD, GBP, EUR)</p>
         </header>
 
         <!-- Navigation Tabs -->
@@ -60,6 +60,42 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="card">
+                    <h3>GBP Balance</h3>
+                    <div class="balance-display">
+                        <div class="balance-item">
+                            <span class="label">Income</span>
+                            <span class="amount income" id="gbp-income">£0</span>
+                        </div>
+                        <div class="balance-item">
+                            <span class="label">Expenses</span>
+                            <span class="amount expense" id="gbp-expenses">£0</span>
+                        </div>
+                        <div class="balance-item net">
+                            <span class="label">Net</span>
+                            <span class="amount" id="gbp-net">£0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>EUR Balance</h3>
+                    <div class="balance-display">
+                        <div class="balance-item">
+                            <span class="label">Income</span>
+                            <span class="amount income" id="eur-income">€0</span>
+                        </div>
+                        <div class="balance-item">
+                            <span class="label">Expenses</span>
+                            <span class="amount expense" id="eur-expenses">€0</span>
+                        </div>
+                        <div class="balance-item net">
+                            <span class="label">Net</span>
+                            <span class="amount" id="eur-net">€0</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
@@ -90,6 +126,8 @@
                             <select id="currency" required>
                                 <option value="NGN">NGN (₦)</option>
                                 <option value="USD">USD ($)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="EUR">EUR (€)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -132,6 +170,8 @@
                             <option value="">All Currencies</option>
                             <option value="NGN">NGN</option>
                             <option value="USD">USD</option>
+                            <option value="GBP">GBP</option>
+                            <option value="EUR">EUR</option>
                         </select>
                         <select id="filter-type">
                             <option value="">All Types</option>
@@ -168,6 +208,8 @@
                             <select id="budget-currency" required>
                                 <option value="NGN">NGN (₦)</option>
                                 <option value="USD">USD ($)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="EUR">EUR (€)</option>
                             </select>
                         </div>
                     </div>

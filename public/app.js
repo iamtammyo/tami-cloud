@@ -130,7 +130,7 @@ function displayTransactionList(items, container) {
     }
 
     container.innerHTML = items.map(tx => {
-        const symbol = tx.currency === 'NGN' ? '₦' : '$';
+        const symbol = getCurrencySymbol(tx.currency);
         const date = new Date(tx.transaction_date).toLocaleDateString();
         const category = tx.category ? tx.category.name : 'Uncategorized';
         const icon = tx.category ? tx.category.icon : '📌';
@@ -139,7 +139,7 @@ function displayTransactionList(items, container) {
             <div class="transaction-item">
                 <div class="transaction-info">
                     <div class="transaction-description">${icon} ${tx.description}</div>
-                    <div class="transaction-meta">${category} • ${date}</div>
+                    <div class="transaction-meta">${category} • ${date} • ${tx.currency}</div>
                 </div>
                 <div class="transaction-amount ${tx.transaction_type}">
                     ${tx.transaction_type === 'income' ? '+' : '-'}${symbol}${formatNumber(tx.amount)}
@@ -176,16 +176,32 @@ async function loadSummary() {
 function displaySummary(summary) {
     const ngnData = summary.NGN || { income: 0, expenses: 0, net: 0 };
     const usdData = summary.USD || { income: 0, expenses: 0, net: 0 };
+    const gbpData = summary.GBP || { income: 0, expenses: 0, net: 0 };
+    const eurData = summary.EUR || { income: 0, expenses: 0, net: 0 };
 
+    // NGN
     document.getElementById('ngn-income').textContent = `₦${formatNumber(ngnData.income)}`;
     document.getElementById('ngn-expenses').textContent = `₦${formatNumber(ngnData.expenses)}`;
     document.getElementById('ngn-net').textContent = `₦${formatNumber(ngnData.net)}`;
     document.getElementById('ngn-net').className = `amount ${ngnData.net >= 0 ? 'income' : 'expense'}`;
 
+    // USD
     document.getElementById('usd-income').textContent = `$${formatNumber(usdData.income)}`;
     document.getElementById('usd-expenses').textContent = `$${formatNumber(usdData.expenses)}`;
     document.getElementById('usd-net').textContent = `$${formatNumber(usdData.net)}`;
     document.getElementById('usd-net').className = `amount ${usdData.net >= 0 ? 'income' : 'expense'}`;
+
+    // GBP
+    document.getElementById('gbp-income').textContent = `£${formatNumber(gbpData.income)}`;
+    document.getElementById('gbp-expenses').textContent = `£${formatNumber(gbpData.expenses)}`;
+    document.getElementById('gbp-net').textContent = `£${formatNumber(gbpData.net)}`;
+    document.getElementById('gbp-net').className = `amount ${gbpData.net >= 0 ? 'income' : 'expense'}`;
+
+    // EUR
+    document.getElementById('eur-income').textContent = `€${formatNumber(eurData.income)}`;
+    document.getElementById('eur-expenses').textContent = `€${formatNumber(eurData.expenses)}`;
+    document.getElementById('eur-net').textContent = `€${formatNumber(eurData.net)}`;
+    document.getElementById('eur-net').className = `amount ${eurData.net >= 0 ? 'income' : 'expense'}`;
 }
 
 function displayCategorySummary(data) {
@@ -200,12 +216,12 @@ function displayCategorySummary(data) {
 
     container.innerHTML = data.slice(0, 10).map(item => {
         const percentage = (item.total / maxAmount) * 100;
-        const symbol = item.currency === 'NGN' ? '₦' : '$';
+        const symbol = getCurrencySymbol(item.currency);
         const categoryName = item.category_name || 'Uncategorized';
 
         return `
             <div class="category-bar">
-                <div class="category-label">${item.category_icon || '📌'} ${categoryName}</div>
+                <div class="category-label">${item.category_icon || '📌'} ${categoryName} (${item.currency})</div>
                 <div class="bar-container">
                     <div class="bar-fill" style="width: ${percentage}%"></div>
                 </div>
@@ -246,7 +262,7 @@ async function displayBudgets() {
             if (data.success) {
                 const progress = data.data;
                 const percentage = progress.percentage;
-                const symbol = budget.currency === 'NGN' ? '₦' : '$';
+                const symbol = getCurrencySymbol(budget.currency);
 
                 let progressClass = '';
                 if (percentage >= 90) progressClass = 'danger';
@@ -255,7 +271,7 @@ async function displayBudgets() {
                 return `
                     <div class="budget-item">
                         <div class="budget-header">
-                            <div class="budget-name">${budget.name}</div>
+                            <div class="budget-name">${budget.name} (${budget.currency})</div>
                             <div class="budget-amount">${symbol}${formatNumber(budget.amount)}</div>
                         </div>
                         <div class="budget-progress">
@@ -444,6 +460,16 @@ async function deleteTransaction(id) {
 }
 
 // Utility Functions
+function getCurrencySymbol(currency) {
+    const symbols = {
+        'NGN': '₦',
+        'USD': '$',
+        'GBP': '£',
+        'EUR': '€'
+    };
+    return symbols[currency] || currency;
+}
+
 function formatNumber(num) {
     return new Intl.NumberFormat('en-US', {
         minimumFractionDigits: 0,

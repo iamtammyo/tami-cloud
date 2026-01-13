@@ -11,7 +11,7 @@ const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials.json');
 
 interface ParsedTransaction {
   amount: number;
-  currency: 'NGN' | 'USD';
+  currency: 'NGN' | 'USD' | 'GBP' | 'EUR';
   description: string;
   transaction_date: string;
   transaction_type: 'income' | 'expense';
@@ -157,58 +157,144 @@ export class GmailService {
 
   /**
    * Parse transaction from email text
-   * This is a basic parser - you'll need to customize it for specific banks
+   * Enhanced parser for Standard Chartered, Kuda Bank, and other Nigerian banks
+   * Supports NGN, USD, GBP, and EUR
    */
   private parseTransaction(emailText: string, subject: string): ParsedTransaction | null {
-    // Common patterns for Nigerian banks
+    // Enhanced patterns for multiple banks and currencies
     const patterns = [
-      // Pattern for debit transactions
-      /(?:Debit|Debited|DR|Withdrawal).*?(?:NGN|₦|N)\s*([\d,]+\.?\d*)/i,
-      /(?:Debit|Debited|DR|Withdrawal).*?\$\s*([\d,]+\.?\d*)/i,
-      // Pattern for credit transactions
-      /(?:Credit|Credited|CR|Deposit).*?(?:NGN|₦|N)\s*([\d,]+\.?\d*)/i,
-      /(?:Credit|Credited|CR|Deposit).*?\$\s*([\d,]+\.?\d*)/i,
-      // General amount pattern
-      /Amount:\s*(?:NGN|₦|N|\$)\s*([\d,]+\.?\d*)/i,
+      // Standard Chartered Bank patterns
+      /(?:Debit|Debited|DR).*?(?:NGN|₦|N)\s*([\d,]+\.?\d*)/i,
+      /(?:Debit|Debited|DR).*?\$\s*([\d,]+\.?\d*)/i,
+      /(?:Debit|Debited|DR).*?(?:GBP|£)\s*([\d,]+\.?\d*)/i,
+      /(?:Debit|Debited|DR).*?(?:EUR|€)\s*([\d,]+\.?\d*)/i,
+      /(?:Credit|Credited|CR).*?(?:NGN|₦|N)\s*([\d,]+\.?\d*)/i,
+      /(?:Credit|Credited|CR).*?\$\s*([\d,]+\.?\d*)/i,
+      /(?:Credit|Credited|CR).*?(?:GBP|£)\s*([\d,]+\.?\d*)/i,
+      /(?:Credit|Credited|CR).*?(?:EUR|€)\s*([\d,]+\.?\d*)/i,
+
+      // Kuda Bank patterns (they use different format)
+      /(?:sent|paid|transferred).*?(?:NGN|₦|N)\s*([\d,]+\.?\d*)/i,
+      /(?:sent|paid|transferred).*?\$\s*([\d,]+\.?\d*)/i,
+      /(?:received).*?(?:NGN|₦|N)\s*([\d,]+\.?\d*)/i,
+      /(?:received).*?\$\s*([\d,]+\.?\d*)/i,
+
+      // Generic patterns
+      /Amount:\s*(?:NGN|₦|N)\s*([\d,]+\.?\d*)/i,
+      /Amount:\s*\$\s*([\d,]+\.?\d*)/i,
+      /Amount:\s*(?:GBP|£)\s*([\d,]+\.?\d*)/i,
+      /Amount:\s*(?:EUR|€)\s*([\d,]+\.?\d*)/i,
+
+      // More flexible patterns
+      /(?:NGN|₦|N)\s*([\d,]+\.?\d*)/,
+      /\$\s*([\d,]+\.?\d*)/,
+      /(?:GBP|£)\s*([\d,]+\.?\d*)/,
+      /(?:EUR|€)\s*([\d,]+\.?\d*)/,
     ];
 
     let amount: number | null = null;
-    let currency: 'NGN' | 'USD' = 'NGN';
+    let currency: 'NGN' | 'USD' | 'GBP' | 'EUR' = 'NGN';
     let transactionType: 'income' | 'expense' = 'expense';
 
-    // Determine transaction type
-    if (/credit|credited|deposit|received/i.test(emailText) || /credit|credited|deposit|received/i.test(subject)) {
+    // Determine transaction type from keywords
+    const combinedText = `${emailText} ${subject}`.toLowerCase();
+
+    // Check for credit/income indicators
+    if (/credit|credited|deposit|received|incoming|payment received|salary|refund/i.test(combinedText)) {
       transactionType = 'income';
+    }
+
+    // Check for debit/expense indicators (Kuda specific)
+    if (/sent|paid|transferred|purchase|withdrawal|debit|debited/i.test(combinedText)) {
+      transactionType = 'expense';
     }
 
     // Extract amount and currency
     for (const pattern of patterns) {
       const match = emailText.match(pattern);
       if (match) {
-        amount = parseFloat(match[1].replace(/,/g, ''));
+        const amountStr = match[1].replace(/,/g, '');
+        const parsedAmount = parseFloat(amountStr);
 
-        // Determine currency
-        if (/\$|USD|Dollar/i.test(match[0])) {
-          currency = 'USD';
+        // Only use if it's a valid number greater than 0
+        if (!isNaN(parsedAmount) && parsedAmount > 0) {
+          amount = parsedAmount;
+
+          // Determine currency from the match
+          const matchText = match[0];
+          if (/\$|USD|Dollar/i.test(matchText)) {
+            currency = 'USD';
+          } else if (/£|GBP|Pound/i.test(matchText)) {
+            currency = 'GBP';
+          } else if (/€|EUR|Euro/i.test(matchText)) {
+            currency = 'EUR';
+          } else if (/NGN|₦|N\s/i.test(matchText)) {
+            currency = 'NGN';
+          }
+
+          break;
         }
-        break;
       }
     }
 
     if (!amount) return null;
 
-    // Extract merchant/description
-    const merchantMatch = emailText.match(/(?:at|from|to)\s+([A-Z][A-Za-z0-9\s&-]+?)(?:\s+on|\s+at|\s+for|\.)/);
-    const merchant = merchantMatch ? merchantMatch[1].trim() : subject;
+    // Extract merchant/description with better patterns
+    let merchant = '';
 
-    // Extract date (default to now if not found)
-    const date = new Date().toISOString().split('T')[0];
+    // Try multiple merchant extraction patterns
+    const merchantPatterns = [
+      /(?:at|from|to|via)\s+([A-Z][A-Za-z0-9\s&.\-']+?)(?:\s+on|\s+at|\.|,|\s+for)/i,
+      /(?:merchant|vendor|payee):\s*([A-Za-z0-9\s&.\-']+?)(?:\.|,|$)/i,
+      /(?:Reference|Narration):\s*([A-Za-z0-9\s&.\-']+?)(?:\.|,|$)/i,
+    ];
+
+    for (const pattern of merchantPatterns) {
+      const match = emailText.match(pattern);
+      if (match && match[1]) {
+        merchant = match[1].trim();
+        break;
+      }
+    }
+
+    // Fallback to subject if no merchant found
+    if (!merchant) {
+      merchant = subject.replace(/^(Transaction Alert|Debit Alert|Credit Alert|Payment|Transfer)\s*[:|-]?\s*/i, '').trim();
+    }
+
+    // Clean up merchant name
+    merchant = merchant.substring(0, 255);
+    if (!merchant) merchant = 'Transaction';
+
+    // Extract date with better patterns
+    let transactionDate = new Date().toISOString().split('T')[0];
+
+    const datePatterns = [
+      /(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/,
+      /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/,
+      /on\s+(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})/i,
+    ];
+
+    for (const pattern of datePatterns) {
+      const match = emailText.match(pattern);
+      if (match) {
+        try {
+          const parsedDate = new Date(match[1]);
+          if (!isNaN(parsedDate.getTime())) {
+            transactionDate = parsedDate.toISOString().split('T')[0];
+            break;
+          }
+        } catch (e) {
+          // Continue to next pattern if this one fails
+        }
+      }
+    }
 
     return {
       amount,
       currency,
-      description: merchant.substring(0, 255),
-      transaction_date: date,
+      description: merchant,
+      transaction_date: transactionDate,
       transaction_type: transactionType,
       merchant,
     };
@@ -224,9 +310,9 @@ export class GmailService {
       // Get last sync state
       const syncState = db.prepare('SELECT * FROM gmail_sync_state WHERE id = 1').get() as any;
 
-      // Search for transaction emails
+      // Search for transaction emails (including Standard Chartered and Kuda Bank)
       const messages = await this.searchTransactionEmails(
-        'transaction OR payment OR debit OR credit OR purchase',
+        '(transaction OR payment OR debit OR credit OR purchase) OR (from:standardchartered.com) OR (from:kuda.com) OR (from:kudabank.com) OR (subject:alert)',
         maxEmails
       );
 
