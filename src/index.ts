@@ -42,6 +42,16 @@ app.use('/api/budgets', budgetsRouter);
 app.use('/api/exchange-rates', exchangeRatesRouter);
 app.use('/api/gmail', gmailRouter);
 
+// Google OAuth callback redirect (for backwards compatibility)
+app.get('/auth/google/callback', (req, res) => {
+  const code = req.query.code;
+  if (code) {
+    res.redirect(`/api/gmail/auth/callback?code=${code}`);
+  } else {
+    res.status(400).json({ success: false, error: 'No authorization code provided' });
+  }
+});
+
 // Serve index.html for root path
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
