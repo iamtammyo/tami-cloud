@@ -1,0 +1,37 @@
+{
+  "name": "tami-cloud-budget-tracker",
+  "version": "1.0.0",
+  "description": "Multi-currency budget tracker with Gmail and banking integration",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:migrate": "ts-node src/database/migrate.ts",
+    "test": "jest"
+  },
+  "keywords": ["budget", "tracker", "multi-currency", "gmail", "banking"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "better-sqlite3": "^9.2.2",
+    "googleapis": "^129.0.0",
+    "date-fns": "^3.0.6",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "@types/jest": "^29.5.11",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1"
+  }
+}
