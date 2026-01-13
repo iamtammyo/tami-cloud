@@ -57,11 +57,11 @@ export class ExchangeRateService {
         `https://v6.exchangerate-api.com/v6/${apiKey}/latest/USD`
       );
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (data.result === 'success') {
         const today = format(new Date(), 'yyyy-MM-dd');
-        const rates = data.conversion_rates;
+        const rates = data.conversion_rates as any;
 
         // Store all relevant currency pairs
         const currencies = ['NGN', 'GBP', 'EUR'];

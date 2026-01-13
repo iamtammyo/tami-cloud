@@ -389,7 +389,7 @@ export class GmailService {
             ...parsed,
             category_id: categoryId,
             source: 'gmail',
-            source_id: message.id,
+            source_id: message.id || undefined,
           });
 
           stats.imported++;

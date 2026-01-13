@@ -1,4 +1,4 @@
-export type Currency = 'NGN' | 'USD';
+export type Currency = 'NGN' | 'USD' | 'GBP' | 'EUR';
 export type TransactionType = 'income' | 'expense';
 export type TransactionSource = 'manual' | 'gmail' | 'bank_api';
 export type BudgetPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
