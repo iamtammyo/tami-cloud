@@ -230,6 +230,27 @@ body {
     font-size: 0.9em;
 }
 
+.date-filter {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.date-filter select,
+.date-filter input[type="date"] {
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.9em;
+    background: white;
+}
+
+.date-filter input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
 .transaction-list {
     display: flex;
     flex-direction: column;
@@ -400,6 +421,15 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.category-bar:hover {
+    background: #f8f9fa;
+    transform: translateX(5px);
 }
 
 .category-label {

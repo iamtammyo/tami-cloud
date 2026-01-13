@@ -165,4 +165,61 @@ router.post('/sync', async (req: Request, res: Response) => {
   }
 });
 
+// Get specific email content by ID
+router.get('/email/:id', async (req: Request, res: Response) => {
+  try {
+    await gmailService.initialize();
+
+    if (!gmailService.isAuthenticated()) {
+      return res.status(401).json({
+        success: false,
+        error: 'Not authenticated with Gmail.',
+      });
+    }
+
+    const emailId = req.params.id;
+    const emailContent = await gmailService.getEmailContent(emailId);
+
+    if (!emailContent) {
+      return res.status(404).json({
+        success: false,
+        error: 'Email not found',
+      });
+    }
+
+    // Extract relevant information
+    const headers = emailContent.payload?.headers || [];
+    const subject = headers.find((h: any) => h.name === 'Subject')?.value || '';
+    const from = headers.find((h: any) => h.name === 'From')?.value || '';
+    const date = headers.find((h: any) => h.name === 'Date')?.value || '';
+
+    // Extract body text
+    let body = '';
+    if (emailContent.payload?.body?.data) {
+      body = Buffer.from(emailContent.payload.body.data, 'base64').toString('utf-8');
+    } else if (emailContent.payload?.parts) {
+      for (const part of emailContent.payload.parts) {
+        if (part.mimeType === 'text/plain' && part.body?.data) {
+          body += Buffer.from(part.body.data, 'base64').toString('utf-8');
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        id: emailContent.id,
+        subject,
+        from,
+        date,
+        snippet: emailContent.snippet,
+        body: body.substring(0, 2000), // Limit body length
+        internalDate: emailContent.internalDate,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: (error as Error).message });
+  }
+});
+
 export default router;

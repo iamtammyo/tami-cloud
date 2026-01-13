@@ -39,8 +39,16 @@ function setupModal() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeModal();
+            closeEditModal();
+            closeEmailModal();
         }
     });
+
+    // Setup edit form submission
+    const editForm = document.getElementById('edit-transaction-form');
+    if (editForm) {
+        editForm.addEventListener('submit', handleEditSubmit);
+    }
 }
 
 // Tab Navigation
@@ -124,7 +132,16 @@ function displayCategories() {
 // Load Transactions
 async function loadTransactions() {
     try {
-        const response = await fetch(`${API_BASE}/transactions?limit=100`);
+        // Build query parameters for date filtering
+        const params = new URLSearchParams({ limit: '100' });
+        if (currentTransactionDateRange.startDate) {
+            params.append('start_date', currentTransactionDateRange.startDate);
+        }
+        if (currentTransactionDateRange.endDate) {
+            params.append('end_date', currentTransactionDateRange.endDate);
+        }
+
+        const response = await fetch(`${API_BASE}/transactions?${params.toString()}`);
         const data = await response.json();
 
         if (data.success) {
@@ -175,6 +192,7 @@ function displayTransactionList(items, container) {
                     ${tx.transaction_type === 'income' ? '+' : '-'}${symbol}${formatNumber(tx.amount)}
                 </div>
                 <div class="transaction-actions" onclick="event.stopPropagation()">
+                    <button class="btn btn-primary" onclick="editTransaction(${tx.id})" style="margin-right: 8px;">Edit</button>
                     <button class="btn btn-danger" onclick="deleteTransaction(${tx.id})">Delete</button>
                 </div>
             </div>
@@ -185,14 +203,25 @@ function displayTransactionList(items, container) {
 // Load Summary
 async function loadSummary() {
     try {
-        const response = await fetch(`${API_BASE}/transactions/summary/overview`);
+        // Build query parameters for date filtering
+        const params = new URLSearchParams();
+        if (currentDashboardDateRange.startDate) {
+            params.append('start_date', currentDashboardDateRange.startDate);
+        }
+        if (currentDashboardDateRange.endDate) {
+            params.append('end_date', currentDashboardDateRange.endDate);
+        }
+
+        const queryString = params.toString() ? `?${params.toString()}` : '';
+
+        const response = await fetch(`${API_BASE}/transactions/summary/overview${queryString}`);
         const data = await response.json();
 
         if (data.success) {
             displaySummary(data.data);
         }
 
-        const categoryResponse = await fetch(`${API_BASE}/transactions/summary/by-category`);
+        const categoryResponse = await fetch(`${API_BASE}/transactions/summary/by-category${queryString}`);
         const categoryData = await categoryResponse.json();
 
         if (categoryData.success) {
@@ -331,9 +360,10 @@ function displayCategorySummary(data) {
         const percentage = (item.total / maxAmount) * 100;
         const symbol = getCurrencySymbol(item.currency);
         const categoryName = item.category_name || 'Uncategorized';
+        const categoryId = item.category_id;
 
         return `
-            <div class="category-bar">
+            <div class="category-bar" onclick="${categoryId ? `viewCategoryDetails(${categoryId}, '${categoryName}')` : 'return false;'}">
                 <div class="category-label">${item.category_icon || '📌'} ${categoryName} (${item.currency})</div>
                 <div class="bar-container">
                     <div class="bar-fill" style="width: ${percentage}%"></div>
@@ -522,6 +552,22 @@ function setupFilters() {
     filters.forEach(filterId => {
         document.getElementById(filterId).addEventListener('change', applyFilters);
     });
+
+    // Setup date preset filters
+    const dashboardDatePreset = document.getElementById('dashboard-date-preset');
+    if (dashboardDatePreset) {
+        dashboardDatePreset.addEventListener('change', handleDashboardDatePreset);
+    }
+
+    const transactionDatePreset = document.getElementById('transaction-date-preset');
+    if (transactionDatePreset) {
+        transactionDatePreset.addEventListener('change', handleTransactionDatePreset);
+    }
+
+    const categoryDatePreset = document.getElementById('category-detail-date-preset');
+    if (categoryDatePreset) {
+        categoryDatePreset.addEventListener('change', handleCategoryDatePreset);
+    }
 }
 
 function applyFilters() {
@@ -625,6 +671,12 @@ function showTransactionDetails(id) {
             <span class="detail-label">Source</span>
             <span class="detail-value"><span class="detail-badge source">${sourceIcon} ${sourceText}</span></span>
         </div>
+        ${transaction.source === 'gmail' && transaction.source_id ? `
+        <div class="detail-row">
+            <span class="detail-label">Email ID</span>
+            <span class="detail-value" style="font-size: 0.85em; color: #667eea;">${transaction.source_id.substring(0, 20)}...</span>
+        </div>
+        ` : ''}
         ${transaction.notes ? `
         <div class="detail-row">
             <span class="detail-label">Notes</span>
@@ -637,6 +689,12 @@ function showTransactionDetails(id) {
             <span class="detail-value">${transaction.tags.map(tag => tag.name).join(', ')}</span>
         </div>
         ` : ''}
+        <div style="margin-top: 25px; display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-primary" onclick="closeModal(); editTransaction(${transaction.id});">Edit Transaction</button>
+            ${transaction.source === 'gmail' && transaction.source_id ? `
+            <button class="btn" style="background: #667eea; color: white;" onclick="viewSourceEmail('${transaction.source_id}')">📧 View Email</button>
+            ` : ''}
+        </div>
     `;
 
     modal.classList.add('show');
@@ -645,6 +703,152 @@ function showTransactionDetails(id) {
 function closeModal() {
     const modal = document.getElementById('transaction-modal');
     modal.classList.remove('show');
+}
+
+// Edit Transaction Functions
+function editTransaction(id) {
+    const transaction = transactions.find(tx => tx.id === id);
+    if (!transaction) return;
+
+    // Populate edit form
+    document.getElementById('edit-transaction-id').value = transaction.id;
+    document.getElementById('edit-amount').value = transaction.amount;
+    document.getElementById('edit-currency').value = transaction.currency;
+    document.getElementById('edit-transaction-type').value = transaction.transaction_type;
+    document.getElementById('edit-description').value = transaction.description;
+    document.getElementById('edit-transaction-date').value = transaction.transaction_date;
+    document.getElementById('edit-notes').value = transaction.notes || '';
+
+    // Populate category dropdown
+    const categorySelect = document.getElementById('edit-category');
+    categorySelect.innerHTML = '';
+    categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = `${cat.icon || ''} ${cat.name}`;
+        if (cat.id === transaction.category_id) {
+            option.selected = true;
+        }
+        categorySelect.appendChild(option);
+    });
+
+    // Show modal
+    document.getElementById('edit-modal').classList.add('show');
+}
+
+async function handleEditSubmit(e) {
+    e.preventDefault();
+
+    const id = document.getElementById('edit-transaction-id').value;
+    const data = {
+        amount: parseFloat(document.getElementById('edit-amount').value),
+        currency: document.getElementById('edit-currency').value,
+        description: document.getElementById('edit-description').value,
+        category_id: parseInt(document.getElementById('edit-category').value) || undefined,
+        transaction_date: document.getElementById('edit-transaction-date').value,
+        transaction_type: document.getElementById('edit-transaction-type').value,
+        notes: document.getElementById('edit-notes').value || undefined
+    };
+
+    try {
+        const response = await fetch(`${API_BASE}/transactions/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('Transaction updated successfully!', 'success');
+            closeEditModal();
+            await loadTransactions();
+            await loadSummary();
+        } else {
+            showNotification(result.error || 'Failed to update transaction', 'error');
+        }
+    } catch (error) {
+        showNotification('Failed to update transaction', 'error');
+    }
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').classList.remove('show');
+}
+
+// View Source Email Function
+async function viewSourceEmail(emailId) {
+    const modal = document.getElementById('email-modal');
+    const modalBody = document.getElementById('email-modal-body');
+
+    // Show loading state
+    modalBody.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #6c757d;">
+            <div style="font-size: 3em; margin-bottom: 15px;">⏳</div>
+            <p>Loading email content...</p>
+        </div>
+    `;
+
+    modal.classList.add('show');
+
+    try {
+        const response = await fetch(`${API_BASE}/gmail/email/${emailId}`);
+        const data = await response.json();
+
+        if (data.success) {
+            const email = data.data;
+            const date = new Date(parseInt(email.internalDate)).toLocaleString();
+
+            modalBody.innerHTML = `
+                <div class="detail-row">
+                    <span class="detail-label">From</span>
+                    <span class="detail-value">${email.from || 'Unknown'}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Subject</span>
+                    <span class="detail-value"><strong>${email.subject}</strong></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value">${date}</span>
+                </div>
+                <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+                    <div style="white-space: pre-wrap; font-family: monospace; font-size: 0.9em; line-height: 1.6;">
+                        ${email.snippet || email.body || 'No content available'}
+                    </div>
+                </div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="https://mail.google.com/mail/u/0/#inbox/${emailId}" target="_blank" class="btn btn-primary">
+                        Open in Gmail
+                    </a>
+                </div>
+            `;
+        } else {
+            modalBody.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #dc3545;">
+                    <div style="font-size: 3em; margin-bottom: 15px;">❌</div>
+                    <p>${data.error || 'Failed to load email'}</p>
+                    <p style="font-size: 0.9em; color: #6c757d; margin-top: 10px;">
+                        Email ID: ${emailId}
+                    </p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        modalBody.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <div style="font-size: 3em; margin-bottom: 15px;">❌</div>
+                <p>Failed to load email content</p>
+                <p style="font-size: 0.9em; color: #6c757d; margin-top: 10px;">
+                    Email ID: ${emailId}
+                </p>
+            </div>
+        `;
+    }
+}
+
+function closeEmailModal() {
+    document.getElementById('email-modal').classList.remove('show');
 }
 
 // Utility Functions
@@ -673,4 +877,223 @@ function showNotification(message, type = 'success') {
     setTimeout(() => {
         notification.classList.remove('show');
     }, 3000);
+}
+
+// Date filtering utility functions
+function getDateRange(preset) {
+    const today = new Date();
+    let startDate, endDate;
+
+    switch (preset) {
+        case '7':
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 7);
+            endDate = today;
+            break;
+        case '30':
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 30);
+            endDate = today;
+            break;
+        case '90':
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 90);
+            endDate = today;
+            break;
+        case 'this-month':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = today;
+            break;
+        case 'last-month':
+            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+            break;
+        case 'this-year':
+            startDate = new Date(today.getFullYear(), 0, 1);
+            endDate = today;
+            break;
+        default:
+            return { startDate: null, endDate: null };
+    }
+
+    return {
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
+    };
+}
+
+// Dashboard date filtering
+let currentDashboardDateRange = { startDate: null, endDate: null };
+
+function handleDashboardDatePreset(e) {
+    const preset = e.target.value;
+    const customDatesDiv = document.getElementById('dashboard-custom-dates');
+
+    if (preset === 'custom') {
+        customDatesDiv.style.display = 'flex';
+        return;
+    }
+
+    customDatesDiv.style.display = 'none';
+
+    if (preset === '') {
+        currentDashboardDateRange = { startDate: null, endDate: null };
+    } else {
+        currentDashboardDateRange = getDateRange(preset);
+    }
+
+    loadSummary();
+}
+
+function applyDashboardDateFilter() {
+    const startDate = document.getElementById('dashboard-start-date').value;
+    const endDate = document.getElementById('dashboard-end-date').value;
+
+    currentDashboardDateRange = {
+        startDate: startDate || null,
+        endDate: endDate || null
+    };
+
+    loadSummary();
+}
+
+// Transaction list date filtering
+let currentTransactionDateRange = { startDate: null, endDate: null };
+
+function handleTransactionDatePreset(e) {
+    const preset = e.target.value;
+    const customDatesDiv = document.getElementById('transaction-custom-dates');
+
+    if (preset === 'custom') {
+        customDatesDiv.style.display = 'block';
+        return;
+    }
+
+    customDatesDiv.style.display = 'none';
+
+    if (preset === '') {
+        currentTransactionDateRange = { startDate: null, endDate: null };
+    } else {
+        currentTransactionDateRange = getDateRange(preset);
+    }
+
+    loadTransactions();
+}
+
+function applyTransactionDateFilter() {
+    const startDate = document.getElementById('transaction-start-date').value;
+    const endDate = document.getElementById('transaction-end-date').value;
+
+    currentTransactionDateRange = {
+        startDate: startDate || null,
+        endDate: endDate || null
+    };
+
+    loadTransactions();
+}
+
+// Category detail modal
+let currentCategoryId = null;
+let currentCategoryDateRange = { startDate: null, endDate: null };
+
+async function viewCategoryDetails(categoryId, categoryName) {
+    currentCategoryId = categoryId;
+    currentCategoryDateRange = { startDate: null, endDate: null };
+
+    document.getElementById('category-detail-title').textContent = `${categoryName} - Details`;
+    document.getElementById('category-detail-date-preset').value = '';
+
+    const modal = document.getElementById('category-detail-modal');
+    modal.classList.add('show');
+
+    await loadCategoryDetails();
+}
+
+async function loadCategoryDetails() {
+    if (!currentCategoryId) return;
+
+    try {
+        let url = `${API_BASE}/categories/${currentCategoryId}/details`;
+        const params = new URLSearchParams();
+
+        if (currentCategoryDateRange.startDate) {
+            params.append('start_date', currentCategoryDateRange.startDate);
+        }
+        if (currentCategoryDateRange.endDate) {
+            params.append('end_date', currentCategoryDateRange.endDate);
+        }
+
+        if (params.toString()) {
+            url += `?${params.toString()}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            displayCategoryDetails(data.data);
+        }
+    } catch (error) {
+        showNotification('Failed to load category details', 'error');
+    }
+}
+
+function displayCategoryDetails(data) {
+    const { category, transactions, totals, transaction_count } = data;
+
+    // Display totals by currency
+    const totalsContainer = document.getElementById('category-totals');
+    const totalsHTML = Object.entries(totals).map(([currency, amounts]) => {
+        const symbol = getCurrencySymbol(currency);
+        const netClass = amounts.net >= 0 ? 'income' : 'expense';
+
+        return `
+            <div class="card" style="padding: 15px; margin: 0;">
+                <h4 style="color: #6c757d; font-size: 0.9em; margin-bottom: 10px;">${currency}</h4>
+                <div class="balance-display" style="gap: 10px;">
+                    <div class="balance-item" style="padding: 8px;">
+                        <span class="label" style="font-size: 0.85em;">Income</span>
+                        <span class="amount income" style="font-size: 1.1em;">${symbol}${formatNumber(amounts.income)}</span>
+                    </div>
+                    <div class="balance-item" style="padding: 8px;">
+                        <span class="label" style="font-size: 0.85em;">Expenses</span>
+                        <span class="amount expense" style="font-size: 1.1em;">${symbol}${formatNumber(amounts.expense)}</span>
+                    </div>
+                    <div class="balance-item net" style="padding: 8px;">
+                        <span class="label" style="font-size: 0.85em;">Net</span>
+                        <span class="amount ${netClass}" style="font-size: 1.1em;">${symbol}${formatNumber(Math.abs(amounts.net))}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    totalsContainer.innerHTML = totalsHTML || '<p style="color: #6c757d;">No transactions found</p>';
+
+    // Display transactions
+    const transactionsContainer = document.getElementById('category-transactions');
+    if (transactions.length === 0) {
+        transactionsContainer.innerHTML = '<div class="empty-state"><p>No transactions found</p></div>';
+        return;
+    }
+
+    displayTransactionList(transactions, transactionsContainer);
+}
+
+function handleCategoryDatePreset(e) {
+    const preset = e.target.value;
+
+    if (preset === '') {
+        currentCategoryDateRange = { startDate: null, endDate: null };
+    } else {
+        currentCategoryDateRange = getDateRange(preset);
+    }
+
+    loadCategoryDetails();
+}
+
+function closeCategoryDetailModal() {
+    document.getElementById('category-detail-modal').classList.remove('show');
+    currentCategoryId = null;
+    currentCategoryDateRange = { startDate: null, endDate: null };
 }
