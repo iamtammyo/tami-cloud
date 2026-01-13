@@ -311,8 +311,9 @@ export class GmailService {
       const syncState = db.prepare('SELECT * FROM gmail_sync_state WHERE id = 1').get() as any;
 
       // Search for transaction emails (including Standard Chartered and Kuda Bank)
+      // Only search emails from January 1st, 2026 onwards
       const messages = await this.searchTransactionEmails(
-        '(transaction OR payment OR debit OR credit OR purchase) OR (from:standardchartered.com) OR (from:kuda.com) OR (from:kudabank.com) OR (subject:alert)',
+        'after:2026/01/01 ((transaction OR payment OR debit OR credit OR purchase) OR (from:standardchartered.com) OR (from:kuda.com) OR (from:kudabank.com) OR (subject:alert))',
         maxEmails
       );
 
