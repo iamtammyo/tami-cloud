@@ -4,6 +4,7 @@ A multi-currency budget tracking application that automatically pulls transactio
 
 ## Features
 
+- **Web Interface**: Clean, modern web UI for easy interaction with your budget data
 - **Multi-Currency Support**: Track expenses in both NGN and USD with automatic currency conversion
 - **Gmail Integration**: Automatically extract transaction data from bank notification emails
 - **Manual Entry**: Add transactions manually with detailed categorization
@@ -14,6 +15,7 @@ A multi-currency budget tracking application that automatically pulls transactio
 
 ## Technology Stack
 
+- **Frontend**: HTML, CSS, JavaScript (Vanilla JS)
 - **Backend**: Node.js with TypeScript and Express
 - **Database**: SQLite (easily upgradeable to PostgreSQL)
 - **Gmail Integration**: Google Gmail API
@@ -56,7 +58,9 @@ npm run db:migrate
 npm run dev
 ```
 
-The API will be available at `http://localhost:3000`
+The application will be available at:
+- **Web Interface**: http://localhost:3000
+- **API**: http://localhost:3000/api
 
 ## Configuration
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import * as path from 'path';
 import { initializeDatabase } from './database';
 
 // Import routes
@@ -22,6 +23,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Initialize database
 initializeDatabase();
 
@@ -38,8 +42,13 @@ app.use('/api/budgets', budgetsRouter);
 app.use('/api/exchange-rates', exchangeRatesRouter);
 app.use('/api/gmail', gmailRouter);
 
-// 404 handler
-app.use((_req, res) => {
+// Serve index.html for root path
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// 404 handler for API routes only
+app.use('/api/*', (_req, res) => {
   res.status(404).json({ success: false, error: 'Endpoint not found' });
 });
 
@@ -51,8 +60,9 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`\n🚀 Tami Cloud Budget Tracker API is running!`);
+  console.log(`\n🚀 Tami Cloud Budget Tracker is running!`);
   console.log(`📡 Server: http://localhost:${PORT}`);
+  console.log(`🌐 Web Interface: http://localhost:${PORT}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
   console.log(`\n📚 Available endpoints:`);
   console.log(`  Transactions:`);
