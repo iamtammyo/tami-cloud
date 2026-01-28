@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tami Cloud Budget Tracker</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>💰 Tami Cloud Budget Tracker</h1>
+            <p class="tagline">Track your spending across multiple currencies (NGN, USD, GBP, EUR)</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="tab-btn" data-tab="transactions">Transactions</button>
+            <button class="tab-btn" data-tab="budgets">Budgets</button>
+            <button class="tab-btn" data-tab="categories">Categories</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="summary-cards">
+                <div class="card">
+                    <h3>NGN Balance</h3>
+                    <div class="balance-display">
+                        <div class="balance-item">
+                            <span class="label">Income</span>
+                            <span class="amount income" id="ngn-income">₦0</span>
+                        </div>
+                        <div class="balance-item">
+                            <span class="label">Expenses</span>
+                            <span class="amount expense" id="ngn-expenses">₦0</span>
+                        </div>
+                        <div class="balance-item net">
+                            <span class="label">Net</span>
+                            <span class="amount" id="ngn-net">₦0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>USD Balance</h3>
+                    <div class="balance-display">
+                        <div class="balance-item">
+                            <span class="label">Income</span>
+                            <span class="amount income" id="usd-income">$0</span>
+                        </div>
+                        <div class="balance-item">
+                            <span class="label">Expenses</span>
+                            <span class="amount expense" id="usd-expenses">$0</span>
+                        </div>
+                        <div class="balance-item net">
+                            <span class="label">Net</span>
+                            <span class="amount" id="usd-net">$0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>GBP Balance</h3>
+                    <div class="balance-display">
+                        <div class="balance-item">
+                            <span class="label">Income</span>
+                            <span class="amount income" id="gbp-income">£0</span>
+                        </div>
+                        <div class="balance-item">
+                            <span class="label">Expenses</span>
+                            <span class="amount expense" id="gbp-expenses">£0</span>
+                        </div>
+                        <div class="balance-item net">
+                            <span class="label">Net</span>
+                            <span class="amount" id="gbp-net">£0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>EUR Balance</h3>
+                    <div class="balance-display">
+                        <div class="balance-item">
+                            <span class="label">Income</span>
+                            <span class="amount income" id="eur-income">€0</span>
+                        </div>
+                        <div class="balance-item">
+                            <span class="label">Expenses</span>
+                            <span class="amount expense" id="eur-expenses">€0</span>
+                        </div>
+                        <div class="balance-item net">
+                            <span class="label">Net</span>
+                            <span class="amount" id="eur-net">€0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>💱 Total Balance Conversions</h3>
+                <p style="color: #6c757d; margin-bottom: 20px; font-size: 0.95em;">Your total net worth converted to each currency</p>
+                <div id="conversion-display" class="balance-display"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>📊 Spending by Category</h3>
+                    <div class="date-filter">
+                        <select id="dashboard-date-preset">
+                            <option value="">All Time</option>
+                            <option value="7">Past 7 Days</option>
+                            <option value="30">Past 30 Days</option>
+                            <option value="90">Past 90 Days</option>
+                            <option value="this-month">This Month</option>
+                            <option value="last-month">Last Month</option>
+                            <option value="this-year">This Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <div id="dashboard-custom-dates" style="display: none; gap: 10px;">
+                            <input type="date" id="dashboard-start-date" placeholder="Start Date">
+                            <input type="date" id="dashboard-end-date" placeholder="End Date">
+                            <button class="btn" style="padding: 8px 16px;" onclick="applyDashboardDateFilter()">Apply</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="category-chart" class="category-chart"></div>
+            </div>
+
+            <div class="card">
+                <h3>Recent Transactions</h3>
+                <div id="recent-transactions" class="transaction-list"></div>
+            </div>
+        </div>
+
+        <!-- Transactions Tab -->
+        <div id="transactions" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Add Transaction</h3>
+                </div>
+                <form id="transaction-form" class="form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="amount">Amount</label>
+                            <input type="number" id="amount" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="currency">Currency</label>
+                            <select id="currency" required>
+                                <option value="NGN">NGN (₦)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="EUR">EUR (€)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="transaction-type">Type</label>
+                            <select id="transaction-type" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <input type="text" id="description" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" required>
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="transaction-date">Date</label>
+                            <input type="date" id="transaction-date" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notes (optional)</label>
+                        <textarea id="notes" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Transaction</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>All Transactions</h3>
+                    <div class="filters">
+                        <select id="filter-currency">
+                            <option value="">All Currencies</option>
+                            <option value="NGN">NGN</option>
+                            <option value="USD">USD</option>
+                            <option value="GBP">GBP</option>
+                            <option value="EUR">EUR</option>
+                        </select>
+                        <select id="filter-type">
+                            <option value="">All Types</option>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                        <select id="filter-category">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select id="transaction-date-preset">
+                            <option value="">All Time</option>
+                            <option value="7">Past 7 Days</option>
+                            <option value="30">Past 30 Days</option>
+                            <option value="90">Past 90 Days</option>
+                            <option value="this-month">This Month</option>
+                            <option value="last-month">Last Month</option>
+                            <option value="this-year">This Year</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="transaction-custom-dates" style="display: none; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px; gap: 10px;">
+                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <div>
+                            <label style="font-size: 0.9em; color: #6c757d; margin-bottom: 5px; display: block;">Start Date</label>
+                            <input type="date" id="transaction-start-date" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.9em; color: #6c757d; margin-bottom: 5px; display: block;">End Date</label>
+                            <input type="date" id="transaction-end-date" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px;">
+                        </div>
+                        <button class="btn btn-primary" style="padding: 8px 20px; margin-top: 20px;" onclick="applyTransactionDateFilter()">Apply</button>
+                    </div>
+                </div>
+                <div id="all-transactions" class="transaction-list"></div>
+            </div>
+        </div>
+
+        <!-- Budgets Tab -->
+        <div id="budgets" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Create Budget</h3>
+                </div>
+                <form id="budget-form" class="form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="budget-name">Budget Name</label>
+                            <input type="text" id="budget-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="budget-amount">Amount</label>
+                            <input type="number" id="budget-amount" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="budget-currency">Currency</label>
+                            <select id="budget-currency" required>
+                                <option value="NGN">NGN (₦)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="EUR">EUR (€)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="budget-period">Period</label>
+                            <select id="budget-period" required>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="budget-category">Category (optional)</label>
+                            <select id="budget-category">
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="budget-start-date">Start Date</label>
+                            <input type="date" id="budget-start-date" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create Budget</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Active Budgets</h3>
+                <div id="budgets-list" class="budgets-list"></div>
+            </div>
+        </div>
+
+        <!-- Categories Tab -->
+        <div id="categories" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Add Category</h3>
+                </div>
+                <form id="category-form" class="form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="category-name">Category Name</label>
+                            <input type="text" id="category-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category-icon">Icon</label>
+                            <input type="text" id="category-icon" placeholder="🏷️" maxlength="2">
+                        </div>
+                        <div class="form-group">
+                            <label for="category-color">Color</label>
+                            <input type="color" id="category-color" value="#3498db">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="category-description">Description</label>
+                        <input type="text" id="category-description">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Category</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>All Categories</h3>
+                <div id="categories-list" class="categories-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Detail Modal -->
+    <div id="transaction-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Transaction Details</h2>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Transaction details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Transaction Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Transaction</h2>
+                <span class="modal-close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="edit-transaction-form" class="form">
+                    <input type="hidden" id="edit-transaction-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-amount">Amount</label>
+                            <input type="number" id="edit-amount" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-currency">Currency</label>
+                            <select id="edit-currency" required>
+                                <option value="NGN">NGN (₦)</option>
+                                <option value="USD">USD ($)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="EUR">EUR (€)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-transaction-type">Type</label>
+                            <select id="edit-transaction-type" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="edit-description">Description</label>
+                            <input type="text" id="edit-description" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-category">Category</label>
+                            <select id="edit-category" required>
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-transaction-date">Date</label>
+                            <input type="date" id="edit-transaction-date" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-notes">Notes (optional)</label>
+                        <textarea id="edit-notes" rows="2"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="btn" style="background: #6c757d; color: white;" onclick="closeEditModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email View Modal -->
+    <div id="email-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2>📧 Source Email</h2>
+                <span class="modal-close" onclick="closeEmailModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="email-modal-body">
+                <div style="text-align: center; padding: 40px; color: #6c757d;">
+                    <div style="font-size: 3em; margin-bottom: 15px;">⏳</div>
+                    <p>Loading email content...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Detail Modal -->
+    <div id="category-detail-modal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2 id="category-detail-title">Category Details</h2>
+                <span class="modal-close" onclick="closeCategoryDetailModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="card-header" style="padding: 0; margin-bottom: 20px; border: none; background: none;">
+                    <h3 style="margin: 0; font-size: 1.1em; color: #6c757d;">Filter by Date</h3>
+                    <select id="category-detail-date-preset" style="padding: 8px 12px; border: 2px solid #e9ecef; border-radius: 8px;">
+                        <option value="">All Time</option>
+                        <option value="7">Past 7 Days</option>
+                        <option value="30">Past 30 Days</option>
+                        <option value="90">Past 90 Days</option>
+                        <option value="this-month">This Month</option>
+                        <option value="last-month">Last Month</option>
+                        <option value="this-year">This Year</option>
+                    </select>
+                </div>
+
+                <div id="category-totals" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;"></div>
+
+                <h3 style="margin-bottom: 15px;">Transactions</h3>
+                <div id="category-transactions" class="transaction-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
