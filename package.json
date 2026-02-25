@@ -1,0 +1,27 @@
+{
+  "name": "tami-cloud",
+  "version": "1.0.0",
+  "description": "Buffer GraphQL API integration for creating ideas",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:60364/git/iamtammyo/tami-cloud"
+  },
+  "keywords": [
+    "buffer",
+    "graphql",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "graphql": "^16.13.0",
+    "graphql-request": "^7.4.0"
+  }
+}
