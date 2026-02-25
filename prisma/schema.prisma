@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String     @id @default(cuid())
+  name      String?
+  email     String?    @unique
+  image     String?
+  accounts  Account[]
+  posts     Post[]
+  templates Template[]
+  createdAt DateTime   @default(now())
+}
+
+model Account {
+  id                String @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  expiresAt         Int?
+  username          String?
+  profileImage      String?
+  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posts             Post[]
+
+  @@unique([provider, providerAccountId])
+}
+
+model Post {
+  id             String   @id @default(cuid())
+  userId         String
+  accountId      String
+  platform       String
+  externalId     String
+  content        String
+  mediaUrls      String?
+  publishedAt    DateTime
+  likes          Int      @default(0)
+  comments       Int      @default(0)
+  shares         Int      @default(0)
+  impressions    Int      @default(0)
+  reach          Int      @default(0)
+  engagementRate Float    @default(0)
+  isTopPerformer Boolean  @default(false)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+
+  @@unique([platform, externalId])
+}
+
+model Template {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  content       String
+  category      String?
+  platform      String?
+  tags          String?
+  sourcePostIds String?
+  isAiGenerated Boolean  @default(false)
+  usageCount    Int      @default(0)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
