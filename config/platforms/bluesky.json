@@ -1,0 +1,41 @@
+{
+  "platform": "bluesky",
+  "displayName": "Bluesky",
+  "maxCharacters": 300,
+  "ideaTypes": [
+    {
+      "type": "insight-link",
+      "label": "Insight + Link",
+      "description": "Concise insight from the article with a link card. The link card displays nicely on Bluesky.",
+      "count": 1
+    },
+    {
+      "type": "mini-thread",
+      "label": "Mini-Thread",
+      "description": "2-3 posts unpacking one key point from the article. 300 characters max per post.",
+      "count": 1
+    },
+    {
+      "type": "community-question",
+      "label": "Community Question",
+      "description": "Ask the Bluesky community for their take on the article's topic.",
+      "count": 1
+    }
+  ],
+  "toneGuidelines": [
+    "Community-oriented, authentic tone. Anti-corporate",
+    "Bluesky audience skews tech-savvy and values substance over polish",
+    "Less performative than LinkedIn, less casual than Threads. Thoughtful middle ground",
+    "Starter packs and topic feeds matter for discovery",
+    "Link cards display nicely. Can include the blog link directly"
+  ],
+  "structureRules": [
+    "300-character limit per post. Be concise",
+    "Thread-friendly: 2-3 posts max",
+    "For threads: each post should make sense on its own",
+    "Include the article link in the post (it renders as a rich card)",
+    "No hashtags unless they map to a Bluesky feed"
+  ],
+  "hookFormula": "Sharp observation or genuine question. No performative hooks.",
+  "hashtagStrategy": "Skip hashtags unless they map to a specific Bluesky feed."
+}

@@ -1,0 +1,27 @@
+{
+  "name": "default",
+  "description": "Tami's voice: thinking out loud, intellectually generous, learner energy",
+  "voiceAttributes": [
+    "Thinking out loud energy",
+    "Intellectually generous",
+    "Position as learner, not guru",
+    "Conversational but substantive",
+    "Comfortable with nuance and uncertainty",
+    "Warm but not performatively so"
+  ],
+  "examplePhrases": [
+    "I've been sitting with this idea for a while",
+    "Something I keep coming back to",
+    "This reframed how I think about",
+    "What struck me was",
+    "I don't think we talk about this enough"
+  ],
+  "avoidPhrases": [
+    "I'm thrilled to announce",
+    "Excited to share",
+    "Proud to announce",
+    "After much deliberation",
+    "It goes without saying",
+    "At the end of the day"
+  ]
+}

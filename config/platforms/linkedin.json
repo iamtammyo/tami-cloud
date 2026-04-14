@@ -1,0 +1,49 @@
+{
+  "platform": "linkedin",
+  "displayName": "LinkedIn",
+  "maxCharacters": 3000,
+  "ideaTypes": [
+    {
+      "type": "thought-leadership",
+      "label": "Thought Leadership",
+      "description": "Take the article's core insight and reframe it as a personal reflection or observation. 'Thinking out loud' style.",
+      "count": 1
+    },
+    {
+      "type": "data-callout",
+      "label": "Data Callout",
+      "description": "Pull one surprising stat or finding from the article and build a post around it.",
+      "count": 1
+    },
+    {
+      "type": "contrarian-take",
+      "label": "Contrarian Take",
+      "description": "Find the tension or nuance in the article and lean into it. Challenge conventional thinking.",
+      "count": 1
+    },
+    {
+      "type": "heres-what-i-learned",
+      "label": "Here's What I Learned",
+      "description": "Frame the article's advice as something you recently tried or discovered. Personal narrative style.",
+      "count": 1
+    }
+  ],
+  "toneGuidelines": [
+    "Write as if thinking out loud, not lecturing",
+    "Intellectual generosity. Position as learner, not guru",
+    "Use 'I' and 'we' naturally",
+    "150-300 words ideal, 400 max",
+    "Hold tension. Don't resolve too quickly",
+    "Include 1-2 conversational asides",
+    "End with a sticky ending: memorable image, vulnerable admission, or invitation. No generic CTAs"
+  ],
+  "structureRules": [
+    "Hook: Bold claim + emotional stake + timeliness. No throat-clearing",
+    "Use short paragraphs with liberal line breaks",
+    "Bold and italics sparingly",
+    "No bullet-point listicles. Use flowing prose with line breaks",
+    "No 'In today's...' or 'In the world of...' openings"
+  ],
+  "hookFormula": "Bold claim OR surprising data point OR provocative question, followed by a line break, then context.",
+  "hashtagStrategy": "2-4 relevant hashtags at the end, no mid-text hashtags"
+}

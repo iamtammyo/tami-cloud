@@ -1,0 +1,27 @@
+{
+  "name": "buffer-brand",
+  "description": "Buffer's brand voice: approachable, helpful, transparent, community-first",
+  "voiceAttributes": [
+    "Approachable and clear",
+    "Helpful without being prescriptive",
+    "Transparent about what we know and don't know",
+    "Community-first mindset",
+    "Data-informed but human",
+    "Optimistic without being naive"
+  ],
+  "examplePhrases": [
+    "We looked at the data and found",
+    "Here's what we've seen work",
+    "This is what our community told us",
+    "We tested this and here's what happened",
+    "There's no one-size-fits-all, but"
+  ],
+  "avoidPhrases": [
+    "Best-in-class",
+    "Industry-leading",
+    "Disruptive",
+    "Revolutionary",
+    "You NEED to do this",
+    "The secret to success"
+  ]
+}

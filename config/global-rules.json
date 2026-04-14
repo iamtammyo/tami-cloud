@@ -1,0 +1,35 @@
+{
+  "antiPatterns": [
+    "No 'delve', 'leverage', 'utilize', 'robust', 'streamline', 'harness'",
+    "No magic adverbs: 'quietly', 'deeply', 'fundamentally', 'remarkably'",
+    "No grandiose nouns: 'tapestry', 'landscape', 'paradigm', 'synergy'",
+    "No 'It's not X, it's Y' constructions",
+    "No em-dashes. Use commas, periods, colons instead",
+    "No elliptical setups like 'The best part?'",
+    "No revelation hooks like 'Here's the truth no one talks about'",
+    "No fractal summaries: don't summarize what you're about to say, say it, then summarize what you said",
+    "No 'game-changer', 'deep dive', 'unlock'",
+    "No 'In today's fast-paced world' or similar throat-clearing",
+    "No 'Let that sink in'",
+    "No 'Here's the thing'",
+    "No 'Unpopular opinion:' prefix",
+    "No 'Thread' or similar meta-references with emoji",
+    "No 'master', 'crush it', or 'kill it'",
+    "No 'just' as filler word",
+    "Avoid exclamation marks except in rare emphasis"
+  ],
+  "brandVoiceDefaults": [
+    "Thoughtful and genuine, never performative",
+    "Confident but not arrogant",
+    "Specific over grandiose. Name the thing",
+    "Show your work. Reference the source material",
+    "Trust the reader. Skip unnecessary analogies and hand-holding"
+  ],
+  "contentPrinciples": [
+    "Every post must provide value: insight, framework, or provocation",
+    "Always attribute data and quotes to the source article",
+    "Write for the reader, not for the algorithm",
+    "Prefer concrete examples over abstract claims",
+    "Vary sentence length. Mix long and short. Let rhythm feel natural"
+  ]
+}

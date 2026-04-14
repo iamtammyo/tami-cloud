@@ -1,0 +1,42 @@
+{
+  "platform": "threads",
+  "displayName": "Threads",
+  "maxCharacters": 500,
+  "ideaTypes": [
+    {
+      "type": "hot-take",
+      "label": "Hot Take / Conversation Starter",
+      "description": "A provocative or surprising angle from the article that invites replies.",
+      "count": 1
+    },
+    {
+      "type": "quick-tip-thread",
+      "label": "Quick Tip Thread",
+      "description": "A 3-5 post thread pulling actionable tips from the article. 500 characters max per post.",
+      "count": 1
+    },
+    {
+      "type": "one-thing-surprised-me",
+      "label": "One Thing That Surprised Me",
+      "description": "Single post highlighting something unexpected from the article.",
+      "count": 1
+    }
+  ],
+  "toneGuidelines": [
+    "Short, punchy, conversational. Think 'tweet energy' but with room to breathe",
+    "Hook in the first line. No preamble",
+    "Questions and conversation starters work well. Threads rewards replies",
+    "Cultural references and timely takes land here",
+    "Casual tone, even more informal than LinkedIn. Can use humor",
+    "500 characters per post in a thread. Single posts can be longer"
+  ],
+  "structureRules": [
+    "Can be a single post OR a 3-5 post thread",
+    "For threads: number each post (1/, 2/, etc.)",
+    "Link in last post of thread, not first",
+    "Each post in a thread should stand alone but connect to the next",
+    "No hashtags needed on Threads"
+  ],
+  "hookFormula": "Provocative statement or question that stops the scroll. One line max.",
+  "hashtagStrategy": "No hashtags. Threads does not use them effectively."
+}
