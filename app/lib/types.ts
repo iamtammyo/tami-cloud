@@ -60,5 +60,6 @@ export type Photographer = {
   styles: GenreTag[];
   signature: string;
   bio: string;
-  sampleSeeds: string[];
+  wikipediaTitle: string;
+  quote?: string;
 };
