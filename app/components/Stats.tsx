@@ -2,17 +2,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PHOTOGRAPHERS } from "../lib/photographers";
-import { loadPhotos } from "../lib/storage";
-import type { GenreTag, StoredPhoto } from "../lib/types";
+import { loadPhotos, loadProfile } from "../lib/storage";
+import { buildPracticePrompts } from "../lib/practice";
+import type { GenreTag, StoredPhoto, UserProfile } from "../lib/types";
 
 export default function Stats() {
   const [photos, setPhotos] = useState<StoredPhoto[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     setPhotos(loadPhotos());
+    setProfile(loadProfile());
+
+    function onProfileChange(e: Event) {
+      const detail = (e as CustomEvent<UserProfile | null>).detail;
+      setProfile(detail);
+    }
+    window.addEventListener("lensed:profile-changed", onProfileChange);
+    return () =>
+      window.removeEventListener("lensed:profile-changed", onProfileChange);
   }, []);
 
   const counts = useMemo(() => buildCounts(photos), [photos]);
+  const practice = useMemo(
+    () => buildPracticePrompts(photos, profile),
+    [photos, profile],
+  );
 
   if (photos.length === 0) {
     return (
@@ -62,6 +77,38 @@ export default function Stats() {
           </p>
         )}
       </div>
+
+      {practice.length > 0 && (
+        <section className="plate-cream relative rounded-md p-5">
+          <span className="screw absolute left-2 top-2" />
+          <span className="screw absolute right-2 top-2" />
+          <span className="screw absolute bottom-2 left-2" />
+          <span className="screw absolute bottom-2 right-2" />
+          <div className="flex items-baseline justify-between gap-3">
+            <div>
+              <div className="engrave-cream text-[10px]">THIS WEEK · PRACTICE</div>
+              <h3 className="wordmark mt-1 text-lg engrave-deep">
+                EXERCISES BASED ON YOUR PATTERNS
+              </h3>
+            </div>
+            <span className="led-green h-2.5 w-2.5" />
+          </div>
+          <ul className="mt-4 space-y-3">
+            {practice.map((p) => (
+              <li
+                key={p.id}
+                className="rounded-sm border border-stone-400/40 bg-white/40 p-3"
+              >
+                <div className="flex items-baseline gap-2">
+                  <span className="led-red h-1.5 w-1.5 flex-none" />
+                  <h4 className="font-medium text-stone-900">{p.title}</h4>
+                </div>
+                <p className="mt-1 pl-3.5 text-sm text-stone-800">{p.body}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Panel title="Genres you reach for">
         <BarList items={counts.genres} total={sampleCount} />
