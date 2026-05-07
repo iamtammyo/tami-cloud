@@ -35,6 +35,34 @@ export type Analysis = {
   improvements: string[];
   similarPhotographers: string[];
   oneLine: string;
+  cameraTips?: string[];
+};
+
+export type CameraProfile = {
+  id: string;
+  brand: string;
+  model: string;
+  fullName: string;
+  bodyClass: "mirrorless" | "dslr" | "rangefinder" | "compact" | "phone";
+  sensorClass: string;
+  controls: {
+    aperture: string;
+    shutterSpeed: string;
+    iso: string;
+    exposureCompensation: string;
+    modes: string;
+    signature?: string;
+  };
+};
+
+export type SkillLevel = "beginner" | "developing" | "advanced";
+
+export type UserProfile = {
+  cameraId: string | null;
+  customCameraName: string | null;
+  skillLevel: SkillLevel | null;
+  mainSubjects: string[];
+  completedAt: number;
 };
 
 export type StoredPhoto = {

@@ -1,9 +1,10 @@
 "use client";
 
-import type { Collection, StoredPhoto } from "./types";
+import type { Collection, StoredPhoto, UserProfile } from "./types";
 
 const PHOTOS_KEY = "lensed.photos.v1";
 const COLLECTIONS_KEY = "lensed.collections.v1";
+const PROFILE_KEY = "lensed.profile.v1";
 
 export function loadPhotos(): StoredPhoto[] {
   if (typeof window === "undefined") return [];
@@ -37,4 +38,26 @@ export function loadCollections(): Collection[] {
 export function saveCollections(cols: Collection[]): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(cols));
+}
+
+export function loadProfile(): UserProfile | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(PROFILE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as UserProfile;
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function saveProfile(profile: UserProfile | null): void {
+  if (typeof window === "undefined") return;
+  if (profile === null) {
+    window.localStorage.removeItem(PROFILE_KEY);
+    return;
+  }
+  window.localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
 }

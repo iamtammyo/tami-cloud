@@ -4,17 +4,20 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   loadCollections,
   loadPhotos,
+  loadProfile,
   saveCollections,
   savePhotos,
 } from "../lib/storage";
-import type { Analysis, Collection, StoredPhoto } from "../lib/types";
+import type { Analysis, Collection, StoredPhoto, UserProfile } from "../lib/types";
 import { dataUrlToBase64, fileToScaledDataUrl } from "../lib/image";
+import { findCamera } from "../lib/cameras";
 
 type View = "all" | "uncategorized" | string;
 
 export default function MyPhotos() {
   const [photos, setPhotos] = useState<StoredPhoto[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [view, setView] = useState<View>("all");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +29,15 @@ export default function MyPhotos() {
   useEffect(() => {
     setPhotos(loadPhotos());
     setCollections(loadCollections());
+    setProfile(loadProfile());
+
+    function onProfileChange(e: Event) {
+      const detail = (e as CustomEvent<UserProfile | null>).detail;
+      setProfile(detail);
+    }
+    window.addEventListener("lensed:profile-changed", onProfileChange);
+    return () =>
+      window.removeEventListener("lensed:profile-changed", onProfileChange);
   }, []);
 
   const visiblePhotos = useMemo(() => {
@@ -49,10 +61,30 @@ export default function MyPhotos() {
     return view;
   }, [view]);
 
+  function buildCameraContext() {
+    if (!profile) return null;
+    const camera = findCamera(profile.cameraId);
+    if (camera) {
+      return {
+        fullName: camera.fullName,
+        detailed: true,
+        controls: camera.controls,
+      };
+    }
+    if (profile.customCameraName) {
+      return {
+        fullName: profile.customCameraName,
+        detailed: false,
+      };
+    }
+    return null;
+  }
+
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setError(null);
     setBusy(true);
+    const cameraCtx = buildCameraContext();
     try {
       const next: StoredPhoto[] = [];
       for (const file of Array.from(files)) {
@@ -64,6 +96,9 @@ export default function MyPhotos() {
           body: JSON.stringify({
             imageBase64: dataUrlToBase64(big.dataUrl),
             mediaType: big.mediaType,
+            camera: cameraCtx,
+            skillLevel: profile?.skillLevel ?? null,
+            mainSubjects: profile?.mainSubjects ?? [],
           }),
         });
         if (!res.ok) {
@@ -425,6 +460,28 @@ export default function MyPhotos() {
                   items={selected.analysis.improvements}
                 />
               </div>
+
+              {selected.analysis.cameraTips &&
+                selected.analysis.cameraTips.length > 0 && (
+                  <div className="plate-cream mt-6 rounded-md px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="led-green h-2 w-2" />
+                      <span className="engrave-cream text-[10px]">
+                        {profile && (findCamera(profile.cameraId)?.fullName || profile.customCameraName)
+                          ? `ON YOUR ${(findCamera(profile.cameraId)?.fullName || profile.customCameraName || "").toUpperCase()}`
+                          : "ON YOUR CAMERA"}
+                      </span>
+                    </div>
+                    <ul className="mt-2 space-y-1.5 text-sm">
+                      {selected.analysis.cameraTips.map((tip) => (
+                        <li key={tip} className="flex gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-700" />
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
               {selected.analysis.similarPhotographers.length > 0 && (
                 <div className="plate-cream mt-6 rounded-md px-4 py-3">

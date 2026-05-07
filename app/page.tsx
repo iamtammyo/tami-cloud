@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MyPhotos from "./components/MyPhotos";
 import Inspiration from "./components/Inspiration";
 import Stats from "./components/Stats";
 import ThemeToggle from "./components/ThemeToggle";
+import Onboarding from "./components/Onboarding";
+import CameraBadge from "./components/CameraBadge";
+import { loadProfile } from "./lib/storage";
+import type { UserProfile } from "./lib/types";
 
 type Tab = "photos" | "inspiration" | "stats";
 
@@ -16,20 +20,41 @@ const TABS: { id: Tab; label: string; sub: string }[] = [
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("photos");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  useEffect(() => {
+    const p = loadProfile();
+    setProfile(p);
+    setLoaded(true);
+    if (!p) setOnboardingOpen(true);
+  }, []);
+
+  function closeOnboarding(next: UserProfile | null) {
+    setOnboardingOpen(false);
+    setProfile(next);
+    window.dispatchEvent(
+      new CustomEvent("lensed:profile-changed", { detail: next }),
+    );
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      {/* Top plate — chrome nameplate */}
       <header className="plate-chrome relative mb-2 rounded-md px-6 py-4">
         <Screws />
-        <div className="flex items-end justify-between gap-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="wordmark text-3xl engrave-deep">LENSED</div>
             <div className="engrave mt-0.5 text-[10px]">
               MODEL 01 · A WORKBENCH FOR AMATEUR PHOTOGRAPHERS
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <CameraBadge
+              profile={profile}
+              onClick={() => setOnboardingOpen(true)}
+            />
             <ThemeToggle />
             <PortRow />
             <div className="flex items-center gap-1.5">
@@ -40,10 +65,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Sprocket-hole divider */}
       <div className="sprocket mb-6 rounded-sm" />
 
-      {/* Mode-dial row: tabs */}
       <nav className="plate-black mb-8 flex flex-wrap items-center gap-3 rounded-md p-3">
         <span className="engrave-cream pl-2 pr-1 text-[10px] text-stone-400">
           MODE
@@ -106,6 +129,14 @@ export default function Home() {
           </span>
         </div>
       </footer>
+
+      {loaded && (
+        <Onboarding
+          open={onboardingOpen}
+          initial={profile}
+          onClose={closeOnboarding}
+        />
+      )}
     </main>
   );
 }
