@@ -1,0 +1,278 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --body: #141315;
+  --panel: #1a191c;
+  --line: #2a292d;
+  --chrome-1: #f6f6f8;
+  --chrome-2: #c9ccd2;
+  --chrome-3: #8b8e94;
+  --cream: #ece6d5;
+  --cream-line: #c9c1a8;
+  --ink: #1c1b1d;
+  --led: #c13a2a;
+  --led-glow: rgba(193, 58, 42, 0.6);
+}
+
+html,
+body {
+  background: var(--body);
+  color: #efece6;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Subtle leather-grain noise on the page body */
+body {
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    radial-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-size: 3px 3px, 5px 5px;
+  background-position: 0 0, 1.5px 1.5px;
+}
+
+::selection {
+  background: var(--cream);
+  color: var(--ink);
+}
+
+/* ========== Materials ========== */
+
+.plate-black {
+  background-color: var(--panel);
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    radial-gradient(rgba(0, 0, 0, 0.25) 1px, transparent 1px);
+  background-size: 3px 3px, 6px 6px;
+  border: 1px solid var(--line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+}
+
+.plate-chrome {
+  background: linear-gradient(
+    180deg,
+    #fafafc 0%,
+    #d4d6dc 22%,
+    #9b9ea5 50%,
+    #d4d6dc 78%,
+    #fafafc 100%
+  );
+  color: var(--ink);
+  border-top: 1px solid rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+.plate-cream {
+  background:
+    linear-gradient(180deg, #f4eedb 0%, #e6dfc6 100%);
+  color: var(--ink);
+  border: 1px solid var(--cream-line);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* ========== Knurling / ribbing ========== */
+
+.knurl-h {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.55) 0,
+    rgba(255, 255, 255, 0.55) 1px,
+    rgba(0, 0, 0, 0.25) 1px,
+    rgba(0, 0, 0, 0.25) 3px
+  );
+}
+
+.knurl-dark {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 0,
+    rgba(255, 255, 255, 0.06) 1px,
+    rgba(0, 0, 0, 0.45) 1px,
+    rgba(0, 0, 0, 0.45) 3px
+  );
+}
+
+/* ========== Engraved typography ========== */
+
+.engrave {
+  color: #2c2c30;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.engrave-deep {
+  color: #1c1b1d;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85),
+    0 -1px 0 rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.engrave-cream {
+  color: #4a3f24;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.1em;
+}
+
+.wordmark {
+  font-family: "Times New Roman", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+/* ========== Buttons & dials ========== */
+
+.btn-chrome {
+  background: linear-gradient(180deg, #fdfdff 0%, #d6d8de 50%, #aeb1b8 100%);
+  color: var(--ink);
+  border: 1px solid #6a6d73;
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.15),
+    0 1px 0 rgba(0, 0, 0, 0.35);
+  transition: transform 0.06s ease;
+}
+.btn-chrome:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+}
+.btn-chrome:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-black {
+  background: linear-gradient(180deg, #2a292c 0%, #161517 100%);
+  color: #efece6;
+  border: 1px solid #050506;
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.dial {
+  background:
+    radial-gradient(circle at 30% 28%, #fdfdff, #c2c5cb 40%, #7d8086 95%);
+  border: 1px solid #4f5258;
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.dial-active {
+  background:
+    radial-gradient(circle at 30% 28%, #fdf6e0, #ddd2a8 35%, #8a7e54 95%);
+  border-color: #4d4527;
+}
+
+/* ========== Ports & screws ========== */
+
+.port {
+  background:
+    radial-gradient(circle at 35% 30%, #232225 0%, #050506 70%, #000 100%);
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 2px 4px rgba(0, 0, 0, 0.85),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.port-light {
+  background:
+    radial-gradient(circle at 35% 30%, #b8babf 0%, #6e7177 60%, #3b3d42 100%);
+  border-radius: 9999px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.45),
+    inset 0 2px 3px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.screw {
+  width: 8px;
+  height: 8px;
+  background:
+    radial-gradient(circle at 35% 30%, #d6d8de, #6f7278 70%, #3f4146 100%);
+  border-radius: 9999px;
+  position: relative;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.screw::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background: linear-gradient(45deg, transparent 45%, rgba(0, 0, 0, 0.5) 45%, rgba(0, 0, 0, 0.5) 55%, transparent 55%);
+  border-radius: 9999px;
+}
+
+/* ========== LED indicators ========== */
+
+.led-red {
+  background:
+    radial-gradient(circle at 30% 30%, #ff8b75 0%, #c13a2a 45%, #5a1208 100%);
+  border-radius: 9999px;
+  box-shadow:
+    0 0 8px var(--led-glow),
+    inset 0 0 2px rgba(255, 180, 150, 0.6),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.led-green {
+  background:
+    radial-gradient(circle at 30% 30%, #b3ffb0 0%, #3aa340 45%, #0f3c14 100%);
+  border-radius: 9999px;
+  box-shadow:
+    0 0 6px rgba(58, 163, 64, 0.5),
+    inset 0 0 2px rgba(180, 255, 180, 0.5),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+/* ========== Inputs ========== */
+
+.input-port {
+  background: #0a090b;
+  color: #efece6;
+  border: 1px solid #050506;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.7),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+.input-port:focus {
+  outline: none;
+  border-color: var(--cream);
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.7),
+    0 0 0 2px rgba(236, 230, 213, 0.25);
+}
+
+/* ========== Sprocket-hole divider ========== */
+
+.sprocket {
+  background:
+    radial-gradient(circle, #050506 4px, transparent 4.5px) 0 0 / 14px 100% repeat-x,
+    var(--panel);
+  height: 16px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
