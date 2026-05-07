@@ -60,30 +60,45 @@ export async function POST(req: Request) {
 
   const client = new Anthropic({ apiKey });
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1200,
-    system: SYSTEM,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType as (typeof allowed)[number],
-              data: imageBase64,
+  let message: Anthropic.Message;
+  try {
+    message = await client.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1200,
+      system: SYSTEM,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mediaType as (typeof allowed)[number],
+                data: imageBase64,
+              },
             },
-          },
-          {
-            type: "text",
-            text: "Analyze this photograph and return JSON exactly matching the schema.",
-          },
-        ],
-      },
-    ],
-  });
+            {
+              type: "text",
+              text: "Analyze this photograph and return JSON exactly matching the schema.",
+            },
+          ],
+        },
+      ],
+    });
+  } catch (err) {
+    const detail =
+      err instanceof Anthropic.APIError
+        ? `${err.status ?? ""} ${err.name}: ${err.message}`.trim()
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("[analyze] Anthropic call failed:", detail);
+    return NextResponse.json(
+      { error: `Claude API error — ${detail}` },
+      { status: 502 },
+    );
+  }
 
   const textBlock = message.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {
