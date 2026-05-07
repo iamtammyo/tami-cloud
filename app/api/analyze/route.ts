@@ -4,7 +4,20 @@ import Anthropic from "@anthropic-ai/sdk";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const SYSTEM = `You are a thoughtful photography critic and educator helping an amateur photographer learn.
+type CameraContext = {
+  fullName: string;
+  detailed: boolean;
+  controls?: {
+    aperture: string;
+    shutterSpeed: string;
+    iso: string;
+    exposureCompensation: string;
+    modes: string;
+    signature?: string;
+  };
+};
+
+const BASE_SYSTEM = `You are a thoughtful photography critic and educator helping an amateur photographer learn.
 Given a single photograph, analyze it and respond with JSON only — no prose, no markdown, no code fences.
 
 Schema:
@@ -19,12 +32,47 @@ Schema:
   "strengths": string[] (2-3 bullets, each <=14 words),
   "improvements": string[] (2-3 concrete, kind suggestions, each <=18 words),
   "similarPhotographers": string[] (2-4 well-known photographers whose published style this evokes, full names),
-  "oneLine": string (a single evocative sentence describing the image, <=20 words)
+  "oneLine": string (a single evocative sentence describing the image, <=20 words),
+  "cameraTips": string[] (0-3 actionable, body-specific instructions; see CAMERA section below)
 }
 
 Be specific and grounded in what you actually see. Never invent EXIF. Keep the tone warm, like a mentor.`;
 
-type Body = { imageBase64?: string; mediaType?: string };
+function buildSystemPrompt(camera: CameraContext | null, skillLevel: string | null, mainSubjects: string[]): string {
+  let extra = "";
+  if (camera) {
+    if (camera.detailed && camera.controls) {
+      extra += `\n\nCAMERA: The photographer shoots with a ${camera.fullName}. When you suggest technique changes, phrase the relevant ones in 1–3 "cameraTips" entries using exact dial/button names from their camera. Reference its real controls:
+- Aperture: ${camera.controls.aperture}
+- Shutter speed: ${camera.controls.shutterSpeed}
+- ISO: ${camera.controls.iso}
+- Exposure compensation: ${camera.controls.exposureCompensation}
+- Modes: ${camera.controls.modes}${
+        camera.controls.signature ? `\n- Signature feature: ${camera.controls.signature}` : ""
+      }
+Each cameraTip should be one sentence (<=22 words), action-oriented, and concrete (e.g. "Turn the aperture ring on your lens to f/2.8 to soften the background"). Do not repeat advice that's already in 'improvements'. If no body-specific tip is helpful, return an empty array.`;
+    } else {
+      extra += `\n\nCAMERA: The photographer shoots with a ${camera.fullName}. Reference the camera by name in 1–2 "cameraTips" entries when relevant, but stay general about controls since exact dial layout is unknown.`;
+    }
+  } else {
+    extra += `\n\nCAMERA: The photographer hasn't told us their camera. Return cameraTips as an empty array.`;
+  }
+  if (skillLevel) {
+    extra += `\n\nSKILL LEVEL: ${skillLevel}. Adjust the depth of explanation accordingly — a beginner needs vocabulary defined; an advanced shooter wants nuance, not basics.`;
+  }
+  if (mainSubjects.length > 0) {
+    extra += `\n\nUSUAL SUBJECTS: ${mainSubjects.join(", ")}. Keep this in mind as context, but do not force comparisons.`;
+  }
+  return BASE_SYSTEM + extra;
+}
+
+type Body = {
+  imageBase64?: string;
+  mediaType?: string;
+  camera?: CameraContext | null;
+  skillLevel?: string | null;
+  mainSubjects?: string[];
+};
 
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -42,7 +90,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const { imageBase64, mediaType } = body;
+  const { imageBase64, mediaType, camera, skillLevel, mainSubjects } = body;
   if (!imageBase64 || !mediaType) {
     return NextResponse.json(
       { error: "imageBase64 and mediaType are required." },
@@ -58,14 +106,20 @@ export async function POST(req: Request) {
     );
   }
 
+  const system = buildSystemPrompt(
+    camera ?? null,
+    skillLevel ?? null,
+    Array.isArray(mainSubjects) ? mainSubjects : [],
+  );
+
   const client = new Anthropic({ apiKey });
 
   let message: Anthropic.Message;
   try {
     message = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 1200,
-      system: SYSTEM,
+      max_tokens: 1300,
+      system,
       messages: [
         {
           role: "user",
