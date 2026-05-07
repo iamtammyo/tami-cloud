@@ -46,48 +46,52 @@ export default function Inspiration() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-end gap-4">
-        <div className="flex-1 min-w-[220px]">
-          <label className="text-xs uppercase tracking-wide text-stone-500">
-            Search
-          </label>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Photographer, country, style…"
-            className="mt-1 w-full rounded-md border border-stone-700 bg-stone-950 px-3 py-2 text-sm outline-none focus:border-stone-400"
-          />
+      {/* Filter deck — feels like a viewfinder readout panel */}
+      <div className="plate-black mb-8 rounded-md p-4">
+        <div className="mb-3 flex items-center gap-3">
+          <span className="port h-3 w-3" />
+          <span className="engrave-cream text-[10px] text-stone-300">
+            REFERENCE INDEX · {PHOTOGRAPHERS.length.toString().padStart(3, "0")}{" "}
+            PHOTOGRAPHERS ON FILE
+          </span>
         </div>
-        <div>
-          <label className="text-xs uppercase tracking-wide text-stone-500">
-            Style
-          </label>
-          <select
-            value={styleFilter}
-            onChange={(e) => setStyleFilter(e.target.value as GenreTag | "all")}
-            className="mt-1 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 text-sm outline-none focus:border-stone-400"
-          >
-            <option value="all">All styles</option>
-            {ALL_STYLES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs uppercase tracking-wide text-stone-500">
-            Group by
-          </label>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-            className="mt-1 rounded-md border border-stone-700 bg-stone-950 px-3 py-2 text-sm outline-none focus:border-stone-400"
-          >
-            <option value="style">Style</option>
-            <option value="name">Name</option>
-            <option value="era">Era</option>
-          </select>
+        <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
+          <div>
+            <Label>Search</Label>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Name · country · style…"
+              className="input-port mt-1 w-full px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <Label>Genre</Label>
+            <select
+              value={styleFilter}
+              onChange={(e) => setStyleFilter(e.target.value as GenreTag | "all")}
+              className="input-port mt-1 px-3 py-2 text-sm"
+            >
+              <option value="all">All</option>
+              {ALL_STYLES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Group by</Label>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as Sort)}
+              className="input-port mt-1 px-3 py-2 text-sm"
+            >
+              <option value="style">Style</option>
+              <option value="name">Name</option>
+              <option value="era">Era</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -99,9 +103,10 @@ export default function Inspiration() {
         <div className="space-y-10">
           {grouped.map(([style, list]) => (
             <section key={style}>
-              <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-stone-400">
-                {style}
-              </h2>
+              <div className="plate-chrome mb-4 inline-flex items-center gap-3 rounded-sm px-3 py-1">
+                <span className="led-red h-1.5 w-1.5" />
+                <h2 className="engrave text-[11px]">CHANNEL · {style}</h2>
+              </div>
               <CardGrid
                 list={list}
                 openId={openId}
@@ -118,6 +123,12 @@ export default function Inspiration() {
         />
       )}
     </div>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="engrave-cream text-[10px] text-stone-400">{children}</span>
   );
 }
 
@@ -154,30 +165,40 @@ function Card({
   onToggle: () => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-stone-800 bg-stone-950/40">
-      <div className="grid grid-cols-2 gap-0.5">
-        {photographer.sampleSeeds.slice(0, 4).map((seed) => (
-          <img
-            key={seed}
-            src={sampleUrl(seed, 600, 400)}
-            alt={`Sample evoking ${photographer.name}`}
-            className="h-32 w-full object-cover"
-            loading="lazy"
-          />
-        ))}
-      </div>
-      <div className="p-4">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 className="text-base font-medium">{photographer.name}</h3>
-          <span className="text-xs text-stone-500">{photographer.era}</span>
+    <div className="plate-black overflow-hidden rounded-md">
+      {/* Contact-sheet 4-up */}
+      <div className="relative">
+        <div className="grid grid-cols-2 gap-0.5 bg-black p-0.5">
+          {photographer.sampleSeeds.slice(0, 4).map((seed) => (
+            <img
+              key={seed}
+              src={sampleUrl(seed, 600, 400)}
+              alt={`Sample evoking ${photographer.name}`}
+              className="h-32 w-full object-cover"
+              loading="lazy"
+            />
+          ))}
         </div>
-        <div className="mt-1 text-xs text-stone-400">{photographer.country}</div>
+        <span className="screw absolute left-1.5 top-1.5" />
+        <span className="screw absolute right-1.5 top-1.5" />
+      </div>
+
+      {/* Chrome nameplate */}
+      <div className="plate-chrome relative flex items-baseline justify-between gap-2 px-4 py-2">
+        <h3 className="wordmark text-base engrave-deep">{photographer.name}</h3>
+        <span className="engrave text-[10px]">{photographer.era}</span>
+      </div>
+
+      <div className="p-4">
+        <div className="engrave-cream text-[10px] text-stone-400">
+          {photographer.country}
+        </div>
         <p className="mt-2 text-sm text-stone-300">{photographer.signature}</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {photographer.styles.map((s) => (
             <span
               key={s}
-              className="rounded-full border border-stone-700 px-2 py-0.5 text-xs text-stone-300"
+              className="rounded-full border border-stone-700 bg-stone-950/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-stone-300"
             >
               {s}
             </span>
@@ -185,19 +206,16 @@ function Card({
         </div>
         <button
           onClick={onToggle}
-          className="mt-3 text-xs text-stone-400 hover:text-stone-100"
+          className="mt-4 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-stone-300 hover:text-stone-100"
         >
+          <span className={`port h-2 w-2 ${expanded ? "led-red" : ""}`} />
           {expanded ? "Hide bio" : "Read more"}
         </button>
         {expanded && (
-          <p className="mt-2 text-sm leading-relaxed text-stone-300">
+          <p className="mt-3 text-sm leading-relaxed text-stone-300">
             {photographer.bio}
           </p>
         )}
-        <div className="mt-3 text-[10px] text-stone-600">
-          Samples are placeholder imagery seeded by photographer name; replace with
-          curated work where licensing permits.
-        </div>
       </div>
     </div>
   );

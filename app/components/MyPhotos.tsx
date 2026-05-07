@@ -71,13 +71,23 @@ export default function MyPhotos() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <p className="text-sm text-stone-400">
-          Upload a photo. Claude analyzes composition, lighting, mood, and gives
-          gentle suggestions.
-        </p>
+      {/* Control deck */}
+      <div className="plate-black mb-6 flex flex-wrap items-center justify-between gap-4 rounded-md p-4">
         <div className="flex items-center gap-3">
-          {busy && <span className="text-xs text-stone-400">Analyzing…</span>}
+          <span className="port h-3 w-3" />
+          <span className="engrave-cream text-[10px] text-stone-300">
+            FILM BAY · LOAD JPEG / PNG / WEBP
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          {busy && (
+            <span className="flex items-center gap-2">
+              <span className="led-red h-2 w-2 animate-pulse" />
+              <span className="engrave-cream text-[10px] text-stone-300">
+                EXPOSING…
+              </span>
+            </span>
+          )}
           <input
             ref={inputRef}
             type="file"
@@ -89,30 +99,41 @@ export default function MyPhotos() {
           <button
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            className="rounded-md bg-stone-100 px-4 py-2 text-sm font-medium text-stone-900 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="btn-chrome relative px-5 py-2 text-[11px] uppercase tracking-[0.18em]"
           >
-            Upload photos
+            <span className="engrave">Load Photos</span>
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-md border border-red-900/50 bg-red-950/40 px-4 py-3 text-sm text-red-200">
-          {error}
+        <div className="plate-cream mb-6 rounded-md px-4 py-3 text-sm">
+          <span className="engrave-cream text-[10px]">ERROR</span>
+          <p className="mt-1 text-stone-800">{error}</p>
         </div>
       )}
 
       {photos.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-stone-700 px-8 py-16 text-center">
-          <p className="text-stone-300">No photos yet.</p>
+        <div className="plate-black rounded-md px-8 py-16 text-center">
+          <div className="engrave-cream text-xs">FRAME 000</div>
+          <p className="mt-3 text-stone-200">No exposures yet.</p>
           <p className="mt-1 text-sm text-stone-500">
-            Upload a JPEG or PNG to get a written critique.
+            Load a photo to receive a written critique.
           </p>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-          <aside className="space-y-2">
-            {photos.map((p) => {
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+          {/* Filmstrip */}
+          <aside className="plate-black space-y-2 rounded-md p-3">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <span className="engrave-cream text-[10px] text-stone-300">
+                FILMSTRIP
+              </span>
+              <span className="engrave-cream text-[10px] text-stone-500">
+                {photos.length.toString().padStart(3, "0")}
+              </span>
+            </div>
+            {photos.map((p, i) => {
               const active = p.id === selectedId;
               return (
                 <button
@@ -120,18 +141,24 @@ export default function MyPhotos() {
                   onClick={() => setSelectedId(p.id)}
                   className={`flex w-full items-center gap-3 rounded-md border p-2 text-left transition ${
                     active
-                      ? "border-stone-300 bg-stone-900"
+                      ? "border-stone-200 bg-stone-900/80"
                       : "border-stone-800 hover:border-stone-700"
                   }`}
                 >
-                  <img
-                    src={p.thumbDataUrl}
-                    alt={p.filename}
-                    className="h-14 w-14 rounded object-cover"
-                  />
+                  <span className="relative">
+                    <img
+                      src={p.thumbDataUrl}
+                      alt={p.filename}
+                      className="h-14 w-14 rounded-sm object-cover ring-1 ring-black"
+                    />
+                    {active && (
+                      <span className="led-red absolute -right-1 -top-1 h-2 w-2" />
+                    )}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm">{p.filename}</div>
-                    <div className="text-xs text-stone-500">
+                    <div className="text-[10px] uppercase tracking-wider text-stone-500">
+                      №{(photos.length - i).toString().padStart(3, "0")} ·{" "}
                       {p.analysis.genre} · {p.analysis.mood}
                     </div>
                   </div>
@@ -141,32 +168,41 @@ export default function MyPhotos() {
           </aside>
 
           {selected && (
-            <article className="rounded-lg border border-stone-800 p-5">
+            <article className="plate-black rounded-md p-5">
               <div className="mb-5 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <img
-                  src={selected.thumbDataUrl}
-                  alt={selected.filename}
-                  className="w-full rounded-md object-cover"
-                />
+                {/* Photo in matte black frame with corner screws */}
+                <div className="relative rounded-md p-3 ring-1 ring-black/60">
+                  <span className="screw absolute left-1.5 top-1.5" />
+                  <span className="screw absolute right-1.5 top-1.5" />
+                  <span className="screw absolute bottom-1.5 left-1.5" />
+                  <span className="screw absolute bottom-1.5 right-1.5" />
+                  <img
+                    src={selected.thumbDataUrl}
+                    alt={selected.filename}
+                    className="w-full rounded-sm object-cover"
+                  />
+                </div>
                 <div>
-                  <h2 className="text-lg font-medium">{selected.filename}</h2>
-                  <p className="mt-2 italic text-stone-300">
+                  {/* Cream LCD-style readout */}
+                  <div className="plate-cream rounded-sm px-3 py-2">
+                    <div className="engrave-cream text-[9px]">FILE</div>
+                    <div className="font-mono text-sm">{selected.filename}</div>
+                  </div>
+                  <p className="mt-3 italic text-stone-300">
                     “{selected.analysis.oneLine}”
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                    <Tag>{selected.analysis.genre}</Tag>
-                    <Tag>{selected.analysis.mood}</Tag>
+                    <Tag chrome>{selected.analysis.genre}</Tag>
+                    <Tag chrome>{selected.analysis.mood}</Tag>
                     {selected.analysis.subjects.slice(0, 4).map((s) => (
-                      <Tag key={s} muted>
-                        {s}
-                      </Tag>
+                      <Tag key={s}>{s}</Tag>
                     ))}
                   </div>
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     {selected.analysis.palette.map((c) => (
                       <div
                         key={c}
-                        className="rounded border border-stone-700 px-2 py-1 text-xs text-stone-300"
+                        className="plate-cream rounded-sm px-2 py-1 text-[10px] uppercase tracking-wider"
                       >
                         {c}
                       </div>
@@ -174,12 +210,14 @@ export default function MyPhotos() {
                   </div>
                   <button
                     onClick={() => deletePhoto(selected.id)}
-                    className="mt-6 text-xs text-stone-500 hover:text-red-400"
+                    className="mt-6 text-[10px] uppercase tracking-[0.18em] text-stone-500 hover:text-red-400"
                   >
-                    Remove
+                    Eject frame
                   </button>
                 </div>
               </div>
+
+              <Divider />
 
               <div className="grid gap-5 md:grid-cols-3">
                 <Section title="Composition">{selected.analysis.composition}</Section>
@@ -187,7 +225,9 @@ export default function MyPhotos() {
                 <Section title="Technique">{selected.analysis.technique}</Section>
               </div>
 
-              <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <Divider />
+
+              <div className="grid gap-5 md:grid-cols-2">
                 <BulletSection title="Strengths" items={selected.analysis.strengths} />
                 <BulletSection
                   title="Try next time"
@@ -196,15 +236,15 @@ export default function MyPhotos() {
               </div>
 
               {selected.analysis.similarPhotographers.length > 0 && (
-                <div className="mt-5 rounded-md border border-stone-800 bg-stone-950/50 p-4">
-                  <div className="text-xs uppercase tracking-wide text-stone-500">
-                    If you liked making this, study
+                <div className="plate-cream mt-6 rounded-md px-4 py-3">
+                  <div className="engrave-cream text-[10px]">
+                    REFERENCE LIBRARY · STUDY THESE
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selected.analysis.similarPhotographers.map((n) => (
                       <span
                         key={n}
-                        className="rounded-full border border-stone-700 px-3 py-1 text-sm"
+                        className="rounded-full border border-amber-900/30 bg-amber-50/40 px-3 py-1 text-sm text-stone-800"
                       >
                         {n}
                       </span>
@@ -220,24 +260,35 @@ export default function MyPhotos() {
   );
 }
 
-function Tag({ children, muted = false }: { children: React.ReactNode; muted?: boolean }) {
+function Tag({
+  children,
+  chrome = false,
+}: {
+  children: React.ReactNode;
+  chrome?: boolean;
+}) {
+  if (chrome) {
+    return (
+      <span className="btn-chrome inline-flex items-center px-3 py-1 text-[11px]">
+        <span className="engrave">{children}</span>
+      </span>
+    );
+  }
   return (
-    <span
-      className={`rounded-full px-2.5 py-1 ${
-        muted
-          ? "border border-stone-700 text-stone-300"
-          : "bg-stone-100 text-stone-900"
-      }`}
-    >
+    <span className="rounded-full border border-stone-700 px-2.5 py-1 text-stone-300">
       {children}
     </span>
   );
 }
 
+function Divider() {
+  return <div className="my-5 sprocket rounded-sm" />;
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wide text-stone-500">{title}</div>
+      <div className="engrave-cream text-[10px] text-stone-400">{title}</div>
       <p className="mt-1.5 text-sm text-stone-200">{children}</p>
     </div>
   );
@@ -246,11 +297,11 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function BulletSection({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wide text-stone-500">{title}</div>
+      <div className="engrave-cream text-[10px] text-stone-400">{title}</div>
       <ul className="mt-1.5 space-y-1.5 text-sm text-stone-200">
         {items.map((it) => (
           <li key={it} className="flex gap-2">
-            <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-500" />
+            <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-400" />
             <span>{it}</span>
           </li>
         ))}
