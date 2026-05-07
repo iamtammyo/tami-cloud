@@ -65,6 +65,18 @@ export type UserProfile = {
   completedAt: number;
 };
 
+export type Exif = {
+  cameraMake?: string;
+  cameraModel?: string;
+  lensModel?: string;
+  focalLength?: number;
+  focalLength35?: number;
+  aperture?: number;
+  shutterSeconds?: number;
+  iso?: number;
+  dateTaken?: string;
+};
+
 export type StoredPhoto = {
   id: string;
   createdAt: number;
@@ -72,6 +84,7 @@ export type StoredPhoto = {
   filename: string;
   analysis: Analysis;
   collectionId?: string;
+  exif?: Exif;
 };
 
 export type Collection = {

@@ -17,6 +17,31 @@ type CameraContext = {
   };
 };
 
+type ExifContext = {
+  cameraMake?: string;
+  cameraModel?: string;
+  lensModel?: string;
+  focalLength?: number;
+  aperture?: number;
+  shutterSeconds?: number;
+  iso?: number;
+};
+
+function formatExifForPrompt(exif: ExifContext): string {
+  const parts: string[] = [];
+  const cam = [exif.cameraMake, exif.cameraModel].filter(Boolean).join(" ");
+  if (cam) parts.push(`camera: ${cam}`);
+  if (exif.lensModel) parts.push(`lens: ${exif.lensModel}`);
+  if (typeof exif.focalLength === "number") parts.push(`focal length: ${Math.round(exif.focalLength)}mm`);
+  if (typeof exif.aperture === "number") parts.push(`aperture: f/${exif.aperture >= 10 ? Math.round(exif.aperture) : exif.aperture.toFixed(1).replace(/\.0$/, "")}`);
+  if (typeof exif.shutterSeconds === "number") {
+    const s = exif.shutterSeconds;
+    parts.push(`shutter: ${s >= 1 ? `${s}s` : `1/${Math.round(1 / s)}s`}`);
+  }
+  if (typeof exif.iso === "number") parts.push(`ISO ${Math.round(exif.iso)}`);
+  return parts.join(", ");
+}
+
 const BASE_SYSTEM = `You are a thoughtful photography critic and educator helping an amateur photographer learn.
 Given a single photograph, analyze it and respond with JSON only — no prose, no markdown, no code fences.
 
@@ -36,10 +61,21 @@ Schema:
   "cameraTips": string[] (0-3 actionable, body-specific instructions; see CAMERA section below)
 }
 
-Be specific and grounded in what you actually see. Never invent EXIF. Keep the tone warm, like a mentor.`;
+Be specific and grounded in what you actually see. When EXIF is provided, ground the "technique" field in the actual numbers (don't guess; use them). Keep the tone warm, like a mentor.`;
 
-function buildSystemPrompt(camera: CameraContext | null, skillLevel: string | null, mainSubjects: string[]): string {
+function buildSystemPrompt(
+  camera: CameraContext | null,
+  skillLevel: string | null,
+  mainSubjects: string[],
+  exif: ExifContext | null,
+): string {
   let extra = "";
+  if (exif) {
+    const line = formatExifForPrompt(exif);
+    if (line) {
+      extra += `\n\nEXIF: ${line}. Use these actual settings in your "technique" field rather than guessing. If suggesting changes, anchor them to what they actually shot.`;
+    }
+  }
   if (camera) {
     if (camera.detailed && camera.controls) {
       extra += `\n\nCAMERA: The photographer shoots with a ${camera.fullName}. When you suggest technique changes, phrase the relevant ones in 1–3 "cameraTips" entries using exact dial/button names from their camera. Reference its real controls:
@@ -72,6 +108,7 @@ type Body = {
   camera?: CameraContext | null;
   skillLevel?: string | null;
   mainSubjects?: string[];
+  exif?: ExifContext | null;
 };
 
 export async function POST(req: Request) {
@@ -90,7 +127,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const { imageBase64, mediaType, camera, skillLevel, mainSubjects } = body;
+  const { imageBase64, mediaType, camera, skillLevel, mainSubjects, exif } = body;
   if (!imageBase64 || !mediaType) {
     return NextResponse.json(
       { error: "imageBase64 and mediaType are required." },
@@ -110,6 +147,7 @@ export async function POST(req: Request) {
     camera ?? null,
     skillLevel ?? null,
     Array.isArray(mainSubjects) ? mainSubjects : [],
+    exif ?? null,
   );
 
   const client = new Anthropic({ apiKey });

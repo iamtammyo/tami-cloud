@@ -11,6 +11,15 @@ import {
 import type { Analysis, Collection, StoredPhoto, UserProfile } from "../lib/types";
 import { dataUrlToBase64, fileToScaledDataUrl } from "../lib/image";
 import { findCamera } from "../lib/cameras";
+import {
+  exifSummaryLine,
+  extractExif,
+  formatAperture,
+  formatCamera,
+  formatFocal,
+  formatIso,
+  formatShutter,
+} from "../lib/exif";
 
 type View = "all" | "uncategorized" | string;
 
@@ -88,6 +97,7 @@ export default function MyPhotos() {
     try {
       const next: StoredPhoto[] = [];
       for (const file of Array.from(files)) {
+        const exif = await extractExif(file);
         const thumb = await fileToScaledDataUrl(file, 480, 0.8);
         const big = await fileToScaledDataUrl(file, 1568, 0.85);
         const res = await fetch("/api/analyze", {
@@ -99,6 +109,7 @@ export default function MyPhotos() {
             camera: cameraCtx,
             skillLevel: profile?.skillLevel ?? null,
             mainSubjects: profile?.mainSubjects ?? [],
+            exif,
           }),
         });
         if (!res.ok) {
@@ -113,6 +124,7 @@ export default function MyPhotos() {
           filename: file.name,
           analysis,
           collectionId: targetCollectionId,
+          exif: exif ?? undefined,
         });
       }
       const merged = [...next, ...photos];
@@ -393,6 +405,7 @@ export default function MyPhotos() {
                     <div className="engrave-cream text-[9px]">FILE</div>
                     <div className="font-mono text-sm">{selected.filename}</div>
                   </div>
+                  {selected.exif && <ExifPanel exif={selected.exif} />}
                   <p className="mt-3 italic text-stone-300">
                     “{selected.analysis.oneLine}”
                   </p>
@@ -543,6 +556,46 @@ function CollectionChip({
         {count.toString().padStart(2, "0")}
       </span>
     </button>
+  );
+}
+
+function ExifPanel({ exif }: { exif: import("../lib/types").Exif }) {
+  const camera = formatCamera(exif);
+  const summary = exifSummaryLine(exif);
+  const cells: { label: string; value: string | null }[] = [
+    { label: "FOCAL", value: formatFocal(exif.focalLength) },
+    { label: "APERTURE", value: formatAperture(exif.aperture) },
+    { label: "SHUTTER", value: formatShutter(exif.shutterSeconds) },
+    { label: "ISO", value: formatIso(exif.iso)?.replace("ISO ", "") ?? null },
+  ];
+  const hasAny = camera || exif.lensModel || summary;
+  if (!hasAny) return null;
+  return (
+    <div className="plate-cream mt-2 rounded-sm px-3 py-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="engrave-cream text-[9px]">SHOT DATA</span>
+        <span className="font-mono text-[10px] text-stone-700">
+          {camera ?? "—"}
+        </span>
+      </div>
+      {exif.lensModel && (
+        <div className="mt-0.5 truncate font-mono text-[10px] text-stone-700">
+          {exif.lensModel}
+        </div>
+      )}
+      <div className="mt-2 grid grid-cols-4 gap-1 text-center">
+        {cells.map((c) => (
+          <div key={c.label} className="rounded-sm border border-stone-400/40 bg-white/40 px-1 py-1">
+            <div className="text-[8px] uppercase tracking-wider text-stone-600">
+              {c.label}
+            </div>
+            <div className="font-mono text-[11px] text-stone-900">
+              {c.value ?? "—"}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
