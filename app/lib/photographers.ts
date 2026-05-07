@@ -9,7 +9,8 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["landscape", "fine-art"],
     signature: "Sweeping black-and-white American wilderness with crystalline tonal range.",
     bio: "Co-developer of the Zone System; his Yosemite and Sierra Nevada work defined modern landscape photography.",
-    sampleSeeds: ["adams-1", "adams-2", "adams-3", "adams-4"],
+    wikipediaTitle: "Ansel_Adams",
+    quote: "You don't take a photograph, you make it.",
   },
   {
     id: "vivian-maier",
@@ -19,7 +20,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["street", "portrait"],
     signature: "Self-taught Chicago street photographer with sharp framing and quiet humanism.",
     bio: "Her work was discovered posthumously in a storage locker, revealing tens of thousands of frames of mid-century American life.",
-    sampleSeeds: ["maier-1", "maier-2", "maier-3", "maier-4"],
+    wikipediaTitle: "Vivian_Maier",
   },
   {
     id: "henri-cartier-bresson",
@@ -29,7 +30,8 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["street", "photojournalism", "documentary"],
     signature: "The “decisive moment” — geometry, gesture, and timing fused into one frame.",
     bio: "Co-founder of Magnum Photos; his 35mm Leica reportage shaped how generations frame the everyday.",
-    sampleSeeds: ["hcb-1", "hcb-2", "hcb-3", "hcb-4"],
+    wikipediaTitle: "Henri_Cartier-Bresson",
+    quote: "Your first 10,000 photographs are your worst.",
   },
   {
     id: "steve-mccurry",
@@ -39,7 +41,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["portrait", "travel", "photojournalism"],
     signature: "Saturated, eye-locked portraits from across South Asia and beyond.",
     bio: "Best known for ‘Afghan Girl’ and decades of National Geographic assignments emphasizing color and human gaze.",
-    sampleSeeds: ["mccurry-1", "mccurry-2", "mccurry-3", "mccurry-4"],
+    wikipediaTitle: "Steve_McCurry",
   },
   {
     id: "annie-leibovitz",
@@ -49,7 +51,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["portrait", "fashion"],
     signature: "Theatrical, narrative celebrity portraiture with painterly lighting.",
     bio: "From Rolling Stone to Vanity Fair, her staged conceptual portraits define a generation of editorial work.",
-    sampleSeeds: ["leibovitz-1", "leibovitz-2", "leibovitz-3", "leibovitz-4"],
+    wikipediaTitle: "Annie_Leibovitz",
   },
   {
     id: "richard-avedon",
@@ -59,7 +61,8 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["portrait", "fashion"],
     signature: "Stark white-seamless portraits stripped of context — face as everything.",
     bio: "His ‘In the American West’ series reshaped portraiture, finding monumentality in ordinary subjects.",
-    sampleSeeds: ["avedon-1", "avedon-2", "avedon-3", "avedon-4"],
+    wikipediaTitle: "Richard_Avedon",
+    quote: "All photographs are accurate. None of them is the truth.",
   },
   {
     id: "sebastiao-salgado",
@@ -69,7 +72,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["documentary", "photojournalism", "landscape"],
     signature: "Epic black-and-white reportage of labor, migration, and the natural world.",
     bio: "An economist turned photographer; ‘Workers’, ‘Migrations’, and ‘Genesis’ pair documentary rigor with high contrast grandeur.",
-    sampleSeeds: ["salgado-1", "salgado-2", "salgado-3", "salgado-4"],
+    wikipediaTitle: "Sebastião_Salgado",
   },
   {
     id: "diane-arbus",
@@ -79,7 +82,8 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["portrait", "documentary"],
     signature: "Square-format, flash-lit portraits of people on society’s margins.",
     bio: "Her unflinching encounters with strangers became a foundation of contemporary portraiture.",
-    sampleSeeds: ["arbus-1", "arbus-2", "arbus-3", "arbus-4"],
+    wikipediaTitle: "Diane_Arbus",
+    quote: "A photograph is a secret about a secret.",
   },
   {
     id: "saul-leiter",
@@ -89,7 +93,8 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["street", "fine-art"],
     signature: "Painterly color street work — reflections, rain, and obscured layers.",
     bio: "An early adopter of color in art photography; his New York frames feel more like quiet paintings than reportage.",
-    sampleSeeds: ["leiter-1", "leiter-2", "leiter-3", "leiter-4"],
+    wikipediaTitle: "Saul_Leiter",
+    quote: "I happen to believe in the beauty of simple things.",
   },
   {
     id: "daido-moriyama",
@@ -99,7 +104,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["street"],
     signature: "Are-bure-boke — grainy, blurry, tilted Tokyo nights.",
     bio: "A central figure of Japan’s Provoke era, his raw black-and-white work redefined street photography.",
-    sampleSeeds: ["moriyama-1", "moriyama-2", "moriyama-3", "moriyama-4"],
+    wikipediaTitle: "Daidō_Moriyama",
   },
   {
     id: "fan-ho",
@@ -109,7 +114,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["street", "fine-art"],
     signature: "Geometric beams of light slicing through 1950s Hong Kong alleys.",
     bio: "Filmmaker and photographer whose graphic, near-cinematic compositions are studies in light and shadow.",
-    sampleSeeds: ["fanho-1", "fanho-2", "fanho-3", "fanho-4"],
+    wikipediaTitle: "Fan_Ho",
   },
   {
     id: "william-eggleston",
@@ -119,7 +124,8 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["fine-art", "street"],
     signature: "Mundane Southern subjects elevated by saturated dye-transfer color.",
     bio: "His 1976 MoMA show legitimized color photography as fine art and made the everyday strange.",
-    sampleSeeds: ["eggleston-1", "eggleston-2", "eggleston-3", "eggleston-4"],
+    wikipediaTitle: "William_Eggleston",
+    quote: "I am at war with the obvious.",
   },
   {
     id: "helmut-newton",
@@ -129,7 +135,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["fashion", "portrait"],
     signature: "High-gloss, provocative black-and-white fashion staged like film stills.",
     bio: "Defined a hard-edged glamour for Vogue and beyond, balancing eroticism with cinematic precision.",
-    sampleSeeds: ["newton-1", "newton-2", "newton-3", "newton-4"],
+    wikipediaTitle: "Helmut_Newton",
   },
   {
     id: "irving-penn",
@@ -139,7 +145,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["portrait", "still-life", "fashion"],
     signature: "Studio precision — clean backdrops, exquisite tonality, sculptural lighting.",
     bio: "His Vogue covers, ethnographic ‘Worlds in a Small Room’ portraits, and still lifes set the standard for studio craft.",
-    sampleSeeds: ["penn-1", "penn-2", "penn-3", "penn-4"],
+    wikipediaTitle: "Irving_Penn",
   },
   {
     id: "andreas-gursky",
@@ -149,7 +155,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["landscape", "architecture", "fine-art"],
     signature: "Massive, hyper-detailed tableaus of contemporary scale — stock floors, supermarkets, rivers.",
     bio: "A Düsseldorf School heir whose digitally constructed prints meditate on globalization and pattern.",
-    sampleSeeds: ["gursky-1", "gursky-2", "gursky-3", "gursky-4"],
+    wikipediaTitle: "Andreas_Gursky",
   },
   {
     id: "gregory-crewdson",
@@ -159,7 +165,8 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["fine-art", "portrait"],
     signature: "Cinematic, film-crew-scale tableaus of suburban unease.",
     bio: "Each image is staged like a movie set; series like ‘Beneath the Roses’ blur photography and narrative cinema.",
-    sampleSeeds: ["crewdson-1", "crewdson-2", "crewdson-3", "crewdson-4"],
+    wikipediaTitle: "Gregory_Crewdson",
+    quote: "Every artist has a central story to tell.",
   },
   {
     id: "nick-brandt",
@@ -169,7 +176,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["wildlife", "fine-art"],
     signature: "Reverent black-and-white portraits of East African megafauna.",
     bio: "Shot on medium-format film without telephoto lenses, his work treats animals as subjects of formal portraiture.",
-    sampleSeeds: ["brandt-1", "brandt-2", "brandt-3", "brandt-4"],
+    wikipediaTitle: "Nick_Brandt",
   },
   {
     id: "joel-meyerowitz",
@@ -179,7 +186,7 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["street", "landscape"],
     signature: "Color street work and luminous Cape Cod beach studies.",
     bio: "An evangelist for color when it was still considered un-serious; equally fluent in 35mm street and 8x10 view-camera coastlines.",
-    sampleSeeds: ["meyerowitz-1", "meyerowitz-2", "meyerowitz-3", "meyerowitz-4"],
+    wikipediaTitle: "Joel_Meyerowitz",
   },
   {
     id: "hiroshi-sugimoto",
@@ -189,7 +196,8 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["fine-art", "architecture", "landscape"],
     signature: "Long-exposure seascapes and dissolving architectural forms.",
     bio: "His conceptual series — ‘Theaters’, ‘Seascapes’, ‘Architecture’ — use time itself as a compositional tool.",
-    sampleSeeds: ["sugimoto-1", "sugimoto-2", "sugimoto-3", "sugimoto-4"],
+    wikipediaTitle: "Hiroshi_Sugimoto",
+    quote: "Time exposed is what photography really is.",
   },
   {
     id: "garry-winogrand",
@@ -199,13 +207,10 @@ export const PHOTOGRAPHERS: Photographer[] = [
     styles: ["street", "documentary"],
     signature: "Tilted, restless 35mm frames documenting postwar America.",
     bio: "Shot more than a quarter-million frames left undeveloped at his death; an obsessive chronicler of public life.",
-    sampleSeeds: ["winogrand-1", "winogrand-2", "winogrand-3", "winogrand-4"],
+    wikipediaTitle: "Garry_Winogrand",
+    quote: "I photograph to see what something will look like photographed.",
   },
 ];
-
-export function sampleUrl(seed: string, w = 600, h = 400): string {
-  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
-}
 
 export const ALL_STYLES = Array.from(
   new Set(PHOTOGRAPHERS.flatMap((p) => p.styles)),

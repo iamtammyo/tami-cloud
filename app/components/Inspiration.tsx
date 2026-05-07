@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ALL_STYLES, PHOTOGRAPHERS, sampleUrl } from "../lib/photographers";
+import { ALL_STYLES, PHOTOGRAPHERS } from "../lib/photographers";
+import { initials, usePhotographerWiki } from "../lib/wiki";
 import type { GenreTag, Photographer } from "../lib/types";
 
 type Sort = "name" | "style" | "era";
@@ -46,11 +47,10 @@ export default function Inspiration() {
 
   return (
     <div>
-      {/* Filter deck — feels like a viewfinder readout panel */}
       <div className="plate-black mb-8 rounded-md p-4">
         <div className="mb-3 flex items-center gap-3">
           <span className="port h-3 w-3" />
-          <span className="engrave-cream text-[10px] text-stone-300">
+          <span className="engrave-cream text-[10px]">
             REFERENCE INDEX · {PHOTOGRAPHERS.length.toString().padStart(3, "0")}{" "}
             PHOTOGRAPHERS ON FILE
           </span>
@@ -128,7 +128,7 @@ export default function Inspiration() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <span className="engrave-cream text-[10px] text-stone-400">{children}</span>
+    <span className="engrave-cream text-[10px]">{children}</span>
   );
 }
 
@@ -164,36 +164,57 @@ function Card({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const { info, loading } = usePhotographerWiki(photographer.wikipediaTitle);
+
   return (
     <div className="plate-black overflow-hidden rounded-md">
-      {/* Contact-sheet 4-up */}
-      <div className="relative">
-        <div className="grid grid-cols-2 gap-0.5 bg-black p-0.5">
-          {photographer.sampleSeeds.slice(0, 4).map((seed) => (
-            <img
-              key={seed}
-              src={sampleUrl(seed, 600, 400)}
-              alt={`Sample evoking ${photographer.name}`}
-              className="h-32 w-full object-cover"
-              loading="lazy"
-            />
-          ))}
-        </div>
+      {/* Portrait — matte black frame with corner screws */}
+      <div className="relative bg-black p-3">
         <span className="screw absolute left-1.5 top-1.5" />
         <span className="screw absolute right-1.5 top-1.5" />
+        <span className="screw absolute bottom-1.5 left-1.5" />
+        <span className="screw absolute bottom-1.5 right-1.5" />
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-sm bg-stone-900">
+          {loading ? (
+            <div className="absolute inset-0 flex items-center justify-center text-[10px] uppercase tracking-wider text-stone-500">
+              Loading portrait…
+            </div>
+          ) : info?.imageUrl ? (
+            <img
+              src={info.imageUrl}
+              alt={`Portrait of ${photographer.name}`}
+              className="h-full w-full object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-stone-800 text-3xl font-light tracking-widest text-stone-400">
+              {initials(photographer.name)}
+            </div>
+          )}
+          {/* Film border tick */}
+          <div className="pointer-events-none absolute right-2 top-2 rounded-sm bg-black/60 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-stone-300">
+            Wikimedia
+          </div>
+        </div>
       </div>
 
       {/* Chrome nameplate */}
-      <div className="plate-chrome relative flex items-baseline justify-between gap-2 px-4 py-2">
+      <div className="plate-chrome flex items-baseline justify-between gap-2 px-4 py-2">
         <h3 className="wordmark text-base engrave-deep">{photographer.name}</h3>
         <span className="engrave text-[10px]">{photographer.era}</span>
       </div>
 
       <div className="p-4">
-        <div className="engrave-cream text-[10px] text-stone-400">
-          {photographer.country}
-        </div>
+        <div className="engrave-cream text-[10px]">{photographer.country}</div>
         <p className="mt-2 text-sm text-stone-300">{photographer.signature}</p>
+
+        {photographer.quote && (
+          <blockquote className="mt-3 border-l-2 border-stone-600 pl-3 text-sm italic text-stone-400">
+            “{photographer.quote}”
+          </blockquote>
+        )}
+
         <div className="mt-3 flex flex-wrap gap-1.5">
           {photographer.styles.map((s) => (
             <span
@@ -204,13 +225,27 @@ function Card({
             </span>
           ))}
         </div>
-        <button
-          onClick={onToggle}
-          className="mt-4 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-stone-300 hover:text-stone-100"
-        >
-          <span className={`port h-2 w-2 ${expanded ? "led-red" : ""}`} />
-          {expanded ? "Hide bio" : "Read more"}
-        </button>
+
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <button
+            onClick={onToggle}
+            className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-stone-300 hover:text-stone-100"
+          >
+            <span className={`port h-2 w-2 ${expanded ? "led-red" : ""}`} />
+            {expanded ? "Hide bio" : "Read more"}
+          </button>
+          {info?.contentUrl && (
+            <a
+              href={info.contentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-stone-100"
+            >
+              Wikipedia ↗
+            </a>
+          )}
+        </div>
+
         {expanded && (
           <p className="mt-3 text-sm leading-relaxed text-stone-300">
             {photographer.bio}

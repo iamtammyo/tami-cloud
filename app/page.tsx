@@ -4,6 +4,7 @@ import { useState } from "react";
 import MyPhotos from "./components/MyPhotos";
 import Inspiration from "./components/Inspiration";
 import Stats from "./components/Stats";
+import ThemeToggle from "./components/ThemeToggle";
 
 type Tab = "photos" | "inspiration" | "stats";
 
@@ -29,6 +30,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <PortRow />
             <div className="flex items-center gap-1.5">
               <span className="led-red h-2.5 w-2.5" />

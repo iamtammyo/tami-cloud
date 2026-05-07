@@ -43,6 +43,13 @@ export type StoredPhoto = {
   thumbDataUrl: string;
   filename: string;
   analysis: Analysis;
+  collectionId?: string;
+};
+
+export type Collection = {
+  id: string;
+  name: string;
+  createdAt: number;
 };
 
 export type Photographer = {
@@ -53,5 +60,6 @@ export type Photographer = {
   styles: GenreTag[];
   signature: string;
   bio: string;
-  sampleSeeds: string[];
+  wikipediaTitle: string;
+  quote?: string;
 };

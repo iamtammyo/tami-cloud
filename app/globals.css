@@ -2,54 +2,110 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* ========== Theme tokens ========== */
+
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
+
   --body: #141315;
-  --panel: #1a191c;
-  --line: #2a292d;
-  --chrome-1: #f6f6f8;
-  --chrome-2: #c9ccd2;
-  --chrome-3: #8b8e94;
-  --cream: #ece6d5;
+  --body-grain-light: rgba(255, 255, 255, 0.018);
+  --body-grain-dark: rgba(255, 255, 255, 0.012);
+
+  --panel-bg: #1a191c;
+  --panel-grain-1: rgba(255, 255, 255, 0.02);
+  --panel-grain-2: rgba(0, 0, 0, 0.25);
+  --panel-border: #2a292d;
+  --panel-shadow-top: rgba(255, 255, 255, 0.04);
+  --panel-shadow-bottom: rgba(0, 0, 0, 0.6);
+
+  --text-primary: #efece6;
+  --text-secondary: #c8c4b8;
+  --text-muted: #8a8680;
+  --text-faint: #5a564f;
+
+  --cream-bg-from: #f4eedb;
+  --cream-bg-to: #e6dfc6;
   --cream-line: #c9c1a8;
-  --ink: #1c1b1d;
-  --led: #c13a2a;
-  --led-glow: rgba(193, 58, 42, 0.6);
+  --cream-ink: #4a3f24;
+
+  --input-bg: #0a090b;
+  --input-border: #050506;
+  --input-text: #efece6;
+
+  --line-soft: #2a292d;
+  --hover-line: #4a4750;
 }
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Cream camera body, like a vintage chrome-trimmed Olympus PEN */
+  --body: #efe8d6;
+  --body-grain-light: rgba(0, 0, 0, 0.025);
+  --body-grain-dark: rgba(0, 0, 0, 0.018);
+
+  --panel-bg: #e3dac0;
+  --panel-grain-1: rgba(255, 255, 255, 0.5);
+  --panel-grain-2: rgba(120, 100, 60, 0.08);
+  --panel-border: #c9c1a8;
+  --panel-shadow-top: rgba(255, 255, 255, 0.7);
+  --panel-shadow-bottom: rgba(0, 0, 0, 0.08);
+
+  --text-primary: #2c2820;
+  --text-secondary: #4a4434;
+  --text-muted: #6e6650;
+  --text-faint: #9a9176;
+
+  --cream-bg-from: #fbf7e8;
+  --cream-bg-to: #ebe4ce;
+  --cream-line: #b8b094;
+  --cream-ink: #3a3220;
+
+  --input-bg: #f7f1de;
+  --input-border: #b8b094;
+  --input-text: #2c2820;
+
+  --line-soft: #c9c1a8;
+  --hover-line: #8a8268;
+}
+
+/* ========== Base ========== */
 
 html,
 body {
   background: var(--body);
-  color: #efece6;
+  color: var(--text-primary);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  transition: background-color 200ms ease;
 }
 
-/* Subtle leather-grain noise on the page body */
 body {
   background-image:
-    radial-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
-    radial-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+    radial-gradient(var(--body-grain-light) 1px, transparent 1px),
+    radial-gradient(var(--body-grain-dark) 1px, transparent 1px);
   background-size: 3px 3px, 5px 5px;
   background-position: 0 0, 1.5px 1.5px;
 }
 
 ::selection {
-  background: var(--cream);
-  color: var(--ink);
+  background: var(--cream-bg-from);
+  color: var(--cream-ink);
 }
 
 /* ========== Materials ========== */
 
 .plate-black {
-  background-color: var(--panel);
+  background-color: var(--panel-bg);
   background-image:
-    radial-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    radial-gradient(rgba(0, 0, 0, 0.25) 1px, transparent 1px);
+    radial-gradient(var(--panel-grain-1) 1px, transparent 1px),
+    radial-gradient(var(--panel-grain-2) 1px, transparent 1px);
   background-size: 3px 3px, 6px 6px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--panel-border);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 var(--panel-shadow-top),
+    inset 0 -1px 0 var(--panel-shadow-bottom);
+  color: var(--text-primary);
 }
 
 .plate-chrome {
@@ -61,7 +117,7 @@ body {
     #d4d6dc 78%,
     #fafafc 100%
   );
-  color: var(--ink);
+  color: #1c1b1d;
   border-top: 1px solid rgba(255, 255, 255, 0.85);
   border-bottom: 1px solid rgba(0, 0, 0, 0.25);
   box-shadow:
@@ -71,16 +127,15 @@ body {
 }
 
 .plate-cream {
-  background:
-    linear-gradient(180deg, #f4eedb 0%, #e6dfc6 100%);
-  color: var(--ink);
+  background: linear-gradient(180deg, var(--cream-bg-from) 0%, var(--cream-bg-to) 100%);
+  color: var(--cream-ink);
   border: 1px solid var(--cream-line);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 -1px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* ========== Knurling / ribbing ========== */
+/* ========== Knurling ========== */
 
 .knurl-h {
   background-image: repeating-linear-gradient(
@@ -121,9 +176,13 @@ body {
 }
 
 .engrave-cream {
-  color: #4a3f24;
+  color: var(--cream-ink);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
   letter-spacing: 0.1em;
+}
+
+[data-theme="light"] .engrave-cream {
+  color: var(--text-secondary);
 }
 
 .wordmark {
@@ -136,7 +195,7 @@ body {
 
 .btn-chrome {
   background: linear-gradient(180deg, #fdfdff 0%, #d6d8de 50%, #aeb1b8 100%);
-  color: var(--ink);
+  color: #1c1b1d;
   border: 1px solid #6a6d73;
   border-radius: 9999px;
   box-shadow:
@@ -232,7 +291,7 @@ body {
     radial-gradient(circle at 30% 30%, #ff8b75 0%, #c13a2a 45%, #5a1208 100%);
   border-radius: 9999px;
   box-shadow:
-    0 0 8px var(--led-glow),
+    0 0 8px rgba(193, 58, 42, 0.6),
     inset 0 0 2px rgba(255, 180, 150, 0.6),
     inset 0 0 0 1px rgba(0, 0, 0, 0.4);
 }
@@ -250,20 +309,20 @@ body {
 /* ========== Inputs ========== */
 
 .input-port {
-  background: #0a090b;
-  color: #efece6;
-  border: 1px solid #050506;
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.7),
+    inset 0 2px 3px rgba(0, 0, 0, 0.4),
     inset 0 -1px 0 rgba(255, 255, 255, 0.04);
 }
 .input-port:focus {
   outline: none;
-  border-color: var(--cream);
+  border-color: var(--cream-bg-from);
   box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.7),
-    0 0 0 2px rgba(236, 230, 213, 0.25);
+    inset 0 2px 3px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(193, 167, 100, 0.35);
 }
 
 /* ========== Sprocket-hole divider ========== */
@@ -271,8 +330,49 @@ body {
 .sprocket {
   background:
     radial-gradient(circle, #050506 4px, transparent 4.5px) 0 0 / 14px 100% repeat-x,
-    var(--panel);
+    var(--panel-bg);
   height: 16px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-top: 1px solid var(--panel-border);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+[data-theme="light"] .sprocket {
+  background:
+    radial-gradient(circle, #1c1b1d 4px, transparent 4.5px) 0 0 / 14px 100% repeat-x,
+    var(--panel-bg);
+}
+
+/* ========== Theme-aware text helpers (override Tailwind stone-* in light) ========== */
+
+[data-theme="light"] .text-stone-100,
+[data-theme="light"] .text-stone-200,
+[data-theme="light"] .text-stone-300 {
+  color: var(--text-primary);
+}
+[data-theme="light"] .text-stone-400 {
+  color: var(--text-secondary);
+}
+[data-theme="light"] .text-stone-500 {
+  color: var(--text-muted);
+}
+[data-theme="light"] .text-stone-600 {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .border-stone-700,
+[data-theme="light"] .border-stone-800 {
+  border-color: var(--line-soft);
+}
+
+[data-theme="light"] .bg-stone-900,
+[data-theme="light"] .bg-stone-950,
+[data-theme="light"] .bg-stone-950\/40,
+[data-theme="light"] .bg-stone-950\/60,
+[data-theme="light"] .bg-stone-950\/80 {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .ring-black,
+[data-theme="light"] .ring-black\/60 {
+  --tw-ring-color: rgba(0, 0, 0, 0.15);
 }
