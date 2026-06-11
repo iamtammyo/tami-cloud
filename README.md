@@ -22,7 +22,7 @@ Open http://localhost:3000.
 
 ## How analysis works
 
-Uploaded images are scaled in the browser (long edge ≤ 1568px) and sent as base64 to `/api/analyze`. The route calls Claude with a JSON-only critic prompt. Results are stored in `localStorage` so the **Stats** tab can build a profile over time. Nothing leaves your machine except the image bytes the analysis call needs.
+Uploaded images are scaled in the browser (long edge ≤ 1568px) and sent as base64 to `/api/analyze`. The route calls Claude with a JSON-only critic prompt. Photos analyze in parallel (2 at a time) with per-photo status, and a failed analysis can be retried without re-uploading. Results are stored locally in IndexedDB (existing localStorage data migrates automatically on first load) so the **Stats** tab can build a profile over time. Nothing leaves your machine except the image bytes the analysis call needs.
 
 ## Inspiration data
 

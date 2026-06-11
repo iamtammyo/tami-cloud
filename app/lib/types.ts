@@ -28,6 +28,7 @@ export type Analysis = {
   subjects: string[];
   mood: MoodTag;
   palette: string[];
+  paletteHex?: string[];
   composition: string;
   lighting: string;
   technique: string;
@@ -77,12 +78,19 @@ export type Exif = {
   dateTaken?: string;
 };
 
+export type PhotoStatus = "analyzing" | "done" | "failed";
+
 export type StoredPhoto = {
   id: string;
   createdAt: number;
   thumbDataUrl: string;
   filename: string;
-  analysis: Analysis;
+  status: PhotoStatus;
+  analysis: Analysis | null;
+  error?: string;
+  /** Full-size data URL kept only until analysis succeeds, so a failed call can be retried. */
+  retryDataUrl?: string;
+  retryMediaType?: string;
   collectionId?: string;
   exif?: Exif;
 };

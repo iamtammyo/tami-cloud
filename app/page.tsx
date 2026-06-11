@@ -25,10 +25,16 @@ export default function Home() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   useEffect(() => {
-    const p = loadProfile();
-    setProfile(p);
+    setProfile(loadProfile());
     setLoaded(true);
-    if (!p) setOnboardingOpen(true);
+    // Onboarding is deferred: it opens from the camera badge or the inline
+    // prompt that appears after a first critique, not before first value.
+    function onOpenRequest() {
+      setOnboardingOpen(true);
+    }
+    window.addEventListener("lensed:open-onboarding", onOpenRequest);
+    return () =>
+      window.removeEventListener("lensed:open-onboarding", onOpenRequest);
   }, []);
 
   function closeOnboarding(next: UserProfile | null) {

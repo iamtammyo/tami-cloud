@@ -2,16 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PHOTOGRAPHERS } from "../lib/photographers";
-import { loadPhotos, loadProfile } from "../lib/storage";
+import { loadProfile } from "../lib/storage";
+import { loadAllPhotos } from "../lib/db";
 import { buildPracticePrompts } from "../lib/practice";
 import type { GenreTag, StoredPhoto, UserProfile } from "../lib/types";
 
 export default function Stats() {
-  const [photos, setPhotos] = useState<StoredPhoto[]>([]);
+  const [allPhotos, setAllPhotos] = useState<StoredPhoto[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    setPhotos(loadPhotos());
+    let alive = true;
+    void loadAllPhotos().then((p) => {
+      if (alive) setAllPhotos(p);
+    });
     setProfile(loadProfile());
 
     function onProfileChange(e: Event) {
@@ -19,10 +23,17 @@ export default function Stats() {
       setProfile(detail);
     }
     window.addEventListener("lensed:profile-changed", onProfileChange);
-    return () =>
+    return () => {
+      alive = false;
       window.removeEventListener("lensed:profile-changed", onProfileChange);
+    };
   }, []);
 
+  // Only completed critiques feed the fingerprint.
+  const photos = useMemo(
+    () => allPhotos.filter((p) => p.analysis),
+    [allPhotos],
+  );
   const counts = useMemo(() => buildCounts(photos), [photos]);
   const practice = useMemo(
     () => buildPracticePrompts(photos, profile),
@@ -275,6 +286,7 @@ function buildCounts(photos: StoredPhoto[]): Counts {
   const improvement = new Map<string, number>();
 
   for (const p of photos) {
+    if (!p.analysis) continue;
     bump(genre, p.analysis.genre);
     bump(mood, p.analysis.mood);
     for (const s of p.analysis.subjects) bump(subject, s.toLowerCase());

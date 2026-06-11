@@ -1,27 +1,10 @@
 "use client";
 
-import type { Collection, StoredPhoto, UserProfile } from "./types";
+import type { Collection, UserProfile } from "./types";
 
-const PHOTOS_KEY = "lensed.photos.v1";
+// Photos live in IndexedDB (see db.ts); only small records stay in localStorage.
 const COLLECTIONS_KEY = "lensed.collections.v1";
 const PROFILE_KEY = "lensed.profile.v1";
-
-export function loadPhotos(): StoredPhoto[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(PHOTOS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as StoredPhoto[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-export function savePhotos(photos: StoredPhoto[]): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
-}
 
 export function loadCollections(): Collection[] {
   if (typeof window === "undefined") return [];
