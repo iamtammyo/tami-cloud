@@ -2,72 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Lensed — "VSCO-minimal × Teenage Engineering, light"
+   Flat warm-grey surfaces, hairline borders, generous whitespace, mono
+   small-cap labels, and a single orange accent. No gradients, no grain,
+   no fake hardware depth. Class names are kept from the previous theme so
+   components restyle without markup changes.
+   ========================================================================== */
+
 /* ========== Theme tokens ========== */
 
 :root,
-[data-theme="dark"] {
-  color-scheme: dark;
-
-  --body: #141315;
-  --body-grain-light: rgba(255, 255, 255, 0.018);
-  --body-grain-dark: rgba(255, 255, 255, 0.012);
-
-  --panel-bg: #1a191c;
-  --panel-grain-1: rgba(255, 255, 255, 0.02);
-  --panel-grain-2: rgba(0, 0, 0, 0.25);
-  --panel-border: #2a292d;
-  --panel-shadow-top: rgba(255, 255, 255, 0.04);
-  --panel-shadow-bottom: rgba(0, 0, 0, 0.6);
-
-  --text-primary: #efece6;
-  --text-secondary: #c8c4b8;
-  --text-muted: #8a8680;
-  --text-faint: #5a564f;
-
-  --cream-bg-from: #f4eedb;
-  --cream-bg-to: #e6dfc6;
-  --cream-line: #c9c1a8;
-  --cream-ink: #4a3f24;
-
-  --input-bg: #0a090b;
-  --input-border: #050506;
-  --input-text: #efece6;
-
-  --line-soft: #2a292d;
-  --hover-line: #4a4750;
-}
-
 [data-theme="light"] {
   color-scheme: light;
 
-  /* Cream camera body, like a vintage chrome-trimmed Olympus PEN */
-  --body: #efe8d6;
-  --body-grain-light: rgba(0, 0, 0, 0.025);
-  --body-grain-dark: rgba(0, 0, 0, 0.018);
+  --body: #f2f0ea;
+  --panel-bg: #fbfaf6;
+  --panel-border: #e1ded4;
 
-  --panel-bg: #e3dac0;
-  --panel-grain-1: rgba(255, 255, 255, 0.5);
-  --panel-grain-2: rgba(120, 100, 60, 0.08);
-  --panel-border: #c9c1a8;
-  --panel-shadow-top: rgba(255, 255, 255, 0.7);
-  --panel-shadow-bottom: rgba(0, 0, 0, 0.08);
+  --text-primary: #1b1a17;
+  --text-secondary: #55534b;
+  --text-muted: #8a877c;
+  --text-faint: #b3b0a4;
 
-  --text-primary: #2c2820;
-  --text-secondary: #4a4434;
-  --text-muted: #6e6650;
-  --text-faint: #9a9176;
+  --accent: #f4490e;
+  --accent-soft: rgba(244, 73, 14, 0.1);
 
-  --cream-bg-from: #fbf7e8;
-  --cream-bg-to: #ebe4ce;
-  --cream-line: #b8b094;
-  --cream-ink: #3a3220;
+  --cream-bg-from: #f6f3ea;
+  --cream-bg-to: #f6f3ea;
+  --cream-line: #e4dfd0;
+  --cream-ink: #3c3a32;
 
-  --input-bg: #f7f1de;
-  --input-border: #b8b094;
-  --input-text: #2c2820;
+  --input-bg: #ffffff;
+  --input-border: #d8d4c8;
+  --input-text: #1b1a17;
 
-  --line-soft: #c9c1a8;
-  --hover-line: #8a8268;
+  --line-soft: #e1ded4;
+  --hover-line: #b3b0a4;
+
+  --viewer-bg: #e8e5dd;
+
+  --mono: ui-monospace, "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --body: #171715;
+  --panel-bg: #1e1e1b;
+  --panel-border: #2e2e29;
+
+  --text-primary: #ecebe4;
+  --text-secondary: #b9b7ac;
+  --text-muted: #8a887d;
+  --text-faint: #5b5a52;
+
+  --accent: #ff5a1f;
+  --accent-soft: rgba(255, 90, 31, 0.14);
+
+  /* Cream cards stay warm-light in dark mode; their inner chips assume a
+     light surface. */
+  --cream-bg-from: #efe9d9;
+  --cream-bg-to: #efe9d9;
+  --cream-line: #d6cfba;
+  --cream-ink: #3c3a32;
+
+  --input-bg: #141412;
+  --input-border: #2e2e29;
+  --input-text: #ecebe4;
+
+  --line-soft: #2e2e29;
+  --hover-line: #4b4a43;
+
+  --viewer-bg: #0e0e0d;
 }
 
 /* ========== Base ========== */
@@ -80,230 +87,120 @@ body {
   transition: background-color 200ms ease;
 }
 
-body {
-  background-image:
-    radial-gradient(var(--body-grain-light) 1px, transparent 1px),
-    radial-gradient(var(--body-grain-dark) 1px, transparent 1px);
-  background-size: 3px 3px, 5px 5px;
-  background-position: 0 0, 1.5px 1.5px;
-}
-
 ::selection {
-  background: var(--cream-bg-from);
-  color: var(--cream-ink);
+  background: var(--accent);
+  color: #ffffff;
 }
 
-/* ========== Materials ========== */
+/* ========== Surfaces (formerly plates) ========== */
 
-.plate-black {
-  background-color: var(--panel-bg);
-  background-image:
-    radial-gradient(var(--panel-grain-1) 1px, transparent 1px),
-    radial-gradient(var(--panel-grain-2) 1px, transparent 1px);
-  background-size: 3px 3px, 6px 6px;
+.plate-black,
+.plate-chrome {
+  background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  box-shadow:
-    inset 0 1px 0 var(--panel-shadow-top),
-    inset 0 -1px 0 var(--panel-shadow-bottom);
   color: var(--text-primary);
 }
 
-.plate-chrome {
-  background: linear-gradient(
-    180deg,
-    #fafafc 0%,
-    #d4d6dc 22%,
-    #9b9ea5 50%,
-    #d4d6dc 78%,
-    #fafafc 100%
-  );
-  color: #1c1b1d;
-  border-top: 1px solid rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 1px 0 rgba(0, 0, 0, 0.4);
-}
-
 .plate-cream {
-  background: linear-gradient(180deg, var(--cream-bg-from) 0%, var(--cream-bg-to) 100%);
-  color: var(--cream-ink);
+  background: var(--cream-bg-from);
   border: 1px solid var(--cream-line);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  color: var(--cream-ink);
 }
 
-/* ========== Knurling ========== */
+/* ========== Labels (formerly engraving) ========== */
 
-.knurl-h {
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.55) 0,
-    rgba(255, 255, 255, 0.55) 1px,
-    rgba(0, 0, 0, 0.25) 1px,
-    rgba(0, 0, 0, 0.25) 3px
-  );
-}
-
-.knurl-dark {
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.06) 0,
-    rgba(255, 255, 255, 0.06) 1px,
-    rgba(0, 0, 0, 0.45) 1px,
-    rgba(0, 0, 0, 0.45) 3px
-  );
-}
-
-/* ========== Engraved typography ========== */
-
-.engrave {
-  color: #2c2c30;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
+.engrave,
 .engrave-deep {
-  color: #1c1b1d;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.85),
-    0 -1px 0 rgba(0, 0, 0, 0.25);
-  letter-spacing: 0.16em;
+  color: inherit;
+  font-family: var(--mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .engrave-cream {
-  color: var(--cream-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.1em;
-}
-
-[data-theme="light"] .engrave-cream {
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-family: var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .wordmark {
-  font-family: "Times New Roman", Georgia, serif;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
 }
 
 /* ========== Buttons & dials ========== */
 
 .btn-chrome {
-  background: linear-gradient(180deg, #fdfdff 0%, #d6d8de 50%, #aeb1b8 100%);
-  color: #1c1b1d;
-  border: 1px solid #6a6d73;
+  background: var(--text-primary);
+  color: var(--body);
+  border: 1px solid var(--text-primary);
   border-radius: 9999px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.15),
-    0 1px 0 rgba(0, 0, 0, 0.35);
-  transition: transform 0.06s ease;
+  transition: opacity 0.12s ease, transform 0.06s ease;
+}
+.btn-chrome:hover {
+  opacity: 0.85;
 }
 .btn-chrome:active {
   transform: translateY(1px);
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.3),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
 }
 .btn-chrome:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn-black {
-  background: linear-gradient(180deg, #2a292c 0%, #161517 100%);
-  color: #efece6;
-  border: 1px solid #050506;
+  background: var(--accent);
+  color: #ffffff;
+  border: 1px solid var(--accent);
   border-radius: 9999px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
-    0 1px 0 rgba(0, 0, 0, 0.5);
 }
 
 .dial {
-  background:
-    radial-gradient(circle at 30% 28%, #fdfdff, #c2c5cb 40%, #7d8086 95%);
-  border: 1px solid #4f5258;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
   border-radius: 9999px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.35),
-    0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .dial-active {
-  background:
-    radial-gradient(circle at 30% 28%, #fdf6e0, #ddd2a8 35%, #8a7e54 95%);
-  border-color: #4d4527;
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
-/* ========== Ports & screws ========== */
-
-.port {
-  background:
-    radial-gradient(circle at 35% 30%, #232225 0%, #050506 70%, #000 100%);
-  border-radius: 9999px;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 2px 4px rgba(0, 0, 0, 0.85),
-    0 1px 0 rgba(255, 255, 255, 0.05);
+/* Knurling is gone — keep the classes inert so markup needn't change. */
+.knurl-h,
+.knurl-dark {
+  background-image: none;
 }
 
+/* ========== Dots (formerly ports & screws) ========== */
+
+.port,
 .port-light {
-  background:
-    radial-gradient(circle at 35% 30%, #b8babf 0%, #6e7177 60%, #3b3d42 100%);
+  background: transparent;
+  border: 1px solid var(--hover-line);
   border-radius: 9999px;
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.45),
-    inset 0 2px 3px rgba(0, 0, 0, 0.55),
-    0 1px 0 rgba(255, 255, 255, 0.6);
+  box-shadow: none;
 }
 
 .screw {
-  width: 8px;
-  height: 8px;
-  background:
-    radial-gradient(circle at 35% 30%, #d6d8de, #6f7278 70%, #3f4146 100%);
-  border-radius: 9999px;
-  position: relative;
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.4);
-}
-.screw::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  background: linear-gradient(45deg, transparent 45%, rgba(0, 0, 0, 0.5) 45%, rgba(0, 0, 0, 0.5) 55%, transparent 55%);
-  border-radius: 9999px;
+  display: none;
 }
 
-/* ========== LED indicators ========== */
+/* ========== Indicator dots (formerly LEDs) ========== */
 
 .led-red {
-  background:
-    radial-gradient(circle at 30% 30%, #ff8b75 0%, #c13a2a 45%, #5a1208 100%);
+  background: var(--accent);
   border-radius: 9999px;
-  box-shadow:
-    0 0 8px rgba(193, 58, 42, 0.6),
-    inset 0 0 2px rgba(255, 180, 150, 0.6),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 .led-green {
-  background:
-    radial-gradient(circle at 30% 30%, #b3ffb0 0%, #3aa340 45%, #0f3c14 100%);
+  background: #2f9e44;
   border-radius: 9999px;
-  box-shadow:
-    0 0 6px rgba(58, 163, 64, 0.5),
-    inset 0 0 2px rgba(180, 255, 180, 0.5),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 /* ========== Inputs ========== */
@@ -312,37 +209,25 @@ body {
   background: var(--input-bg);
   color: var(--input-text);
   border: 1px solid var(--input-border);
-  border-radius: 4px;
-  box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.4),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
 }
 .input-port:focus {
   outline: none;
-  border-color: var(--cream-bg-from);
-  box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.4),
-    0 0 0 2px rgba(193, 167, 100, 0.35);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
-/* ========== Sprocket-hole divider ========== */
+/* ========== Divider (formerly sprocket strip) ========== */
 
 .sprocket {
-  background:
-    radial-gradient(circle, #050506 4px, transparent 4.5px) 0 0 / 14px 100% repeat-x,
-    var(--panel-bg);
-  height: 16px;
-  border-top: 1px solid var(--panel-border);
-  border-bottom: 1px solid var(--panel-border);
+  height: 1px;
+  background: var(--panel-border);
+  border: none;
 }
 
-[data-theme="light"] .sprocket {
-  background:
-    radial-gradient(circle, #1c1b1d 4px, transparent 4.5px) 0 0 / 14px 100% repeat-x,
-    var(--panel-bg);
-}
-
-/* ========== Theme-aware text helpers (override Tailwind stone-* in light) ========== */
+/* ========== Light-theme remaps for stone-* utilities in markup ==========
+   Markup is written against a dark palette (text-stone-200 etc.); in the
+   light theme those map onto the token scale instead. */
 
 [data-theme="light"] .text-stone-100,
 [data-theme="light"] .text-stone-200,
@@ -352,27 +237,87 @@ body {
 [data-theme="light"] .text-stone-400 {
   color: var(--text-secondary);
 }
-[data-theme="light"] .text-stone-500 {
-  color: var(--text-muted);
-}
+[data-theme="light"] .text-stone-500,
 [data-theme="light"] .text-stone-600 {
   color: var(--text-muted);
 }
 
 [data-theme="light"] .border-stone-700,
-[data-theme="light"] .border-stone-800 {
+[data-theme="light"] .border-stone-800,
+[data-theme="light"] .border-stone-900,
+[data-theme="light"] .border-black {
   border-color: var(--line-soft);
+}
+[data-theme="light"] .hover\:border-stone-400:hover,
+[data-theme="light"] .hover\:border-stone-500:hover,
+[data-theme="light"] .hover\:border-stone-600:hover,
+[data-theme="light"] .hover\:border-stone-700:hover {
+  border-color: var(--hover-line);
+}
+[data-theme="light"] .hover\:text-stone-100:hover,
+[data-theme="light"] .hover\:text-stone-200:hover,
+[data-theme="light"] .hover\:text-stone-300:hover {
+  color: var(--text-primary);
 }
 
 [data-theme="light"] .bg-stone-900,
 [data-theme="light"] .bg-stone-950,
+[data-theme="light"] .bg-stone-900\/60,
+[data-theme="light"] .bg-stone-900\/80,
 [data-theme="light"] .bg-stone-950\/40,
+[data-theme="light"] .bg-stone-950\/50,
 [data-theme="light"] .bg-stone-950\/60,
-[data-theme="light"] .bg-stone-950\/80 {
-  background-color: rgba(0, 0, 0, 0.04);
+[data-theme="light"] .bg-stone-950\/70,
+[data-theme="light"] .bg-stone-950\/80,
+[data-theme="light"] .bg-stone-950\/95 {
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .bg-black,
+[data-theme="light"] .bg-black\/80 {
+  background-color: var(--viewer-bg);
+}
+[data-theme="light"] .bg-black\/60 {
+  background-color: rgba(20, 18, 14, 0.55);
+}
+
+[data-theme="light"] .bg-stone-200 {
+  background-color: var(--text-primary);
+}
+[data-theme="light"] .text-stone-900 {
+  color: var(--body);
+}
+[data-theme="light"] .bg-stone-400,
+[data-theme="light"] .bg-stone-700 {
+  background-color: var(--text-faint);
+}
+[data-theme="light"] .bg-stone-800 {
+  background-color: var(--line-soft);
 }
 
 [data-theme="light"] .ring-black,
-[data-theme="light"] .ring-black\/60 {
-  --tw-ring-color: rgba(0, 0, 0, 0.15);
+[data-theme="light"] .ring-black\/50,
+[data-theme="light"] .ring-black\/60,
+[data-theme="light"] .ring-stone-700 {
+  --tw-ring-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .border-red-900\/50 {
+  border-color: rgba(220, 60, 30, 0.35);
+}
+[data-theme="light"] .bg-red-950\/30 {
+  background-color: rgba(220, 60, 30, 0.06);
+}
+[data-theme="light"] .text-red-400 {
+  color: var(--accent);
+}
+
+[data-theme="light"] .border-amber-900\/30 {
+  border-color: var(--cream-line);
+}
+[data-theme="light"] .bg-amber-50\/40 {
+  background-color: var(--panel-bg);
+}
+[data-theme="light"] .text-stone-800 {
+  color: var(--text-secondary);
 }

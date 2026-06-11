@@ -6,13 +6,13 @@ export type Theme = "dark" | "light";
 const KEY = "lensed.theme";
 
 export function useTheme(): [Theme, (t: Theme) => void] {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("light");
 
   useEffect(() => {
     const stored = (typeof window !== "undefined"
       ? (window.localStorage.getItem(KEY) as Theme | null)
       : null) as Theme | null;
-    const initial = stored === "light" || stored === "dark" ? stored : "dark";
+    const initial = stored === "light" || stored === "dark" ? stored : "light";
     setThemeState(initial);
     document.documentElement.dataset.theme = initial;
   }, []);

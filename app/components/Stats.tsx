@@ -248,17 +248,14 @@ function BarList({ items, total }: { items: [string, number][]; total: number })
             <div className="w-32 text-sm uppercase tracking-wider text-stone-300">
               {label}
             </div>
-            <div className="relative h-3 flex-1 overflow-hidden rounded-sm border border-black bg-stone-950 shadow-inner">
+            <div className="relative h-2 flex-1 overflow-hidden rounded-full border border-black bg-stone-950">
               <div
-                className="absolute left-0 top-0 h-full"
+                className="absolute left-0 top-0 h-full rounded-full"
                 style={{
                   width: `${pct}%`,
-                  background:
-                    "linear-gradient(180deg, #fdfdff 0%, #c9ccd2 50%, #8b8e94 100%)",
-                  boxShadow: "inset 0 -1px 0 rgba(0,0,0,.4)",
+                  background: "var(--text-primary)",
                 }}
               />
-              <div className="knurl-h absolute inset-0 opacity-15" />
             </div>
             <div className="w-20 text-right font-mono text-xs text-stone-300">
               {n.toString().padStart(2, "0")} · {share}%
