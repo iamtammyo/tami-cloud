@@ -7,7 +7,6 @@ import type { Collection, StoredPhoto, UserProfile } from "../lib/types";
 import { dataUrlToBase64, fileToScaledDataUrl } from "../lib/image";
 import { findCamera } from "../lib/cameras";
 import {
-  exifSummaryLine,
   extractExif,
   formatAperture,
   formatCamera,
@@ -18,9 +17,16 @@ import {
 
 type View = "all" | "uncategorized" | string;
 type Layout = "strip" | "sheet";
+type CritiqueTab = "composition" | "lighting" | "technique";
 
 const MAX_CONCURRENT_ANALYSES = 2;
 const SAMPLE_URL = "https://picsum.photos/id/1015/1600/1067";
+
+const CRITIQUE_TABS: { id: CritiqueTab; label: string }[] = [
+  { id: "composition", label: "Composition" },
+  { id: "lighting", label: "Lighting" },
+  { id: "technique", label: "Technique" },
+];
 
 export default function MyPhotos() {
   const [photos, setPhotos] = useState<StoredPhoto[]>([]);
@@ -28,6 +34,7 @@ export default function MyPhotos() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [view, setView] = useState<View>("all");
   const [layout, setLayout] = useState<Layout>("strip");
+  const [critiqueTab, setCritiqueTab] = useState<CritiqueTab>("composition");
   const [showThirds, setShowThirds] = useState(false);
   const [sampleBusy, setSampleBusy] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -71,6 +78,10 @@ export default function MyPhotos() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    setCritiqueTab("composition");
+  }, [selectedId]);
 
   /** Keeps photosRef in sync so async analysis workers never read stale state. */
   function setPhotosSafe(updater: (prev: StoredPhoto[]) => StoredPhoto[]) {
@@ -205,11 +216,13 @@ export default function MyPhotos() {
       try {
         const exif = await extractExif(file);
         const thumb = await fileToScaledDataUrl(file, 480, 0.8);
+        const display = await fileToScaledDataUrl(file, 1280, 0.82);
         const big = await fileToScaledDataUrl(file, 1568, 0.85);
         const photo: StoredPhoto = {
           id: crypto.randomUUID(),
           createdAt: Date.now(),
           thumbDataUrl: thumb.dataUrl,
+          displayDataUrl: display.dataUrl,
           filename: file.name,
           status: "analyzing",
           analysis: null,
@@ -321,222 +334,273 @@ export default function MyPhotos() {
     (findCamera(profile.cameraId) || profile.customCameraName)
   );
 
-  const detailArticle = selected && (
-    <article className="plate-black rounded-md p-5">
-      <div className="mb-5 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div>
-          <div className="relative rounded-md p-3 ring-1 ring-black/60">
-            <span className="screw absolute left-1.5 top-1.5" />
-            <span className="screw absolute right-1.5 top-1.5" />
-            <span className="screw absolute bottom-1.5 left-1.5" />
-            <span className="screw absolute bottom-1.5 right-1.5" />
-            <img
-              src={selected.thumbDataUrl}
-              alt={selected.filename}
-              className="w-full rounded-sm object-cover"
-            />
-            {showThirds && (
-              <div className="pointer-events-none absolute inset-3" aria-hidden>
-                <div className="absolute left-1/3 top-0 h-full w-px bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
-                <div className="absolute left-2/3 top-0 h-full w-px bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
-                <div className="absolute left-0 top-1/3 h-px w-full bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
-                <div className="absolute left-0 top-2/3 h-px w-full bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
-              </div>
-            )}
-          </div>
+  const exifLine = selected?.exif
+    ? [
+        formatFocal(selected.exif.focalLength),
+        formatAperture(selected.exif.aperture),
+        formatShutter(selected.exif.shutterSeconds),
+        formatIso(selected.exif.iso),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+
+  /* The viewer puts the photograph first: full-width hero on plain black,
+     controls floating over it, and a slim Lightroom-style info strip below. */
+  const viewer = selected && (
+    <section className="overflow-hidden rounded-md bg-stone-950 ring-1 ring-black">
+      <div className="relative flex min-h-[40vh] items-center justify-center bg-black md:min-h-[50vh]">
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={selected.displayDataUrl ?? selected.thumbDataUrl}
+            alt={selected.filename}
+            className="block max-h-[60vh] w-auto max-w-full object-contain md:max-h-[70vh]"
+          />
+          {showThirds && (
+            <div className="pointer-events-none absolute inset-0" aria-hidden>
+              <div className="absolute left-1/3 top-0 h-full w-px bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
+              <div className="absolute left-2/3 top-0 h-full w-px bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
+              <div className="absolute left-0 top-1/3 h-px w-full bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
+              <div className="absolute left-0 top-2/3 h-px w-full bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
+            </div>
+          )}
+        </div>
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          {selected.status === "analyzing" && (
+            <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 backdrop-blur">
+              <span className="led-red h-1.5 w-1.5 animate-pulse" />
+              <span className="text-[9px] uppercase tracking-[0.16em] text-stone-200">
+                Developing
+              </span>
+            </span>
+          )}
           <button
             onClick={() => setShowThirds((v) => !v)}
             aria-pressed={showThirds}
-            className="mt-2 inline-flex items-center gap-2 rounded-full border border-stone-700 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-stone-300 hover:border-stone-500"
+            className={`rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] backdrop-blur transition ${
+              showThirds
+                ? "bg-stone-100/90 text-stone-900"
+                : "bg-black/60 text-stone-300 hover:text-stone-100"
+            }`}
           >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${showThirds ? "led-green" : "bg-stone-700"}`}
-            />
-            Thirds grid {showThirds ? "on" : "off"}
+            Thirds
           </button>
-        </div>
-        <div>
-          <div className="plate-cream rounded-sm px-3 py-2">
-            <div className="engrave-cream text-[9px]">FILE</div>
-            <div className="font-mono text-sm">{selected.filename}</div>
-          </div>
-          {selected.exif && <ExifPanel exif={selected.exif} />}
-
-          {selected.status === "analyzing" && (
-            <div className="mt-3 flex items-center gap-2 rounded-sm border border-stone-800 bg-stone-950/60 px-3 py-2.5">
-              <span className="led-red h-2 w-2 animate-pulse" />
-              <span className="engrave-cream text-[10px]">
-                DEVELOPING · CRITIQUE IN PROGRESS
-              </span>
-            </div>
-          )}
-          {selected.status === "failed" && (
-            <div className="mt-3 rounded-sm border border-red-900/50 bg-red-950/30 px-3 py-2.5">
-              <div className="flex items-center gap-2">
-                <span className="led-red h-2 w-2" />
-                <span className="engrave-cream text-[10px]">
-                  DEVELOPMENT FAILED
-                </span>
-              </div>
-              <p className="mt-1.5 text-sm text-stone-300">{selected.error}</p>
-              {selected.retryDataUrl && (
-                <button
-                  onClick={() => enqueueAnalysis(selected.id)}
-                  className="btn-chrome mt-2 px-4 py-1.5 text-[10px] uppercase tracking-[0.18em]"
-                >
-                  <span className="engrave">Re-expose</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {selected.status === "done" && selected.analysis && (
-            <>
-              <p className="mt-3 italic text-stone-300">
-                “{selected.analysis.oneLine}”
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                <Tag chrome>{selected.analysis.genre}</Tag>
-                <Tag chrome>{selected.analysis.mood}</Tag>
-                {selected.analysis.subjects.slice(0, 4).map((s) => (
-                  <Tag key={s}>{s}</Tag>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {selected.analysis.palette.map((c, i) => {
-                  const hex = selected.analysis?.paletteHex?.[i];
-                  const valid = hex && /^#[0-9a-f]{3,8}$/i.test(hex);
-                  return (
-                    <div
-                      key={c}
-                      className="plate-cream flex items-center gap-2 rounded-sm px-2 py-1 text-[10px] uppercase tracking-wider"
-                    >
-                      {valid && (
-                        <span
-                          className="h-3.5 w-3.5 flex-none rounded-sm border border-black/30"
-                          style={{ background: hex }}
-                          aria-hidden
-                        />
-                      )}
-                      {c}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2">
-              <span className="engrave-cream text-[10px]">COLLECTION</span>
-              <select
-                value={selected.collectionId ?? ""}
-                onChange={(e) =>
-                  movePhoto(selected.id, e.target.value || undefined)
-                }
-                className="input-port px-2 py-1 text-sm"
-              >
-                <option value="">Uncategorized</option>
-                {collections.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              onClick={() => deletePhoto(selected.id)}
-              className="text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-red-400"
-            >
-              Eject frame
-            </button>
-          </div>
         </div>
       </div>
 
-      {selected.status === "done" && selected.analysis && (
-        <>
-          <Divider />
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-stone-900 px-4 py-2 font-mono text-[11px] text-stone-400">
+        <span className="min-w-0 truncate">
+          {selected.filename}
+          {selected.exif && formatCamera(selected.exif) && (
+            <span className="text-stone-600"> · {formatCamera(selected.exif)}</span>
+          )}
+        </span>
+        <span className="text-stone-300">{exifLine || "no shot data"}</span>
+      </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
-            <Section title="Composition">{selected.analysis.composition}</Section>
-            <Section title="Lighting">{selected.analysis.lighting}</Section>
-            <Section title="Technique">{selected.analysis.technique}</Section>
+      <div className="flex flex-wrap items-center gap-3 border-t border-stone-900 px-4 py-2">
+        <label className="flex items-center gap-2">
+          <span className="text-[9px] uppercase tracking-[0.16em] text-stone-500">
+            Collection
+          </span>
+          <select
+            value={selected.collectionId ?? ""}
+            onChange={(e) => movePhoto(selected.id, e.target.value || undefined)}
+            className="input-port px-2 py-1 text-xs"
+          >
+            <option value="">Uncategorized</option>
+            {collections.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          onClick={() => deletePhoto(selected.id)}
+          className="ml-auto text-[9px] uppercase tracking-[0.16em] text-stone-500 hover:text-red-400"
+        >
+          Eject frame
+        </button>
+      </div>
+
+      {selected.status === "failed" && (
+        <div className="border-t border-red-900/50 bg-red-950/30 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="led-red h-2 w-2" />
+            <span className="engrave-cream text-[10px]">DEVELOPMENT FAILED</span>
           </div>
+          <p className="mt-1.5 text-sm text-stone-300">{selected.error}</p>
+          {selected.retryDataUrl && (
+            <button
+              onClick={() => enqueueAnalysis(selected.id)}
+              className="btn-chrome mt-2 px-4 py-1.5 text-[10px] uppercase tracking-[0.18em]"
+            >
+              <span className="engrave">Re-expose</span>
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  );
 
-          <Divider />
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <BulletSection title="Strengths" items={selected.analysis.strengths} />
-            <BulletSection
-              title="Try next time"
-              items={selected.analysis.improvements}
+  /* VSCO-style horizontal carousel under the hero. */
+  const filmstrip = visiblePhotos.length > 0 && (
+    <div className="flex gap-2 overflow-x-auto rounded-md bg-stone-950/70 p-2 ring-1 ring-black/50">
+      {visiblePhotos.map((p) => {
+        const active = p.id === selectedId;
+        return (
+          <button
+            key={p.id}
+            onClick={() => setSelectedId(p.id)}
+            title={p.filename}
+            className={`relative h-16 w-16 flex-none overflow-hidden rounded-sm border transition md:h-20 md:w-20 ${
+              active
+                ? "border-stone-100"
+                : "border-transparent opacity-60 hover:opacity-100"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.thumbDataUrl}
+              alt={p.filename}
+              className="h-full w-full object-cover"
             />
-          </div>
+            <StatusDot photo={p} className="absolute right-1 top-1" />
+          </button>
+        );
+      })}
+    </div>
+  );
 
-          {selected.analysis.cameraTips &&
-            selected.analysis.cameraTips.length > 0 && (
-              <div className="plate-cream mt-6 rounded-md px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <span className="led-green h-2 w-2" />
-                  <span className="engrave-cream text-[10px]">
-                    {hasProfileCamera
-                      ? `ON YOUR ${(findCamera(profile!.cameraId)?.fullName || profile!.customCameraName || "").toUpperCase()}`
-                      : "ON YOUR CAMERA"}
-                  </span>
-                </div>
-                <ul className="mt-2 space-y-1.5 text-sm">
-                  {selected.analysis.cameraTips.map((tip) => (
-                    <li key={tip} className="flex gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-700" />
-                      <span>{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+  const critique = selected?.status === "done" && selected.analysis && (
+    <article className="plate-black rounded-md p-5">
+      <p className="italic text-stone-300">“{selected.analysis.oneLine}”</p>
 
-          {!hasProfileCamera && (
-            <div className="plate-cream mt-6 rounded-md px-4 py-3">
-              <div className="flex items-center gap-2">
-                <span className="led-green h-2 w-2" />
-                <span className="engrave-cream text-[10px]">
-                  WANT DIAL-SPECIFIC TIPS?
-                </span>
-              </div>
-              <p className="mt-1.5 text-sm text-stone-800">
-                Tell Lensed what you shoot with and every critique will reference
-                your camera&apos;s actual dials and buttons.
-              </p>
-              <button
-                onClick={() =>
-                  window.dispatchEvent(new Event("lensed:open-onboarding"))
-                }
-                className="btn-chrome mt-2 px-4 py-1.5 text-[10px] uppercase tracking-[0.18em]"
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+        <Tag chrome>{selected.analysis.genre}</Tag>
+        <Tag chrome>{selected.analysis.mood}</Tag>
+        {selected.analysis.subjects.slice(0, 4).map((s) => (
+          <Tag key={s}>{s}</Tag>
+        ))}
+        <span className="ml-auto flex items-center gap-1.5">
+          {selected.analysis.palette.map((c, i) => {
+            const hex = selected.analysis?.paletteHex?.[i];
+            const valid = hex && /^#[0-9a-f]{3,8}$/i.test(hex);
+            return valid ? (
+              <span
+                key={c}
+                title={c}
+                className="h-5 w-5 rounded-full border border-black/50 ring-1 ring-stone-700"
+                style={{ background: hex }}
+              />
+            ) : (
+              <span
+                key={c}
+                className="rounded-full border border-stone-700 px-2 py-0.5 text-[9px] uppercase tracking-wider text-stone-400"
               >
-                <span className="engrave">Add your camera</span>
-              </button>
-            </div>
-          )}
+                {c}
+              </span>
+            );
+          })}
+        </span>
+      </div>
 
-          {selected.analysis.similarPhotographers.length > 0 && (
-            <div className="plate-cream mt-6 rounded-md px-4 py-3">
-              <div className="engrave-cream text-[10px]">
-                REFERENCE LIBRARY · STUDY THESE
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {selected.analysis.similarPhotographers.map((n) => (
-                  <span
-                    key={n}
-                    className="rounded-full border border-amber-900/30 bg-amber-50/40 px-3 py-1 text-sm text-stone-800"
-                  >
-                    {n}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+      {/* One reading at a time, like an editing app's parameter tabs */}
+      <div className="mt-5 rounded-md border border-stone-800 bg-stone-950/50">
+        <div className="flex border-b border-stone-800">
+          {CRITIQUE_TABS.map((t) => {
+            const active = critiqueTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setCritiqueTab(t.id)}
+                aria-pressed={active}
+                className={`flex-1 px-3 py-2.5 text-[10px] uppercase tracking-[0.16em] transition ${
+                  active
+                    ? "border-b-2 border-stone-100 text-stone-100"
+                    : "text-stone-500 hover:text-stone-300"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="px-4 py-4 text-sm leading-relaxed text-stone-200">
+          {selected.analysis[critiqueTab]}
+        </p>
+      </div>
+
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <BulletSection title="Strengths" items={selected.analysis.strengths} />
+        <BulletSection
+          title="Try next time"
+          items={selected.analysis.improvements}
+        />
+      </div>
+
+      {selected.analysis.cameraTips && selected.analysis.cameraTips.length > 0 && (
+        <div className="plate-cream mt-6 rounded-md px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="led-green h-2 w-2" />
+            <span className="engrave-cream text-[10px]">
+              {hasProfileCamera
+                ? `ON YOUR ${(findCamera(profile!.cameraId)?.fullName || profile!.customCameraName || "").toUpperCase()}`
+                : "ON YOUR CAMERA"}
+            </span>
+          </div>
+          <ul className="mt-2 space-y-1.5 text-sm">
+            {selected.analysis.cameraTips.map((tip) => (
+              <li key={tip} className="flex gap-2">
+                <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-700" />
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {!hasProfileCamera && (
+        <div className="plate-cream mt-6 rounded-md px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="led-green h-2 w-2" />
+            <span className="engrave-cream text-[10px]">
+              WANT DIAL-SPECIFIC TIPS?
+            </span>
+          </div>
+          <p className="mt-1.5 text-sm text-stone-800">
+            Tell Lensed what you shoot with and every critique will reference
+            your camera&apos;s actual dials and buttons.
+          </p>
+          <button
+            onClick={() =>
+              window.dispatchEvent(new Event("lensed:open-onboarding"))
+            }
+            className="btn-chrome mt-2 px-4 py-1.5 text-[10px] uppercase tracking-[0.18em]"
+          >
+            <span className="engrave">Add your camera</span>
+          </button>
+        </div>
+      )}
+
+      {selected.analysis.similarPhotographers.length > 0 && (
+        <div className="plate-cream mt-6 rounded-md px-4 py-3">
+          <div className="engrave-cream text-[10px]">
+            REFERENCE LIBRARY · STUDY THESE
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {selected.analysis.similarPhotographers.map((n) => (
+              <span
+                key={n}
+                className="rounded-full border border-amber-900/30 bg-amber-50/40 px-3 py-1 text-sm text-stone-800"
+              >
+                {n}
+              </span>
+            ))}
+          </div>
+        </div>
       )}
     </article>
   );
@@ -710,137 +774,72 @@ export default function MyPhotos() {
             </button>
           </div>
         </div>
-      ) : layout === "sheet" ? (
-        <div className="space-y-6">
-          <div className="plate-black rounded-md p-3">
-            <PanelHeader
-              label="CONTACT SHEET"
-              count={visiblePhotos.length}
-              layout={layout}
-              onLayout={setLayout}
-            />
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-              {visiblePhotos.map((p) => {
-                const active = p.id === selectedId;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedId(p.id)}
-                    title={p.filename}
-                    className={`relative aspect-square overflow-hidden rounded-sm border transition ${
-                      active
-                        ? "border-stone-200"
-                        : "border-stone-800 hover:border-stone-600"
-                    }`}
-                  >
-                    <img
-                      src={p.thumbDataUrl}
-                      alt={p.filename}
-                      className="h-full w-full object-cover"
-                    />
-                    <StatusDot photo={p} className="absolute right-1 top-1" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          {detailArticle}
-        </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <aside className="plate-black space-y-2 self-start rounded-md p-3">
-            <PanelHeader
-              label="FILMSTRIP"
-              count={visiblePhotos.length}
-              layout={layout}
-              onLayout={setLayout}
-            />
-            {visiblePhotos.map((p, i) => {
-              const active = p.id === selectedId;
-              return (
+        <div className="space-y-4">
+          <div className="plate-black flex items-center justify-between rounded-md px-3 py-2">
+            <span className="engrave-cream text-[10px]">
+              LIBRARY · {visiblePhotos.length.toString().padStart(3, "0")}
+            </span>
+            <span className="flex items-center gap-1">
+              {(
+                [
+                  ["strip", "Strip"],
+                  ["sheet", "Sheet"],
+                ] as const
+              ).map(([id, text]) => (
                 <button
-                  key={p.id}
-                  onClick={() => setSelectedId(p.id)}
-                  className={`flex w-full items-center gap-3 rounded-md border p-2 text-left transition ${
-                    active
-                      ? "border-stone-200 bg-stone-900/80"
-                      : "border-stone-800 hover:border-stone-700"
+                  key={id}
+                  onClick={() => setLayout(id)}
+                  aria-pressed={layout === id}
+                  className={`rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-[0.14em] transition ${
+                    layout === id
+                      ? "bg-stone-200 text-stone-900"
+                      : "text-stone-400 hover:text-stone-200"
                   }`}
                 >
-                  <span className="relative">
-                    <img
-                      src={p.thumbDataUrl}
-                      alt={p.filename}
-                      className="h-14 w-14 rounded-sm object-cover ring-1 ring-black"
-                    />
-                    {active && (
-                      <span className="led-red absolute -right-1 -top-1 h-2 w-2" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm">{p.filename}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-stone-400">
-                      №{(visiblePhotos.length - i).toString().padStart(3, "0")} ·{" "}
-                      {p.status === "analyzing" ? (
-                        <span className="text-stone-300">developing…</span>
-                      ) : p.status === "failed" ? (
-                        <span className="text-red-400">failed — retry</span>
-                      ) : (
-                        <>
-                          {p.analysis?.genre} · {p.analysis?.mood}
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  {text}
                 </button>
-              );
-            })}
-          </aside>
+              ))}
+            </span>
+          </div>
 
-          {detailArticle}
+          {layout === "sheet" && (
+            <div className="plate-black rounded-md p-3">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+                {visiblePhotos.map((p) => {
+                  const active = p.id === selectedId;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelectedId(p.id)}
+                      title={p.filename}
+                      className={`relative aspect-square overflow-hidden rounded-sm border transition ${
+                        active
+                          ? "border-stone-200"
+                          : "border-stone-800 hover:border-stone-600"
+                      }`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.thumbDataUrl}
+                        alt={p.filename}
+                        className="h-full w-full object-cover"
+                      />
+                      <StatusDot photo={p} className="absolute right-1 top-1" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {viewer}
+
+          {layout === "strip" && filmstrip}
+
+          {critique}
         </div>
       )}
-    </div>
-  );
-}
-
-function PanelHeader({
-  label,
-  count,
-  layout,
-  onLayout,
-}: {
-  label: string;
-  count: number;
-  layout: Layout;
-  onLayout: (l: Layout) => void;
-}) {
-  return (
-    <div className="mb-2 flex items-center justify-between px-1">
-      <span className="engrave-cream text-[10px]">
-        {label} · {count.toString().padStart(3, "0")}
-      </span>
-      <span className="flex items-center gap-1">
-        {(
-          [
-            ["strip", "Strip"],
-            ["sheet", "Sheet"],
-          ] as const
-        ).map(([id, text]) => (
-          <button
-            key={id}
-            onClick={() => onLayout(id)}
-            aria-pressed={layout === id}
-            className={`rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] transition ${
-              layout === id
-                ? "bg-stone-200 text-stone-900"
-                : "text-stone-400 hover:text-stone-200"
-            }`}
-          >
-            {text}
-          </button>
-        ))}
-      </span>
     </div>
   );
 }
@@ -899,46 +898,6 @@ function CollectionChip({
   );
 }
 
-function ExifPanel({ exif }: { exif: import("../lib/types").Exif }) {
-  const camera = formatCamera(exif);
-  const summary = exifSummaryLine(exif);
-  const cells: { label: string; value: string | null }[] = [
-    { label: "FOCAL", value: formatFocal(exif.focalLength) },
-    { label: "APERTURE", value: formatAperture(exif.aperture) },
-    { label: "SHUTTER", value: formatShutter(exif.shutterSeconds) },
-    { label: "ISO", value: formatIso(exif.iso)?.replace("ISO ", "") ?? null },
-  ];
-  const hasAny = camera || exif.lensModel || summary;
-  if (!hasAny) return null;
-  return (
-    <div className="plate-cream mt-2 rounded-sm px-3 py-2">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="engrave-cream text-[9px]">SHOT DATA</span>
-        <span className="font-mono text-[10px] text-stone-700">
-          {camera ?? "—"}
-        </span>
-      </div>
-      {exif.lensModel && (
-        <div className="mt-0.5 truncate font-mono text-[10px] text-stone-700">
-          {exif.lensModel}
-        </div>
-      )}
-      <div className="mt-2 grid grid-cols-4 gap-1 text-center">
-        {cells.map((c) => (
-          <div key={c.label} className="rounded-sm border border-stone-400/40 bg-white/40 px-1 py-1">
-            <div className="text-[9px] uppercase tracking-wider text-stone-700">
-              {c.label}
-            </div>
-            <div className="font-mono text-[11px] text-stone-900">
-              {c.value ?? "—"}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function Tag({
   children,
   chrome = false,
@@ -957,19 +916,6 @@ function Tag({
     <span className="rounded-full border border-stone-700 px-2.5 py-1 text-stone-300">
       {children}
     </span>
-  );
-}
-
-function Divider() {
-  return <div className="my-5 sprocket rounded-sm" />;
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="engrave-cream text-[10px]">{title}</div>
-      <p className="mt-1.5 text-sm text-stone-200">{children}</p>
-    </div>
   );
 }
 

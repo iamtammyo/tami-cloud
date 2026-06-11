@@ -84,6 +84,8 @@ export type StoredPhoto = {
   id: string;
   createdAt: number;
   thumbDataUrl: string;
+  /** ~1280px render for the hero viewer; older records fall back to the thumb. */
+  displayDataUrl?: string;
   filename: string;
   status: PhotoStatus;
   analysis: Analysis | null;

@@ -46,7 +46,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-4 py-6 pb-28 md:px-6 md:py-10 md:pb-10">
       <header className="plate-chrome relative mb-2 rounded-md px-6 py-4">
         <Screws />
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -73,7 +73,7 @@ export default function Home() {
 
       <div className="sprocket mb-6 rounded-sm" />
 
-      <nav className="plate-black mb-8 flex flex-wrap items-center gap-3 rounded-md p-3">
+      <nav className="plate-black mb-8 hidden flex-wrap items-center gap-3 rounded-md p-3 md:flex">
         <span className="engrave-cream pl-2 pr-1 text-[10px] text-stone-400">
           MODE
         </span>
@@ -135,6 +135,36 @@ export default function Home() {
           </span>
         </div>
       </footer>
+
+      {/* Thumb-reachable tab bar on small screens */}
+      <nav className="plate-black fixed inset-x-0 bottom-0 z-40 border-t border-stone-800 md:hidden">
+        <div className="mx-auto flex max-w-md items-stretch justify-around">
+          {TABS.map((t) => {
+            const active = t.id === tab;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                aria-pressed={active}
+                className="flex flex-1 flex-col items-center gap-1 py-2.5"
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    active ? "led-red" : "bg-stone-700"
+                  }`}
+                />
+                <span
+                  className={`text-[9px] uppercase tracking-[0.16em] ${
+                    active ? "text-stone-100" : "text-stone-400"
+                  }`}
+                >
+                  {t.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       {loaded && (
         <Onboarding
