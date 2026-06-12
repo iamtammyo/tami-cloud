@@ -1,18 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  loadCollections,
-  loadPhotos,
-  loadProfile,
-  saveCollections,
-  savePhotos,
-} from "../lib/storage";
-import type { Analysis, Collection, StoredPhoto, UserProfile } from "../lib/types";
+import { loadCollections, loadProfile, saveCollections } from "../lib/storage";
+import { deletePhotoById, loadAllPhotos, putPhoto } from "../lib/db";
+import type { Collection, StoredPhoto, UserProfile } from "../lib/types";
 import { dataUrlToBase64, fileToScaledDataUrl } from "../lib/image";
 import { findCamera } from "../lib/cameras";
+import PhotographerChip from "./PhotographerChip";
 import {
-  exifSummaryLine,
   extractExif,
   formatAperture,
   formatCamera,
@@ -22,21 +17,54 @@ import {
 } from "../lib/exif";
 
 type View = "all" | "uncategorized" | string;
+type Layout = "strip" | "sheet";
+type CritiqueTab = "composition" | "lighting" | "technique";
+
+const MAX_CONCURRENT_ANALYSES = 2;
+const SAMPLE_URL = "https://picsum.photos/id/1015/1600/1067";
+
+const CRITIQUE_TABS: { id: CritiqueTab; label: string }[] = [
+  { id: "composition", label: "Composition" },
+  { id: "lighting", label: "Lighting" },
+  { id: "technique", label: "Technique" },
+];
 
 export default function MyPhotos() {
   const [photos, setPhotos] = useState<StoredPhoto[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [view, setView] = useState<View>("all");
-  const [busy, setBusy] = useState(false);
+  const [layout, setLayout] = useState<Layout>("strip");
+  const [critiqueTab, setCritiqueTab] = useState<CritiqueTab>("composition");
+  const [showThirds, setShowThirds] = useState(false);
+  const [sampleBusy, setSampleBusy] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const photosRef = useRef<StoredPhoto[]>([]);
+  const queueRef = useRef<string[]>([]);
+  const activeRef = useRef(0);
 
   useEffect(() => {
-    setPhotos(loadPhotos());
+    let alive = true;
+    void loadAllPhotos().then((loaded) => {
+      if (!alive) return;
+      photosRef.current = loaded;
+      setPhotos(loaded);
+      // Photos stuck in "analyzing" from an interrupted session can't resume
+      // their in-flight request; surface them as retryable instead.
+      for (const p of loaded) {
+        if (p.status === "analyzing") {
+          patchPhoto(p.id, {
+            status: "failed",
+            error: "Analysis was interrupted. Retry to develop this frame.",
+          });
+        }
+      }
+    });
     setCollections(loadCollections());
     setProfile(loadProfile());
 
@@ -45,9 +73,30 @@ export default function MyPhotos() {
       setProfile(detail);
     }
     window.addEventListener("lensed:profile-changed", onProfileChange);
-    return () =>
+    return () => {
+      alive = false;
       window.removeEventListener("lensed:profile-changed", onProfileChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    setCritiqueTab("composition");
+  }, [selectedId]);
+
+  /** Keeps photosRef in sync so async analysis workers never read stale state. */
+  function setPhotosSafe(updater: (prev: StoredPhoto[]) => StoredPhoto[]) {
+    photosRef.current = updater(photosRef.current);
+    setPhotos(photosRef.current);
+  }
+
+  function patchPhoto(id: string, patch: Partial<StoredPhoto>) {
+    setPhotosSafe((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    );
+    const updated = photosRef.current.find((p) => p.id === id);
+    if (updated) void putPhoto(updated);
+  }
 
   const visiblePhotos = useMemo(() => {
     if (view === "all") return photos;
@@ -70,6 +119,8 @@ export default function MyPhotos() {
     return view;
   }, [view]);
 
+  const analyzingCount = photos.filter((p) => p.status === "analyzing").length;
+
   function buildCameraContext() {
     if (!profile) return null;
     const camera = findCamera(profile.cameraId);
@@ -89,69 +140,140 @@ export default function MyPhotos() {
     return null;
   }
 
-  async function handleFiles(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    setError(null);
-    setBusy(true);
-    const cameraCtx = buildCameraContext();
+  function enqueueAnalysis(id: string) {
+    queueRef.current.push(id);
+    pumpQueue();
+  }
+
+  function pumpQueue() {
+    while (
+      activeRef.current < MAX_CONCURRENT_ANALYSES &&
+      queueRef.current.length > 0
+    ) {
+      const id = queueRef.current.shift()!;
+      activeRef.current += 1;
+      void runAnalysis(id).finally(() => {
+        activeRef.current -= 1;
+        pumpQueue();
+      });
+    }
+  }
+
+  async function runAnalysis(id: string) {
+    const photo = photosRef.current.find((p) => p.id === id);
+    if (!photo) return;
+    if (!photo.retryDataUrl) {
+      patchPhoto(id, {
+        status: "failed",
+        error: "Original image is no longer available — load it again to analyze.",
+      });
+      return;
+    }
+    patchPhoto(id, { status: "analyzing", error: undefined });
     try {
-      const next: StoredPhoto[] = [];
-      for (const file of Array.from(files)) {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: dataUrlToBase64(photo.retryDataUrl),
+          mediaType: photo.retryMediaType ?? "image/jpeg",
+          camera: buildCameraContext(),
+          skillLevel: profile?.skillLevel ?? null,
+          mainSubjects: profile?.mainSubjects ?? [],
+          exif: photo.exif ?? null,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(errBody?.error ?? `Analyze failed (${res.status})`);
+      }
+      const { analysis } = (await res.json()) as {
+        analysis: StoredPhoto["analysis"];
+      };
+      patchPhoto(id, {
+        status: "done",
+        analysis,
+        error: undefined,
+        retryDataUrl: undefined,
+        retryMediaType: undefined,
+      });
+    } catch (err) {
+      patchPhoto(id, {
+        status: "failed",
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  async function handleFiles(files: FileList | File[] | null) {
+    const list = files ? Array.from(files) : [];
+    if (list.length === 0) return;
+    setError(null);
+    const collectionId = targetCollectionId;
+    let firstId: string | null = null;
+    for (const file of list) {
+      try {
         const exif = await extractExif(file);
         const thumb = await fileToScaledDataUrl(file, 480, 0.8);
+        const display = await fileToScaledDataUrl(file, 1280, 0.82);
         const big = await fileToScaledDataUrl(file, 1568, 0.85);
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageBase64: dataUrlToBase64(big.dataUrl),
-            mediaType: big.mediaType,
-            camera: cameraCtx,
-            skillLevel: profile?.skillLevel ?? null,
-            mainSubjects: profile?.mainSubjects ?? [],
-            exif,
-          }),
-        });
-        if (!res.ok) {
-          const errBody = (await res.json().catch(() => null)) as { error?: string } | null;
-          throw new Error(errBody?.error ?? `Analyze failed (${res.status})`);
-        }
-        const { analysis } = (await res.json()) as { analysis: Analysis };
-        next.push({
+        const photo: StoredPhoto = {
           id: crypto.randomUUID(),
           createdAt: Date.now(),
           thumbDataUrl: thumb.dataUrl,
+          displayDataUrl: display.dataUrl,
           filename: file.name,
-          analysis,
-          collectionId: targetCollectionId,
+          status: "analyzing",
+          analysis: null,
+          retryDataUrl: big.dataUrl,
+          retryMediaType: big.mediaType,
+          collectionId,
           exif: exif ?? undefined,
-        });
+        };
+        setPhotosSafe((prev) => [photo, ...prev]);
+        void putPhoto(photo);
+        if (!firstId) {
+          firstId = photo.id;
+          setSelectedId(photo.id);
+        }
+        enqueueAnalysis(photo.id);
+      } catch (err) {
+        setError(
+          `${file.name}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      const merged = [...next, ...photos];
-      setPhotos(merged);
-      savePhotos(merged);
-      if (next[0]) setSelectedId(next[0].id);
+    }
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  async function loadSamplePhoto() {
+    setError(null);
+    setSampleBusy(true);
+    try {
+      const res = await fetch(SAMPLE_URL);
+      if (!res.ok) throw new Error(`Couldn't fetch the sample photo (${res.status}).`);
+      const blob = await res.blob();
+      const file = new File([blob], "sample-river-valley.jpg", {
+        type: blob.type || "image/jpeg",
+      });
+      await handleFiles([file]);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
-      setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
+      setSampleBusy(false);
     }
   }
 
   function deletePhoto(id: string) {
-    const next = photos.filter((p) => p.id !== id);
-    setPhotos(next);
-    savePhotos(next);
-    if (selectedId === id) setSelectedId(next[0]?.id ?? null);
+    setPhotosSafe((prev) => prev.filter((p) => p.id !== id));
+    void deletePhotoById(id);
+    if (selectedId === id) setSelectedId(photosRef.current[0]?.id ?? null);
   }
 
   function movePhoto(id: string, collectionId: string | undefined) {
-    const next = photos.map((p) =>
-      p.id === id ? { ...p, collectionId } : p,
-    );
-    setPhotos(next);
-    savePhotos(next);
+    patchPhoto(id, { collectionId });
   }
 
   function createCollection() {
@@ -184,26 +306,363 @@ export default function MyPhotos() {
   function deleteCollection(id: string) {
     const c = collections.find((x) => x.id === id);
     if (!c) return;
-    const photoCount = photos.filter((p) => p.collectionId === id).length;
+    const affected = photosRef.current.filter((p) => p.collectionId === id);
     const ok = window.confirm(
-      photoCount > 0
-        ? `Delete "${c.name}"? Its ${photoCount} photo${photoCount === 1 ? "" : "s"} will move to Uncategorized.`
+      affected.length > 0
+        ? `Delete "${c.name}"? Its ${affected.length} photo${affected.length === 1 ? "" : "s"} will move to Uncategorized.`
         : `Delete "${c.name}"?`,
     );
     if (!ok) return;
     const nextCollections = collections.filter((x) => x.id !== id);
-    const nextPhotos = photos.map((p) =>
-      p.collectionId === id ? { ...p, collectionId: undefined } : p,
-    );
     setCollections(nextCollections);
     saveCollections(nextCollections);
-    setPhotos(nextPhotos);
-    savePhotos(nextPhotos);
+    setPhotosSafe((prev) =>
+      prev.map((p) =>
+        p.collectionId === id ? { ...p, collectionId: undefined } : p,
+      ),
+    );
+    for (const p of affected) {
+      const updated = photosRef.current.find((x) => x.id === p.id);
+      if (updated) void putPhoto(updated);
+    }
     if (view === id) setView("all");
   }
 
   const selected = visiblePhotos.find((p) => p.id === selectedId) ?? null;
   const totalUncat = photos.filter((p) => !p.collectionId).length;
+  const hasProfileCamera = !!(
+    profile &&
+    (findCamera(profile.cameraId) || profile.customCameraName)
+  );
+
+  const exifLine = selected?.exif
+    ? [
+        formatFocal(selected.exif.focalLength),
+        formatAperture(selected.exif.aperture),
+        formatShutter(selected.exif.shutterSeconds),
+        formatIso(selected.exif.iso),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+
+  /* The viewer puts the photograph first: full-width hero on plain black,
+     controls floating over it, and a slim Lightroom-style info strip below. */
+  const viewer = selected && (
+    <section className="overflow-hidden rounded-md bg-stone-950 ring-1 ring-black">
+      <div className="relative flex min-h-[40vh] items-center justify-center bg-black md:min-h-[50vh]">
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={selected.displayDataUrl ?? selected.thumbDataUrl}
+            alt={selected.filename}
+            className="block max-h-[60vh] w-auto max-w-full object-contain md:max-h-[70vh]"
+          />
+          {showThirds && (
+            <div className="pointer-events-none absolute inset-0" aria-hidden>
+              <div className="absolute left-1/3 top-0 h-full w-px bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
+              <div className="absolute left-2/3 top-0 h-full w-px bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
+              <div className="absolute left-0 top-1/3 h-px w-full bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
+              <div className="absolute left-0 top-2/3 h-px w-full bg-white/60 shadow-[0_0_1px_rgba(0,0,0,.8)]" />
+            </div>
+          )}
+        </div>
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          {selected.status === "analyzing" && (
+            <span className="flex items-center gap-1.5 rounded-full bg-black/60 px-2.5 py-1 backdrop-blur">
+              <span className="led-red h-1.5 w-1.5 animate-pulse" />
+              <span className="text-[9px] uppercase tracking-[0.16em] text-stone-200">
+                Developing
+              </span>
+            </span>
+          )}
+          <button
+            onClick={() => setShowThirds((v) => !v)}
+            aria-pressed={showThirds}
+            className={`rounded-full px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] backdrop-blur transition ${
+              showThirds
+                ? "bg-stone-100/90 text-stone-900"
+                : "bg-black/60 text-stone-300 hover:text-stone-100"
+            }`}
+          >
+            Thirds
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-t border-stone-900 px-4 py-2 font-mono text-[11px] text-stone-400">
+        <span className="min-w-0 truncate">
+          {selected.filename}
+          {selected.exif && formatCamera(selected.exif) && (
+            <span className="text-stone-600"> · {formatCamera(selected.exif)}</span>
+          )}
+        </span>
+        <span className="text-stone-300">{exifLine || "no shot data"}</span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-stone-900 px-4 py-2">
+        <label className="flex items-center gap-2">
+          <span className="text-[9px] uppercase tracking-[0.16em] text-stone-500">
+            Collection
+          </span>
+          <select
+            value={selected.collectionId ?? ""}
+            onChange={(e) => movePhoto(selected.id, e.target.value || undefined)}
+            className="input-port px-2 py-1 text-xs"
+          >
+            <option value="">Uncategorized</option>
+            {collections.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          onClick={() => deletePhoto(selected.id)}
+          className="ml-auto text-[9px] uppercase tracking-[0.16em] text-stone-500 hover:text-red-400"
+        >
+          Eject frame
+        </button>
+      </div>
+
+      {selected.status === "failed" && (
+        <div className="border-t border-red-900/50 bg-red-950/30 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="led-red h-2 w-2" />
+            <span className="engrave-cream text-[10px]">DEVELOPMENT FAILED</span>
+          </div>
+          <p className="mt-1.5 text-sm text-stone-300">{selected.error}</p>
+          {selected.retryDataUrl && (
+            <button
+              onClick={() => enqueueAnalysis(selected.id)}
+              className="btn-chrome mt-2 px-4 py-1.5 text-[10px] uppercase tracking-[0.18em]"
+            >
+              <span className="engrave">Re-expose</span>
+            </button>
+          )}
+        </div>
+      )}
+    </section>
+  );
+
+  /* VSCO-style horizontal carousel under the hero. */
+  const filmstrip = visiblePhotos.length > 0 && (
+    <div className="flex gap-2 overflow-x-auto rounded-md bg-stone-950/70 p-2 ring-1 ring-black/50">
+      {visiblePhotos.map((p) => {
+        const active = p.id === selectedId;
+        return (
+          <button
+            key={p.id}
+            onClick={() => setSelectedId(p.id)}
+            title={p.filename}
+            className={`relative h-16 w-16 flex-none overflow-hidden rounded-sm border transition md:h-20 md:w-20 ${
+              active
+                ? "border-stone-100"
+                : "border-transparent opacity-60 hover:opacity-100"
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.thumbDataUrl}
+              alt={p.filename}
+              className="h-full w-full object-cover"
+            />
+            <StatusDot photo={p} className="absolute right-1 top-1" />
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const critique = selected?.status === "done" && selected.analysis && (
+    <article className="plate-black rounded-md p-5">
+      <p className="italic text-stone-300">“{selected.analysis.oneLine}”</p>
+
+      {/* Instrument readout: the whole assessment at a glance */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <ReadoutCell label="Genre">
+          <span className="text-sm capitalize text-stone-100">
+            {selected.analysis.genre}
+          </span>
+        </ReadoutCell>
+        <ReadoutCell label="Mood">
+          <span className="text-sm capitalize text-stone-100">
+            {selected.analysis.mood}
+          </span>
+        </ReadoutCell>
+        {selected.analysis.ratings && (
+          <>
+            <ReadoutCell label="Comp">
+              <Meter value={selected.analysis.ratings.composition} />
+            </ReadoutCell>
+            <ReadoutCell label="Light">
+              <Meter value={selected.analysis.ratings.lighting} />
+            </ReadoutCell>
+            <ReadoutCell label="Tech">
+              <Meter value={selected.analysis.ratings.technique} />
+            </ReadoutCell>
+          </>
+        )}
+        <ReadoutCell label="Palette">
+          <span className="flex items-center gap-1.5 py-1">
+            {selected.analysis.palette.map((c, i) => {
+              const hex = selected.analysis?.paletteHex?.[i];
+              const valid = hex && /^#[0-9a-f]{3,8}$/i.test(hex);
+              return valid ? (
+                <span
+                  key={c}
+                  title={c}
+                  className="h-4 w-4 rounded-full border border-black/40"
+                  style={{ background: hex }}
+                />
+              ) : (
+                <span
+                  key={c}
+                  className="font-mono text-[9px] uppercase tracking-wider text-stone-400"
+                >
+                  {c}
+                </span>
+              );
+            })}
+          </span>
+        </ReadoutCell>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+        <span className="font-mono text-[9px] uppercase tracking-wider text-stone-500">
+          Seen
+        </span>
+        {selected.analysis.subjects.slice(0, 5).map((s) => (
+          <Tag key={s}>{s}</Tag>
+        ))}
+      </div>
+
+      {/* One reading at a time, like an editing app's parameter tabs */}
+      <div className="mt-5 rounded-md border border-stone-800 bg-stone-950/50">
+        <div className="flex border-b border-stone-800">
+          {CRITIQUE_TABS.map((t) => {
+            const active = critiqueTab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setCritiqueTab(t.id)}
+                aria-pressed={active}
+                className={`flex-1 px-3 py-2.5 text-[10px] uppercase tracking-[0.16em] transition ${
+                  active
+                    ? "border-b-2 border-stone-100 text-stone-100"
+                    : "text-stone-500 hover:text-stone-300"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="px-4 py-4 text-sm leading-relaxed text-stone-200">
+          {selected.analysis[critiqueTab]}
+        </p>
+      </div>
+
+      <div className="mt-5 grid gap-5 md:grid-cols-2">
+        <div>
+          <div className="engrave-cream text-[10px]">Strengths</div>
+          <div className="mt-2 space-y-2">
+            {selected.analysis.strengths.map((s) => (
+              <div
+                key={s}
+                className="flex items-start gap-2.5 rounded-md border border-stone-800 bg-stone-950/40 px-3 py-2.5 text-sm text-stone-200"
+              >
+                <span className="led-green mt-1.5 h-1.5 w-1.5 flex-none" />
+                <span>{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="engrave-cream text-[10px]">Try next time</div>
+          <div className="mt-2 space-y-2">
+            {selected.analysis.improvements.map((it, i) => (
+              <div
+                key={it}
+                className="flex items-start gap-3 rounded-md border border-stone-800 bg-stone-950/40 px-3 py-2.5 text-sm text-stone-200"
+              >
+                <span
+                  className="mt-0.5 font-mono text-[10px]"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {(i + 1).toString().padStart(2, "0")}
+                </span>
+                <span>{it}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {selected.analysis.cameraTips && selected.analysis.cameraTips.length > 0 && (
+        <div className="plate-cream mt-6 rounded-md px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="led-green h-2 w-2" />
+            <span className="engrave-cream text-[10px]">
+              {hasProfileCamera
+                ? `ON YOUR ${(findCamera(profile!.cameraId)?.fullName || profile!.customCameraName || "").toUpperCase()}`
+                : "ON YOUR CAMERA"}
+            </span>
+          </div>
+          <div className="mt-2 space-y-2 text-sm">
+            {selected.analysis.cameraTips.map((tip, i) => (
+              <div key={tip} className="flex items-start gap-3">
+                <span
+                  className="mt-0.5 font-mono text-[10px]"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {(i + 1).toString().padStart(2, "0")}
+                </span>
+                <span>{tip}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!hasProfileCamera && (
+        <div className="plate-cream mt-6 rounded-md px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="led-green h-2 w-2" />
+            <span className="engrave-cream text-[10px]">
+              WANT DIAL-SPECIFIC TIPS?
+            </span>
+          </div>
+          <p className="mt-1.5 text-sm text-stone-800">
+            Tell Lensed what you shoot with and every critique will reference
+            your camera&apos;s actual dials and buttons.
+          </p>
+          <button
+            onClick={() =>
+              window.dispatchEvent(new Event("lensed:open-onboarding"))
+            }
+            className="btn-chrome mt-2 px-4 py-1.5 text-[10px] uppercase tracking-[0.18em]"
+          >
+            <span className="engrave">Add your camera</span>
+          </button>
+        </div>
+      )}
+
+      {selected.analysis.similarPhotographers.length > 0 && (
+        <div className="plate-cream mt-6 rounded-md px-4 py-3">
+          <div className="engrave-cream text-[10px]">
+            REFERENCE LIBRARY · STUDY THESE
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {selected.analysis.similarPhotographers.map((n) => (
+              <PhotographerChip key={n} name={n} />
+            ))}
+          </div>
+        </div>
+      )}
+    </article>
+  );
 
   return (
     <div>
@@ -276,7 +735,7 @@ export default function MyPhotos() {
                   setCreating(false);
                   setNewName("");
                 }}
-                className="text-[10px] uppercase tracking-wider text-stone-500 hover:text-stone-300"
+                className="text-[10px] uppercase tracking-wider text-stone-400 hover:text-stone-300"
               >
                 Cancel
               </button>
@@ -292,22 +751,38 @@ export default function MyPhotos() {
         </div>
       </div>
 
-      {/* Control deck */}
-      <div className="plate-black mb-6 flex flex-wrap items-center justify-between gap-4 rounded-md p-4">
+      {/* Control deck — also a drop target */}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          void handleFiles(e.dataTransfer.files);
+        }}
+        className={`plate-black mb-6 flex flex-wrap items-center justify-between gap-4 rounded-md p-4 transition ${
+          dragOver ? "ring-2 ring-stone-300" : ""
+        }`}
+      >
         <div className="flex items-center gap-3">
           <span className="port h-3 w-3" />
           <span className="engrave-cream text-[10px]">
             FILM BAY ·{" "}
             {targetCollectionId
               ? `LOAD INTO "${collections.find((c) => c.id === targetCollectionId)?.name ?? ""}"`
-              : "LOAD JPEG / PNG / WEBP"}
+              : "LOAD OR DROP JPEG / PNG / WEBP"}
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {busy && (
+          {analyzingCount > 0 && (
             <span className="flex items-center gap-2">
               <span className="led-red h-2 w-2 animate-pulse" />
-              <span className="engrave-cream text-[10px]">EXPOSING…</span>
+              <span className="engrave-cream text-[10px]">
+                DEVELOPING ×{analyzingCount}
+              </span>
             </span>
           )}
           <input
@@ -320,7 +795,6 @@ export default function MyPhotos() {
           />
           <button
             onClick={() => inputRef.current?.click()}
-            disabled={busy}
             className="btn-chrome relative px-5 py-2 text-[11px] uppercase tracking-[0.18em]"
           >
             <span className="engrave">Load Photos</span>
@@ -339,186 +813,110 @@ export default function MyPhotos() {
         <div className="plate-black rounded-md px-8 py-16 text-center">
           <div className="engrave-cream text-xs">FRAME 000</div>
           <p className="mt-3">No exposures in this collection yet.</p>
-          <p className="mt-1 text-sm text-stone-500">
-            Load a photo to receive a written critique.
+          <p className="mt-1 text-sm text-stone-400">
+            Load a photo to receive a written critique — or develop a sample
+            frame to see how it works.
           </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => inputRef.current?.click()}
+              className="btn-chrome px-5 py-2 text-[11px] uppercase tracking-[0.18em]"
+            >
+              <span className="engrave">Load Photos</span>
+            </button>
+            <button
+              onClick={loadSamplePhoto}
+              disabled={sampleBusy}
+              className="rounded-full border border-stone-600 px-5 py-2 text-[11px] uppercase tracking-[0.18em] text-stone-300 hover:border-stone-400 hover:text-stone-100 disabled:opacity-50"
+            >
+              {sampleBusy ? "Fetching sample…" : "Try a sample photo"}
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <aside className="plate-black space-y-2 rounded-md p-3">
-            <div className="mb-2 flex items-center justify-between px-1">
-              <span className="engrave-cream text-[10px]">FILMSTRIP</span>
-              <span className="engrave-cream text-[10px]">
-                {visiblePhotos.length.toString().padStart(3, "0")}
-              </span>
-            </div>
-            {visiblePhotos.map((p, i) => {
-              const active = p.id === selectedId;
-              return (
+        <div className="space-y-4">
+          <div className="plate-black flex items-center justify-between rounded-md px-3 py-2">
+            <span className="engrave-cream text-[10px]">
+              LIBRARY · {visiblePhotos.length.toString().padStart(3, "0")}
+            </span>
+            <span className="flex items-center gap-1">
+              {(
+                [
+                  ["strip", "Strip"],
+                  ["sheet", "Sheet"],
+                ] as const
+              ).map(([id, text]) => (
                 <button
-                  key={p.id}
-                  onClick={() => setSelectedId(p.id)}
-                  className={`flex w-full items-center gap-3 rounded-md border p-2 text-left transition ${
-                    active
-                      ? "border-stone-200 bg-stone-900/80"
-                      : "border-stone-800 hover:border-stone-700"
+                  key={id}
+                  onClick={() => setLayout(id)}
+                  aria-pressed={layout === id}
+                  className={`rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-[0.14em] transition ${
+                    layout === id
+                      ? "bg-stone-200 text-stone-900"
+                      : "text-stone-400 hover:text-stone-200"
                   }`}
                 >
-                  <span className="relative">
-                    <img
-                      src={p.thumbDataUrl}
-                      alt={p.filename}
-                      className="h-14 w-14 rounded-sm object-cover ring-1 ring-black"
-                    />
-                    {active && (
-                      <span className="led-red absolute -right-1 -top-1 h-2 w-2" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm">{p.filename}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-stone-500">
-                      №{(visiblePhotos.length - i).toString().padStart(3, "0")} ·{" "}
-                      {p.analysis.genre} · {p.analysis.mood}
-                    </div>
-                  </div>
+                  {text}
                 </button>
-              );
-            })}
-          </aside>
+              ))}
+            </span>
+          </div>
 
-          {selected && (
-            <article className="plate-black rounded-md p-5">
-              <div className="mb-5 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <div className="relative rounded-md p-3 ring-1 ring-black/60">
-                  <span className="screw absolute left-1.5 top-1.5" />
-                  <span className="screw absolute right-1.5 top-1.5" />
-                  <span className="screw absolute bottom-1.5 left-1.5" />
-                  <span className="screw absolute bottom-1.5 right-1.5" />
-                  <img
-                    src={selected.thumbDataUrl}
-                    alt={selected.filename}
-                    className="w-full rounded-sm object-cover"
-                  />
-                </div>
-                <div>
-                  <div className="plate-cream rounded-sm px-3 py-2">
-                    <div className="engrave-cream text-[9px]">FILE</div>
-                    <div className="font-mono text-sm">{selected.filename}</div>
-                  </div>
-                  {selected.exif && <ExifPanel exif={selected.exif} />}
-                  <p className="mt-3 italic text-stone-300">
-                    “{selected.analysis.oneLine}”
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                    <Tag chrome>{selected.analysis.genre}</Tag>
-                    <Tag chrome>{selected.analysis.mood}</Tag>
-                    {selected.analysis.subjects.slice(0, 4).map((s) => (
-                      <Tag key={s}>{s}</Tag>
-                    ))}
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {selected.analysis.palette.map((c) => (
-                      <div
-                        key={c}
-                        className="plate-cream rounded-sm px-2 py-1 text-[10px] uppercase tracking-wider"
-                      >
-                        {c}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2">
-                      <span className="engrave-cream text-[10px]">
-                        COLLECTION
-                      </span>
-                      <select
-                        value={selected.collectionId ?? ""}
-                        onChange={(e) =>
-                          movePhoto(selected.id, e.target.value || undefined)
-                        }
-                        className="input-port px-2 py-1 text-sm"
-                      >
-                        <option value="">Uncategorized</option>
-                        {collections.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+          {layout === "sheet" && (
+            <div className="plate-black rounded-md p-3">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+                {visiblePhotos.map((p) => {
+                  const active = p.id === selectedId;
+                  return (
                     <button
-                      onClick={() => deletePhoto(selected.id)}
-                      className="text-[10px] uppercase tracking-[0.18em] text-stone-500 hover:text-red-400"
+                      key={p.id}
+                      onClick={() => setSelectedId(p.id)}
+                      title={p.filename}
+                      className={`relative aspect-square overflow-hidden rounded-sm border transition ${
+                        active
+                          ? "border-stone-200"
+                          : "border-stone-800 hover:border-stone-600"
+                      }`}
                     >
-                      Eject frame
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.thumbDataUrl}
+                        alt={p.filename}
+                        className="h-full w-full object-cover"
+                      />
+                      <StatusDot photo={p} className="absolute right-1 top-1" />
                     </button>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
-
-              <Divider />
-
-              <div className="grid gap-5 md:grid-cols-3">
-                <Section title="Composition">{selected.analysis.composition}</Section>
-                <Section title="Lighting">{selected.analysis.lighting}</Section>
-                <Section title="Technique">{selected.analysis.technique}</Section>
-              </div>
-
-              <Divider />
-
-              <div className="grid gap-5 md:grid-cols-2">
-                <BulletSection title="Strengths" items={selected.analysis.strengths} />
-                <BulletSection
-                  title="Try next time"
-                  items={selected.analysis.improvements}
-                />
-              </div>
-
-              {selected.analysis.cameraTips &&
-                selected.analysis.cameraTips.length > 0 && (
-                  <div className="plate-cream mt-6 rounded-md px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="led-green h-2 w-2" />
-                      <span className="engrave-cream text-[10px]">
-                        {profile && (findCamera(profile.cameraId)?.fullName || profile.customCameraName)
-                          ? `ON YOUR ${(findCamera(profile.cameraId)?.fullName || profile.customCameraName || "").toUpperCase()}`
-                          : "ON YOUR CAMERA"}
-                      </span>
-                    </div>
-                    <ul className="mt-2 space-y-1.5 text-sm">
-                      {selected.analysis.cameraTips.map((tip) => (
-                        <li key={tip} className="flex gap-2">
-                          <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-700" />
-                          <span>{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-              {selected.analysis.similarPhotographers.length > 0 && (
-                <div className="plate-cream mt-6 rounded-md px-4 py-3">
-                  <div className="engrave-cream text-[10px]">
-                    REFERENCE LIBRARY · STUDY THESE
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {selected.analysis.similarPhotographers.map((n) => (
-                      <span
-                        key={n}
-                        className="rounded-full border border-amber-900/30 bg-amber-50/40 px-3 py-1 text-sm text-stone-800"
-                      >
-                        {n}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </article>
+            </div>
           )}
+
+          {viewer}
+
+          {layout === "strip" && filmstrip}
+
+          {critique}
         </div>
       )}
     </div>
   );
+}
+
+function StatusDot({
+  photo,
+  className = "",
+}: {
+  photo: StoredPhoto;
+  className?: string;
+}) {
+  if (photo.status === "analyzing") {
+    return <span className={`led-red h-2 w-2 animate-pulse ${className}`} />;
+  }
+  if (photo.status === "failed") {
+    return <span className={`led-red h-2 w-2 ${className}`} />;
+  }
+  return null;
 }
 
 function CollectionChip({
@@ -552,50 +950,10 @@ function CollectionChip({
       className="inline-flex items-center gap-2 rounded-full border border-stone-700 px-3 py-1 text-stone-300 hover:border-stone-500"
     >
       <span className="text-[11px] uppercase tracking-[0.16em]">{label}</span>
-      <span className="text-[10px] text-stone-500">
+      <span className="text-[10px] text-stone-400">
         {count.toString().padStart(2, "0")}
       </span>
     </button>
-  );
-}
-
-function ExifPanel({ exif }: { exif: import("../lib/types").Exif }) {
-  const camera = formatCamera(exif);
-  const summary = exifSummaryLine(exif);
-  const cells: { label: string; value: string | null }[] = [
-    { label: "FOCAL", value: formatFocal(exif.focalLength) },
-    { label: "APERTURE", value: formatAperture(exif.aperture) },
-    { label: "SHUTTER", value: formatShutter(exif.shutterSeconds) },
-    { label: "ISO", value: formatIso(exif.iso)?.replace("ISO ", "") ?? null },
-  ];
-  const hasAny = camera || exif.lensModel || summary;
-  if (!hasAny) return null;
-  return (
-    <div className="plate-cream mt-2 rounded-sm px-3 py-2">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="engrave-cream text-[9px]">SHOT DATA</span>
-        <span className="font-mono text-[10px] text-stone-700">
-          {camera ?? "—"}
-        </span>
-      </div>
-      {exif.lensModel && (
-        <div className="mt-0.5 truncate font-mono text-[10px] text-stone-700">
-          {exif.lensModel}
-        </div>
-      )}
-      <div className="mt-2 grid grid-cols-4 gap-1 text-center">
-        {cells.map((c) => (
-          <div key={c.label} className="rounded-sm border border-stone-400/40 bg-white/40 px-1 py-1">
-            <div className="text-[8px] uppercase tracking-wider text-stone-600">
-              {c.label}
-            </div>
-            <div className="font-mono text-[11px] text-stone-900">
-              {c.value ?? "—"}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -620,31 +978,40 @@ function Tag({
   );
 }
 
-function Divider() {
-  return <div className="my-5 sprocket rounded-sm" />;
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function ReadoutCell({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-      <div className="engrave-cream text-[10px]">{title}</div>
-      <p className="mt-1.5 text-sm text-stone-200">{children}</p>
+    <div className="min-w-[88px] rounded-md border border-stone-800 bg-stone-950/50 px-3 py-2">
+      <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-stone-500">
+        {label}
+      </div>
+      <div className="mt-1 flex items-center">{children}</div>
     </div>
   );
 }
 
-function BulletSection({ title, items }: { title: string; items: string[] }) {
+function Meter({ value }: { value: number }) {
+  const v = Math.max(0, Math.min(5, Math.round(value)));
   return (
-    <div>
-      <div className="engrave-cream text-[10px]">{title}</div>
-      <ul className="mt-1.5 space-y-1.5 text-sm text-stone-200">
-        {items.map((it) => (
-          <li key={it} className="flex gap-2">
-            <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-400" />
-            <span>{it}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <span
+      className="flex items-center gap-0.5 py-1.5"
+      role="img"
+      aria-label={`${v} of 5`}
+    >
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className="h-1.5 w-3 rounded-[1px]"
+          style={{
+            background: i <= v ? "var(--accent)" : "var(--line-soft)",
+          }}
+        />
+      ))}
+    </span>
   );
 }

@@ -7,11 +7,11 @@ export const metadata: Metadata = {
     "Upload your photography, get AI feedback, browse photographers by style, and learn what you gravitate toward.",
 };
 
-const themeBootScript = `(function(){try{var t=localStorage.getItem('lensed.theme');if(t!=='light'&&t!=='dark'){t='dark';}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();`;
+const themeBootScript = `(function(){try{var t=localStorage.getItem('lensed.theme');if(t!=='light'&&t!=='dark'){t='light';}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" data-theme="light">
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>

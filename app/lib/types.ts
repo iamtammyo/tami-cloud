@@ -28,6 +28,13 @@ export type Analysis = {
   subjects: string[];
   mood: MoodTag;
   palette: string[];
+  paletteHex?: string[];
+  /** 1–5 craft ratings; absent on photos analyzed before this field existed. */
+  ratings?: {
+    composition: number;
+    lighting: number;
+    technique: number;
+  };
   composition: string;
   lighting: string;
   technique: string;
@@ -77,12 +84,21 @@ export type Exif = {
   dateTaken?: string;
 };
 
+export type PhotoStatus = "analyzing" | "done" | "failed";
+
 export type StoredPhoto = {
   id: string;
   createdAt: number;
   thumbDataUrl: string;
+  /** ~1280px render for the hero viewer; older records fall back to the thumb. */
+  displayDataUrl?: string;
   filename: string;
-  analysis: Analysis;
+  status: PhotoStatus;
+  analysis: Analysis | null;
+  error?: string;
+  /** Full-size data URL kept only until analysis succeeds, so a failed call can be retried. */
+  retryDataUrl?: string;
+  retryMediaType?: string;
   collectionId?: string;
   exif?: Exif;
 };
@@ -99,6 +115,10 @@ export type Photographer = {
   era: string;
   country: string;
   styles: GenreTag[];
+  /** Moods the body of work most evokes; used by the recommender. */
+  moods?: MoodTag[];
+  /** Active 21st-century voice — surfaced so recommendations skew current. */
+  contemporary?: boolean;
   signature: string;
   bio: string;
   wikipediaTitle: string;

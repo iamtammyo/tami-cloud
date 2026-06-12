@@ -1,17 +1,23 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PHOTOGRAPHERS } from "../lib/photographers";
-import { loadPhotos, loadProfile } from "../lib/storage";
+import { loadProfile } from "../lib/storage";
+import { loadAllPhotos } from "../lib/db";
 import { buildPracticePrompts } from "../lib/practice";
-import type { GenreTag, StoredPhoto, UserProfile } from "../lib/types";
+import { recommendPhotographers } from "../lib/recommend";
+import { useLibrary } from "../lib/library";
+import type { StoredPhoto, UserProfile } from "../lib/types";
 
 export default function Stats() {
-  const [photos, setPhotos] = useState<StoredPhoto[]>([]);
+  const [allPhotos, setAllPhotos] = useState<StoredPhoto[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const library = useLibrary();
 
   useEffect(() => {
-    setPhotos(loadPhotos());
+    let alive = true;
+    void loadAllPhotos().then((p) => {
+      if (alive) setAllPhotos(p);
+    });
     setProfile(loadProfile());
 
     function onProfileChange(e: Event) {
@@ -19,10 +25,17 @@ export default function Stats() {
       setProfile(detail);
     }
     window.addEventListener("lensed:profile-changed", onProfileChange);
-    return () =>
+    return () => {
+      alive = false;
       window.removeEventListener("lensed:profile-changed", onProfileChange);
+    };
   }, []);
 
+  // Only completed critiques feed the fingerprint.
+  const photos = useMemo(
+    () => allPhotos.filter((p) => p.analysis),
+    [allPhotos],
+  );
   const counts = useMemo(() => buildCounts(photos), [photos]);
   const practice = useMemo(
     () => buildPracticePrompts(photos, profile),
@@ -44,8 +57,17 @@ export default function Stats() {
     );
   }
 
-  const matchedPhotographers = matchPhotographers(counts.genres);
   const sampleCount = photos.length;
+  const recommendations = recommendPhotographers(
+    {
+      genres: counts.genres,
+      moods: counts.moods,
+      subjects: counts.subjects,
+      total: sampleCount,
+    },
+    6,
+    library,
+  );
   const isThin = sampleCount < 5;
 
   return (
@@ -177,31 +199,79 @@ export default function Stats() {
       </Panel>
 
       <Panel title="Photographers worth studying">
-        {matchedPhotographers.length === 0 ? (
+        {recommendations.length === 0 ? (
           <p className="text-sm text-stone-500">
             Once your genre profile fills in, we'll surface relevant photographers.
           </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {matchedPhotographers.map((m) => (
+            {recommendations.map((m) => (
               <div
                 key={m.photographer.id}
                 className="rounded-md border border-stone-800 bg-stone-950/40 p-4"
               >
-                <div className="plate-chrome mb-2 inline-flex items-baseline gap-2 rounded-sm px-2 py-0.5">
-                  <h4 className="wordmark engrave-deep text-sm">
-                    {m.photographer.name}
-                  </h4>
-                  <span className="engrave text-[9px]">
-                    {m.photographer.styles.join(" · ")}
+                <div className="flex items-baseline justify-between gap-2">
+                  <button
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent("lensed:view-photographer", {
+                          detail: { id: m.photographer.id },
+                        }),
+                      )
+                    }
+                    className="text-left font-medium text-stone-100 hover:underline"
+                  >
+                    {m.photographer.name} <span aria-hidden>↗</span>
+                  </button>
+                  <span className="flex items-center gap-2">
+                    {m.photographer.contemporary && (
+                      <span
+                        className="rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em]"
+                        style={{
+                          color: "var(--accent)",
+                          borderColor: "var(--accent)",
+                        }}
+                      >
+                        Now
+                      </span>
+                    )}
+                    <span className="font-mono text-[10px] text-stone-500">
+                      {m.photographer.era}
+                    </span>
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-stone-300">
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-stone-800">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.round(m.strength * 100)}%`,
+                        background: "var(--accent)",
+                      }}
+                    />
+                  </div>
+                  <span className="font-mono text-[10px] text-stone-500">
+                    {Math.round(m.strength * 100).toString().padStart(3, "0")}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-stone-300">
                   {m.photographer.signature}
                 </p>
-                <p className="mt-2 text-[11px] uppercase tracking-wider text-stone-500">
-                  Why · overlaps with your {m.matchedStyles.join(", ")} work
-                </p>
+                {m.reasons.length > 0 && (
+                  <p className="mt-2 text-[11px] uppercase tracking-wider text-stone-500">
+                    Why · {m.reasons.join(" · ")}
+                  </p>
+                )}
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {m.photographer.styles.map((s) => (
+                    <span
+                      key={s}
+                      className="rounded-full border border-stone-700 px-2 py-0.5 text-[9px] uppercase tracking-wider text-stone-400"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -237,17 +307,14 @@ function BarList({ items, total }: { items: [string, number][]; total: number })
             <div className="w-32 text-sm uppercase tracking-wider text-stone-300">
               {label}
             </div>
-            <div className="relative h-3 flex-1 overflow-hidden rounded-sm border border-black bg-stone-950 shadow-inner">
+            <div className="relative h-2 flex-1 overflow-hidden rounded-full border border-black bg-stone-950">
               <div
-                className="absolute left-0 top-0 h-full"
+                className="absolute left-0 top-0 h-full rounded-full"
                 style={{
                   width: `${pct}%`,
-                  background:
-                    "linear-gradient(180deg, #fdfdff 0%, #c9ccd2 50%, #8b8e94 100%)",
-                  boxShadow: "inset 0 -1px 0 rgba(0,0,0,.4)",
+                  background: "var(--text-primary)",
                 }}
               />
-              <div className="knurl-h absolute inset-0 opacity-15" />
             </div>
             <div className="w-20 text-right font-mono text-xs text-stone-300">
               {n.toString().padStart(2, "0")} · {share}%
@@ -275,6 +342,7 @@ function buildCounts(photos: StoredPhoto[]): Counts {
   const improvement = new Map<string, number>();
 
   for (const p of photos) {
+    if (!p.analysis) continue;
     bump(genre, p.analysis.genre);
     bump(mood, p.analysis.mood);
     for (const s of p.analysis.subjects) bump(subject, s.toLowerCase());
@@ -302,17 +370,4 @@ function sortMap(map: Map<string, number>): [string, number][] {
 
 function normalize(s: string): string {
   return s.trim().replace(/\.$/, "");
-}
-
-function matchPhotographers(genres: [string, number][]) {
-  const top = genres.slice(0, 3).map(([g]) => g as GenreTag);
-  if (top.length === 0) return [];
-  const matches = PHOTOGRAPHERS.map((p) => {
-    const overlap = p.styles.filter((s) => top.includes(s));
-    return { photographer: p, matchedStyles: overlap };
-  })
-    .filter((m) => m.matchedStyles.length > 0)
-    .sort((a, b) => b.matchedStyles.length - a.matchedStyles.length)
-    .slice(0, 6);
-  return matches;
 }

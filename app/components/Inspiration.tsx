@@ -1,256 +1,668 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ALL_STYLES, PHOTOGRAPHERS } from "../lib/photographers";
+import { useEffect, useMemo, useState } from "react";
+import {
+  addCustomPhotographer,
+  findPhotographerByName,
+  isCustomPhotographer,
+  removeCustomPhotographer,
+  slugForName,
+  useLibrary,
+} from "../lib/library";
+import { useWorkImages } from "../lib/commons";
+import { useArenaChannel, useArenaDiscovery } from "../lib/arena";
+import { loadAllPhotos } from "../lib/db";
 import { initials, usePhotographerWiki } from "../lib/wiki";
 import type { GenreTag, Photographer } from "../lib/types";
 
-type Sort = "name" | "style" | "era";
+type ViewMode = "grid" | "index";
 
-export default function Inspiration() {
+export default function Inspiration({
+  focusId = null,
+  onFocusConsumed,
+}: {
+  focusId?: string | null;
+  onFocusConsumed?: () => void;
+}) {
+  const photographers = useLibrary();
   const [query, setQuery] = useState("");
-  const [styleFilter, setStyleFilter] = useState<GenreTag | "all">("all");
-  const [sort, setSort] = useState<Sort>("style");
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [genre, setGenre] = useState<GenreTag | "all">("all");
+  const [view, setView] = useState<ViewMode>("grid");
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [addName, setAddName] = useState("");
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [tasteQueries, setTasteQueries] = useState<string[] | null>(null);
+  const discover = useArenaDiscovery(tasteQueries);
+
+  // Taste-based discovery: the queries come from what the user actually
+  // shoots (top genres + dominant mood across analyzed photos).
+  useEffect(() => {
+    void loadAllPhotos().then((photos) => {
+      const genres = new Map<string, number>();
+      const moods = new Map<string, number>();
+      for (const p of photos) {
+        if (!p.analysis) continue;
+        genres.set(p.analysis.genre, (genres.get(p.analysis.genre) ?? 0) + 1);
+        moods.set(p.analysis.mood, (moods.get(p.analysis.mood) ?? 0) + 1);
+      }
+      const topGenres = Array.from(genres.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([g]) => g);
+      const topMood = Array.from(moods.entries()).sort(
+        (a, b) => b[1] - a[1],
+      )[0]?.[0];
+      const qs: string[] = [];
+      if (topGenres[0]) {
+        qs.push(
+          topMood
+            ? `${topMood} ${topGenres[0]} photography`
+            : `${topGenres[0]} photography`,
+        );
+      }
+      if (topGenres[1]) qs.push(`${topGenres[1]} photography`);
+      if (qs.length === 0) qs.push("contemporary photography");
+      setTasteQueries(qs.slice(0, 2));
+    });
+  }, []);
+
+  const styleCounts = useMemo(() => {
+    const map = new Map<GenreTag, number>();
+    for (const p of photographers) {
+      for (const s of p.styles) map.set(s, (map.get(s) ?? 0) + 1);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [photographers]);
+
+  // Arriving from a critique chip or Stats recommendation: open the
+  // detail view directly.
+  useEffect(() => {
+    if (!focusId) return;
+    setQuery("");
+    setGenre("all");
+    setDetailId(focusId);
+    onFocusConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
+
+  async function addByName() {
+    const name = addName.trim();
+    if (!name || addBusy) return;
+    setAddError(null);
+    const existing = findPhotographerByName(name, photographers);
+    if (existing) {
+      setAddName("");
+      setDetailId(existing.id);
+      return;
+    }
+    setAddBusy(true);
+    try {
+      const res = await fetch("/api/photographer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = (await res.json()) as {
+        profile?: Omit<Photographer, "id">;
+        error?: string;
+      };
+      if (!res.ok || !data.profile) {
+        throw new Error(data.error ?? `Add failed (${res.status})`);
+      }
+      const photographer: Photographer = {
+        id: slugForName(data.profile.name),
+        ...data.profile,
+      };
+      addCustomPhotographer(photographer);
+      setAddName("");
+      setDetailId(photographer.id);
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAddBusy(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = PHOTOGRAPHERS.filter((p) => {
-      if (styleFilter !== "all" && !p.styles.includes(styleFilter)) return false;
-      if (!q) return true;
-      return (
-        p.name.toLowerCase().includes(q) ||
-        p.country.toLowerCase().includes(q) ||
-        p.signature.toLowerCase().includes(q) ||
-        p.styles.some((s) => s.includes(q))
-      );
-    });
-    list = [...list].sort((a, b) => {
-      if (sort === "name") return a.name.localeCompare(b.name);
-      if (sort === "era") return a.era.localeCompare(b.era);
-      return a.styles[0].localeCompare(b.styles[0]) || a.name.localeCompare(b.name);
-    });
-    return list;
-  }, [query, styleFilter, sort]);
+    return photographers
+      .filter((p) => {
+        if (genre !== "all" && !p.styles.includes(genre)) return false;
+        if (!q) return true;
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.country.toLowerCase().includes(q) ||
+          p.signature.toLowerCase().includes(q) ||
+          p.styles.some((s) => s.includes(q))
+        );
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [photographers, query, genre]);
 
-  const grouped = useMemo(() => {
-    if (sort !== "style") return null;
-    const map = new Map<GenreTag, Photographer[]>();
-    for (const p of filtered) {
-      const key = p.styles[0];
-      const arr = map.get(key) ?? [];
-      arr.push(p);
-      map.set(key, arr);
-    }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [filtered, sort]);
+  const detail = detailId
+    ? photographers.find((p) => p.id === detailId) ?? null
+    : null;
 
   return (
     <div>
-      <div className="plate-black mb-8 rounded-md p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <span className="port h-3 w-3" />
-          <span className="engrave-cream text-[10px]">
-            REFERENCE INDEX · {PHOTOGRAPHERS.length.toString().padStart(3, "0")}{" "}
-            PHOTOGRAPHERS ON FILE
-          </span>
+      {/* Slim header: search · add · view */}
+      <div className="plate-black mb-6 rounded-md p-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <span className="engrave-cream text-[10px]">Search</span>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Name · country · style…"
+                className="input-port mt-1 block w-56 px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <span className="engrave-cream text-[10px]">Add a photographer</span>
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  value={addName}
+                  onChange={(e) => setAddName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void addByName();
+                  }}
+                  placeholder="e.g. Gordon Parks"
+                  className="input-port w-48 px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={() => void addByName()}
+                  disabled={addBusy || !addName.trim()}
+                  className="btn-chrome px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+                >
+                  <span className="engrave">{addBusy ? "Researching…" : "Add"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            {(
+              [
+                ["grid", "Grid"],
+                ["index", "Index"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setView(id)}
+                aria-pressed={view === id}
+                className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] transition ${
+                  view === id
+                    ? "bg-stone-200 text-stone-900"
+                    : "text-stone-400 hover:text-stone-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-          <div>
-            <Label>Search</Label>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Name · country · style…"
-              className="input-port mt-1 w-full px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <Label>Genre</Label>
-            <select
-              value={styleFilter}
-              onChange={(e) => setStyleFilter(e.target.value as GenreTag | "all")}
-              className="input-port mt-1 px-3 py-2 text-sm"
-            >
-              <option value="all">All</option>
-              {ALL_STYLES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label>Group by</Label>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as Sort)}
-              className="input-port mt-1 px-3 py-2 text-sm"
-            >
-              <option value="style">Style</option>
-              <option value="name">Name</option>
-              <option value="era">Era</option>
-            </select>
-          </div>
-        </div>
+        {addError && (
+          <p className="mt-2 text-xs" style={{ color: "var(--accent)" }}>
+            {addError}
+          </p>
+        )}
+      </div>
+
+      {/* Typographic filter index — the structure you operate, not scroll */}
+      <div className="mb-8 flex flex-wrap gap-x-5 gap-y-1.5 font-mono text-[11px] uppercase tracking-wider">
+        <IndexButton
+          active={genre === "all"}
+          onClick={() => setGenre("all")}
+          label="all"
+          count={photographers.length}
+        />
+        {styleCounts.map(([s, n]) => (
+          <IndexButton
+            key={s}
+            active={genre === s}
+            onClick={() => setGenre(s)}
+            label={s}
+            count={n}
+          />
+        ))}
       </div>
 
       {filtered.length === 0 && (
         <p className="text-sm text-stone-400">No photographers match those filters.</p>
       )}
 
-      {sort === "style" && grouped ? (
-        <div className="space-y-10">
-          {grouped.map(([style, list]) => (
-            <section key={style}>
-              <div className="plate-chrome mb-4 inline-flex items-center gap-3 rounded-sm px-3 py-1">
-                <span className="led-red h-1.5 w-1.5" />
-                <h2 className="engrave text-[11px]">CHANNEL · {style}</h2>
-              </div>
-              <CardGrid
-                list={list}
-                openId={openId}
-                onOpen={(id) => setOpenId((cur) => (cur === id ? null : id))}
-              />
-            </section>
+      {view === "grid" ? (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {filtered.map((p) => (
+            <GridCard key={p.id} photographer={p} onOpen={() => setDetailId(p.id)} />
           ))}
         </div>
       ) : (
-        <CardGrid
-          list={filtered}
-          openId={openId}
-          onOpen={(id) => setOpenId((cur) => (cur === id ? null : id))}
+        <IndexTable list={filtered} onOpen={setDetailId} />
+      )}
+
+      {discover.needsToken && (
+        <div className="mt-14 rounded-md border border-dashed border-stone-700 p-4">
+          <span className="engrave-cream text-[10px]">Wander · via are.na</span>
+          <p className="mt-2 text-sm text-stone-400">
+            Are.na&apos;s search API needs a free access token. Create an app at{" "}
+            <a
+              href="https://dev.are.na"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-stone-200"
+            >
+              dev.are.na
+            </a>
+            , then add its personal access token to Vercel as{" "}
+            <code className="font-mono text-[11px]">ARENA_ACCESS_TOKEN</code> and
+            redeploy — taste-based channel discovery will appear here.
+          </p>
+        </div>
+      )}
+
+      {discover.channels && discover.channels.length > 0 && (
+        <div className="mt-14">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <span className="engrave-cream text-[10px]">
+              Wander · channels matched to your taste
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-wider text-stone-600">
+              {tasteQueries?.join(" · ")} · via are.na
+            </span>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {discover.channels.map((c) => (
+              <a
+                key={c.url}
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-60 flex-none rounded-md border border-stone-800 p-3 transition hover:border-stone-500"
+              >
+                <div className="grid grid-cols-3 gap-1">
+                  {c.thumbs.slice(0, 3).map((t) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={t}
+                      src={t}
+                      alt=""
+                      className="aspect-square w-full rounded-sm object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                  ))}
+                </div>
+                <div className="mt-2 truncate text-sm text-stone-100">{c.title}</div>
+                <div className="font-mono text-[10px] text-stone-500">
+                  {c.user} · {c.length} blocks ↗
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {detail && (
+        <DetailView
+          photographer={detail}
+          pool={photographers}
+          onClose={() => setDetailId(null)}
+          onOpen={setDetailId}
         />
       )}
     </div>
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+function IndexButton({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}) {
   return (
-    <span className="engrave-cream text-[10px]">{children}</span>
+    <button
+      onClick={onClick}
+      aria-pressed={active}
+      className="transition"
+      style={{ color: active ? "var(--accent)" : undefined }}
+    >
+      <span className={active ? "" : "text-stone-400 hover:text-stone-200"}>
+        {label}{" "}
+        <span className={active ? "opacity-70" : "text-stone-600"}>
+          {count.toString().padStart(2, "0")}
+        </span>
+      </span>
+    </button>
   );
 }
 
-function CardGrid({
+/** Sublime-style quiet card: image, a caption line, whitespace. */
+function GridCard({
+  photographer,
+  onOpen,
+}: {
+  photographer: Photographer;
+  onOpen: () => void;
+}) {
+  const { info, loading } = usePhotographerWiki(photographer.wikipediaTitle);
+  return (
+    <button onClick={onOpen} className="group text-left">
+      <div className="aspect-[3/4] w-full overflow-hidden rounded-sm bg-stone-900 ring-1 ring-transparent transition group-hover:ring-stone-400">
+        {info?.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={info.imageUrl}
+            alt={`Portrait of ${photographer.name}`}
+            className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-stone-800 text-2xl font-light tracking-widest text-stone-400">
+            {loading ? "…" : initials(photographer.name)}
+          </div>
+        )}
+      </div>
+      <div className="mt-2 flex items-center gap-1.5">
+        {photographer.contemporary && (
+          <span
+            className="h-1.5 w-1.5 flex-none rounded-full"
+            style={{ background: "var(--accent)" }}
+            title="Contemporary"
+          />
+        )}
+        <span className="truncate text-sm text-stone-100">{photographer.name}</span>
+      </div>
+      <div className="font-mono text-[10px] text-stone-500">
+        {photographer.era} · {photographer.styles[0]}
+      </div>
+    </button>
+  );
+}
+
+/** Are.na-style index: the fastest way to scan a growing library. */
+function IndexTable({
   list,
-  openId,
   onOpen,
 }: {
   list: Photographer[];
-  openId: string | null;
   onOpen: (id: string) => void;
 }) {
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-      {list.map((p) => (
-        <Card
-          key={p.id}
-          photographer={p}
-          expanded={openId === p.id}
-          onToggle={() => onOpen(p.id)}
-        />
-      ))}
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-left">
+        <thead>
+          <tr className="border-b border-stone-800 font-mono text-[10px] uppercase tracking-wider text-stone-500">
+            <th className="py-2 pr-4 font-normal">Name</th>
+            <th className="py-2 pr-4 font-normal">Era</th>
+            <th className="hidden py-2 pr-4 font-normal sm:table-cell">Country</th>
+            <th className="py-2 font-normal">Styles</th>
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((p) => (
+            <tr
+              key={p.id}
+              onClick={() => onOpen(p.id)}
+              className="cursor-pointer border-b border-stone-800/60 transition hover:bg-stone-950/60"
+            >
+              <td className="py-2.5 pr-4 text-sm text-stone-100">
+                <span className="flex items-center gap-1.5">
+                  {p.contemporary && (
+                    <span
+                      className="h-1.5 w-1.5 flex-none rounded-full"
+                      style={{ background: "var(--accent)" }}
+                    />
+                  )}
+                  {p.name}
+                </span>
+              </td>
+              <td className="py-2.5 pr-4 font-mono text-[11px] text-stone-400">
+                {p.era}
+              </td>
+              <td className="hidden py-2.5 pr-4 text-sm text-stone-400 sm:table-cell">
+                {p.country}
+              </td>
+              <td className="py-2.5 font-mono text-[10px] uppercase tracking-wider text-stone-500">
+                {p.styles.join(" · ")}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function Card({
+/** Affinity by shared styles and moods — the are.na "connected to" idea. */
+function relatedPhotographers(
+  p: Photographer,
+  pool: Photographer[],
+  n = 4,
+): Photographer[] {
+  return pool
+    .filter((x) => x.id !== p.id)
+    .map((x) => {
+      let score = 0;
+      for (const s of x.styles) {
+        if (p.styles.includes(s)) {
+          score += s === p.styles[0] || s === x.styles[0] ? 2 : 1.5;
+        }
+      }
+      for (const m of x.moods ?? []) {
+        if ((p.moods ?? []).includes(m)) score += 1;
+      }
+      return { x, score };
+    })
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, n)
+    .map((r) => r.x);
+}
+
+function DetailView({
   photographer,
-  expanded,
-  onToggle,
+  pool,
+  onClose,
+  onOpen,
 }: {
   photographer: Photographer;
-  expanded: boolean;
-  onToggle: () => void;
+  pool: Photographer[];
+  onClose: () => void;
+  onOpen: (id: string) => void;
 }) {
   const { info, loading } = usePhotographerWiki(photographer.wikipediaTitle);
+  const { urls } = useWorkImages(
+    photographer.name,
+    photographer.wikipediaTitle,
+    true,
+    8,
+  );
+  const arenaChannel = useArenaChannel(photographer.name, true);
+  const custom = isCustomPhotographer(photographer);
+  const connected = relatedPhotographers(photographer, pool);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   return (
-    <div className="plate-black overflow-hidden rounded-md">
-      {/* Portrait — matte black frame with corner screws */}
-      <div className="relative bg-black p-3">
-        <span className="screw absolute left-1.5 top-1.5" />
-        <span className="screw absolute right-1.5 top-1.5" />
-        <span className="screw absolute bottom-1.5 left-1.5" />
-        <span className="screw absolute bottom-1.5 right-1.5" />
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-sm bg-stone-900">
-          {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center text-[10px] uppercase tracking-wider text-stone-500">
-              Loading portrait…
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="plate-black max-h-[88vh] w-full max-w-2xl overflow-y-auto rounded-md p-6"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label={photographer.name}
+      >
+        <div className="flex items-start gap-5">
+          <div className="h-36 w-28 flex-none overflow-hidden rounded-sm bg-stone-900">
+            {info?.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={info.imageUrl}
+                alt={`Portrait of ${photographer.name}`}
+                className="h-full w-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-2xl font-light tracking-widest text-stone-500">
+                {loading ? "…" : initials(photographer.name)}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-xl font-semibold text-stone-100">
+                {photographer.name}
+              </h2>
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                className="font-mono text-sm text-stone-500 hover:text-stone-200"
+              >
+                ✕
+              </button>
             </div>
-          ) : info?.imageUrl ? (
-            <img
-              src={info.imageUrl}
-              alt={`Portrait of ${photographer.name}`}
-              className="h-full w-full object-cover"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-stone-800 text-3xl font-light tracking-widest text-stone-400">
-              {initials(photographer.name)}
+            <div className="mt-0.5 font-mono text-[11px] text-stone-500">
+              {photographer.era} · {photographer.country}
             </div>
-          )}
-          {/* Film border tick */}
-          <div className="pointer-events-none absolute right-2 top-2 rounded-sm bg-black/60 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-stone-300">
-            Wikimedia
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {photographer.contemporary && (
+                <span
+                  className="rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider"
+                  style={{ color: "var(--accent)", borderColor: "var(--accent)" }}
+                >
+                  now
+                </span>
+              )}
+              {custom && (
+                <span className="rounded-full border border-stone-600 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-stone-400">
+                  added by you
+                </span>
+              )}
+              {photographer.styles.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-full border border-stone-700 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-stone-400"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+            <p className="mt-3 text-sm text-stone-200">{photographer.signature}</p>
           </div>
         </div>
-      </div>
-
-      {/* Chrome nameplate */}
-      <div className="plate-chrome flex items-baseline justify-between gap-2 px-4 py-2">
-        <h3 className="wordmark text-base engrave-deep">{photographer.name}</h3>
-        <span className="engrave text-[10px]">{photographer.era}</span>
-      </div>
-
-      <div className="p-4">
-        <div className="engrave-cream text-[10px]">{photographer.country}</div>
-        <p className="mt-2 text-sm text-stone-300">{photographer.signature}</p>
 
         {photographer.quote && (
-          <blockquote className="mt-3 border-l-2 border-stone-600 pl-3 text-sm italic text-stone-400">
+          <blockquote
+            className="mt-4 border-l-2 pl-3 text-sm italic text-stone-400"
+            style={{ borderColor: "var(--accent)" }}
+          >
             “{photographer.quote}”
           </blockquote>
         )}
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {photographer.styles.map((s) => (
-            <span
-              key={s}
-              className="rounded-full border border-stone-700 bg-stone-950/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-stone-300"
-            >
-              {s}
-            </span>
-          ))}
-        </div>
+        <p className="mt-4 text-sm leading-relaxed text-stone-300">
+          {photographer.bio}
+        </p>
 
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <button
-            onClick={onToggle}
-            className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-stone-300 hover:text-stone-100"
-          >
-            <span className={`port h-2 w-2 ${expanded ? "led-red" : ""}`} />
-            {expanded ? "Hide bio" : "Read more"}
-          </button>
-          {info?.contentUrl && (
-            <a
-              href={info.contentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-stone-100"
+        {urls.length > 0 && (
+          <div className="mt-5">
+            <div className="engrave-cream text-[10px]">
+              Selected work · via Wikipedia / Wikimedia
+            </div>
+            <div className="mt-2 grid grid-cols-4 gap-1.5">
+              {urls.map((u) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={u}
+                  src={u}
+                  alt={`Photograph by ${photographer.name}`}
+                  className="aspect-square w-full rounded-sm object-cover"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {connected.length > 0 && (
+          <div className="mt-5">
+            <div className="engrave-cream text-[10px]">Connected</div>
+            <div className="mt-2 space-y-1">
+              {connected.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => onOpen(c.id)}
+                  className="block w-full text-left text-sm text-stone-300 transition hover:text-stone-100"
+                >
+                  <span className="text-stone-100">{c.name}</span>{" "}
+                  <span className="font-mono text-[10px] text-stone-500">
+                    {c.styles[0]} · {c.era}
+                  </span>{" "}
+                  <span aria-hidden className="text-stone-600">
+                    →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 flex items-center justify-between border-t border-stone-800 pt-3">
+          <span className="flex items-center gap-4">
+            {info?.contentUrl && (
+              <a
+                href={info.contentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-stone-400 hover:text-stone-100"
+              >
+                Wikipedia ↗
+              </a>
+            )}
+            {arenaChannel && (
+              <a
+                href={arenaChannel.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`${arenaChannel.title} · ${arenaChannel.length} blocks`}
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-stone-400 hover:text-stone-100"
+              >
+                On Are.na ↗
+              </a>
+            )}
+          </span>
+          {custom && (
+            <button
+              onClick={() => {
+                if (window.confirm(`Remove ${photographer.name} from your library?`)) {
+                  removeCustomPhotographer(photographer.id);
+                  onClose();
+                }
+              }}
+              className="font-mono text-[10px] uppercase tracking-[0.16em] text-stone-500 hover:text-red-400"
             >
-              Wikipedia ↗
-            </a>
+              Remove from library
+            </button>
           )}
         </div>
-
-        {expanded && (
-          <p className="mt-3 text-sm leading-relaxed text-stone-300">
-            {photographer.bio}
-          </p>
-        )}
       </div>
     </div>
   );

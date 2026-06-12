@@ -51,6 +51,8 @@ Schema:
   "subjects": string[] (2-5 short noun phrases of what's in frame),
   "mood": one of ["moody","bright","minimal","dramatic","intimate","energetic","melancholic","serene"],
   "palette": string[] (3-5 plain-English color names dominating the image, e.g. "warm amber","slate blue"),
+  "paletteHex": string[] (CSS hex codes matching "palette" entries in order, e.g. "#b4762a"),
+  "ratings": {"composition": integer 1-5, "lighting": integer 1-5, "technique": integer 1-5} (honest craft ratings: 3 = competent, reserve 5 for exceptional; never inflate),
   "composition": string (1-2 sentences on framing, leading lines, balance, rule of thirds, etc.),
   "lighting": string (1-2 sentences on quality/direction/contrast of light),
   "technique": string (1-2 sentences on apparent technical choices — DOF, shutter, focal length feel),

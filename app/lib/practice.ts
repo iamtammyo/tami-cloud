@@ -50,8 +50,11 @@ export function buildPracticePrompts(
   const isos = photos.map((p) => p.exif?.iso).filter((x): x is number => typeof x === "number");
   const focals = photos.map((p) => p.exif?.focalLength).filter((x): x is number => typeof x === "number");
 
-  const moods = photos.map((p) => p.analysis.mood);
-  const genres = photos.map((p) => p.analysis.genre);
+  const analyses = photos
+    .map((p) => p.analysis)
+    .filter((a): a is NonNullable<typeof a> => a !== null);
+  const moods = analyses.map((a) => a.mood);
+  const genres = analyses.map((a) => a.genre);
 
   // Aperture: if median is small, suggest stopping down; if large, suggest opening up
   const medAperture = median(apertures);
