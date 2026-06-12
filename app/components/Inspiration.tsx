@@ -216,6 +216,14 @@ function Card({
         )}
 
         <div className="mt-3 flex flex-wrap gap-1.5">
+          {photographer.contemporary && (
+            <span
+              className="rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider"
+              style={{ color: "var(--accent)", borderColor: "var(--accent)" }}
+            >
+              now
+            </span>
+          )}
           {photographer.styles.map((s) => (
             <span
               key={s}

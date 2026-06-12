@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PHOTOGRAPHERS } from "../lib/photographers";
 import { loadProfile } from "../lib/storage";
 import { loadAllPhotos } from "../lib/db";
 import { buildPracticePrompts } from "../lib/practice";
-import type { GenreTag, StoredPhoto, UserProfile } from "../lib/types";
+import { recommendPhotographers } from "../lib/recommend";
+import type { StoredPhoto, UserProfile } from "../lib/types";
 
 export default function Stats() {
   const [allPhotos, setAllPhotos] = useState<StoredPhoto[]>([]);
@@ -55,8 +55,13 @@ export default function Stats() {
     );
   }
 
-  const matchedPhotographers = matchPhotographers(counts.genres);
   const sampleCount = photos.length;
+  const recommendations = recommendPhotographers({
+    genres: counts.genres,
+    moods: counts.moods,
+    subjects: counts.subjects,
+    total: sampleCount,
+  });
   const isThin = sampleCount < 5;
 
   return (
@@ -188,31 +193,70 @@ export default function Stats() {
       </Panel>
 
       <Panel title="Photographers worth studying">
-        {matchedPhotographers.length === 0 ? (
+        {recommendations.length === 0 ? (
           <p className="text-sm text-stone-500">
             Once your genre profile fills in, we'll surface relevant photographers.
           </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {matchedPhotographers.map((m) => (
+            {recommendations.map((m) => (
               <div
                 key={m.photographer.id}
                 className="rounded-md border border-stone-800 bg-stone-950/40 p-4"
               >
-                <div className="plate-chrome mb-2 inline-flex items-baseline gap-2 rounded-sm px-2 py-0.5">
-                  <h4 className="wordmark engrave-deep text-sm">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h4 className="font-medium text-stone-100">
                     {m.photographer.name}
                   </h4>
-                  <span className="engrave text-[9px]">
-                    {m.photographer.styles.join(" · ")}
+                  <span className="flex items-center gap-2">
+                    {m.photographer.contemporary && (
+                      <span
+                        className="rounded-full border px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.14em]"
+                        style={{
+                          color: "var(--accent)",
+                          borderColor: "var(--accent)",
+                        }}
+                      >
+                        Now
+                      </span>
+                    )}
+                    <span className="font-mono text-[10px] text-stone-500">
+                      {m.photographer.era}
+                    </span>
                   </span>
                 </div>
-                <p className="mt-1 text-sm text-stone-300">
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-stone-800">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.round(m.strength * 100)}%`,
+                        background: "var(--accent)",
+                      }}
+                    />
+                  </div>
+                  <span className="font-mono text-[10px] text-stone-500">
+                    {Math.round(m.strength * 100).toString().padStart(3, "0")}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-stone-300">
                   {m.photographer.signature}
                 </p>
-                <p className="mt-2 text-[11px] uppercase tracking-wider text-stone-500">
-                  Why · overlaps with your {m.matchedStyles.join(", ")} work
-                </p>
+                {m.reasons.length > 0 && (
+                  <p className="mt-2 text-[11px] uppercase tracking-wider text-stone-500">
+                    Why · {m.reasons.join(" · ")}
+                  </p>
+                )}
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {m.photographer.styles.map((s) => (
+                    <span
+                      key={s}
+                      className="rounded-full border border-stone-700 px-2 py-0.5 text-[9px] uppercase tracking-wider text-stone-400"
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -311,17 +355,4 @@ function sortMap(map: Map<string, number>): [string, number][] {
 
 function normalize(s: string): string {
   return s.trim().replace(/\.$/, "");
-}
-
-function matchPhotographers(genres: [string, number][]) {
-  const top = genres.slice(0, 3).map(([g]) => g as GenreTag);
-  if (top.length === 0) return [];
-  const matches = PHOTOGRAPHERS.map((p) => {
-    const overlap = p.styles.filter((s) => top.includes(s));
-    return { photographer: p, matchedStyles: overlap };
-  })
-    .filter((m) => m.matchedStyles.length > 0)
-    .sort((a, b) => b.matchedStyles.length - a.matchedStyles.length)
-    .slice(0, 6);
-  return matches;
 }

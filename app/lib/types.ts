@@ -109,6 +109,10 @@ export type Photographer = {
   era: string;
   country: string;
   styles: GenreTag[];
+  /** Moods the body of work most evokes; used by the recommender. */
+  moods?: MoodTag[];
+  /** Active 21st-century voice — surfaced so recommendations skew current. */
+  contemporary?: boolean;
   signature: string;
   bio: string;
   wikipediaTitle: string;
