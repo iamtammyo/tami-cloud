@@ -7,7 +7,7 @@ import {
   slugForName,
   useLibrary,
 } from "../lib/library";
-import { useCommonsImages } from "../lib/commons";
+import { useWorkImages } from "../lib/commons";
 import { initials, usePhotographerWiki } from "../lib/wiki";
 import type { Photographer } from "../lib/types";
 
@@ -58,7 +58,12 @@ function LinkedChip({ photographer }: { photographer: Photographer }) {
 
 function PreviewCard({ photographer }: { photographer: Photographer }) {
   const { info, loading } = usePhotographerWiki(photographer.wikipediaTitle);
-  const { urls } = useCommonsImages(photographer.name, true, 4);
+  const { urls } = useWorkImages(
+    photographer.name,
+    photographer.wikipediaTitle,
+    true,
+    4,
+  );
 
   return (
     <div className="plate-black absolute bottom-full left-0 z-30 mb-2 w-72 rounded-md p-3 shadow-lg">
@@ -117,7 +122,7 @@ function PreviewCard({ photographer }: { photographer: Photographer }) {
             <img
               key={u}
               src={u}
-              alt={`Work associated with ${photographer.name} (Wikimedia Commons)`}
+              alt={`Photograph by ${photographer.name} (via Wikipedia/Wikimedia)`}
               className="aspect-square w-full rounded-sm object-cover"
               loading="lazy"
               referrerPolicy="no-referrer"

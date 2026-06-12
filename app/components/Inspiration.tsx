@@ -9,7 +9,7 @@ import {
   slugForName,
   useLibrary,
 } from "../lib/library";
-import { useCommonsImages } from "../lib/commons";
+import { useWorkImages } from "../lib/commons";
 import { initials, usePhotographerWiki } from "../lib/wiki";
 import type { GenreTag, Photographer } from "../lib/types";
 
@@ -383,7 +383,12 @@ function DetailView({
   onOpen: (id: string) => void;
 }) {
   const { info, loading } = usePhotographerWiki(photographer.wikipediaTitle);
-  const { urls } = useCommonsImages(photographer.name, true, 8);
+  const { urls } = useWorkImages(
+    photographer.name,
+    photographer.wikipediaTitle,
+    true,
+    8,
+  );
   const custom = isCustomPhotographer(photographer);
   const connected = relatedPhotographers(photographer, pool);
 
@@ -480,14 +485,16 @@ function DetailView({
 
         {urls.length > 0 && (
           <div className="mt-5">
-            <div className="engrave-cream text-[10px]">Work · Wikimedia Commons</div>
+            <div className="engrave-cream text-[10px]">
+              Selected work · via Wikipedia / Wikimedia
+            </div>
             <div className="mt-2 grid grid-cols-4 gap-1.5">
               {urls.map((u) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={u}
                   src={u}
-                  alt={`Work associated with ${photographer.name}`}
+                  alt={`Photograph by ${photographer.name}`}
                   className="aspect-square w-full rounded-sm object-cover"
                   loading="lazy"
                   referrerPolicy="no-referrer"
