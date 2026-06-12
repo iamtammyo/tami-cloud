@@ -31,6 +31,7 @@ const MIN_CONTEMPORARY = 2;
 export function recommendPhotographers(
   profile: TasteProfile,
   limit = 6,
+  pool: Photographer[] = PHOTOGRAPHERS,
 ): Recommendation[] {
   if (profile.total === 0) return [];
 
@@ -42,7 +43,7 @@ export function recommendPhotographers(
   );
   const topSubjects = profile.subjects.slice(0, 8).map(([s]) => s);
 
-  const scored = PHOTOGRAPHERS.map((p) => {
+  const scored = pool.map((p) => {
     let genreScore = 0;
     const matchedGenres: string[] = [];
     for (const s of p.styles) {

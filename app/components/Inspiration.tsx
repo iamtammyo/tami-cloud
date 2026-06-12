@@ -1,21 +1,101 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ALL_STYLES, PHOTOGRAPHERS } from "../lib/photographers";
+import { useEffect, useMemo, useState } from "react";
+import {
+  addCustomPhotographer,
+  findPhotographerByName,
+  isCustomPhotographer,
+  removeCustomPhotographer,
+  slugForName,
+  useLibrary,
+} from "../lib/library";
 import { initials, usePhotographerWiki } from "../lib/wiki";
 import type { GenreTag, Photographer } from "../lib/types";
 
 type Sort = "name" | "style" | "era";
 
-export default function Inspiration() {
+export default function Inspiration({
+  focusId = null,
+  onFocusConsumed,
+}: {
+  focusId?: string | null;
+  onFocusConsumed?: () => void;
+}) {
+  const photographers = useLibrary();
   const [query, setQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState<GenreTag | "all">("all");
   const [sort, setSort] = useState<Sort>("style");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [addName, setAddName] = useState("");
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
+  const allStyles = useMemo(
+    () => Array.from(new Set(photographers.flatMap((p) => p.styles))).sort(),
+    [photographers],
+  );
+
+  // Arriving from a critique chip or a Stats recommendation: clear filters,
+  // expand the card, and scroll it into view.
+  useEffect(() => {
+    if (!focusId) return;
+    setQuery("");
+    setStyleFilter("all");
+    setOpenId(focusId);
+    const t = window.setTimeout(() => {
+      document
+        .getElementById(`photographer-${focusId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      onFocusConsumed?.();
+    }, 80);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId]);
+
+  async function addByName() {
+    const name = addName.trim();
+    if (!name || addBusy) return;
+    setAddError(null);
+    const existing = findPhotographerByName(name, photographers);
+    if (existing) {
+      setAddName("");
+      setOpenId(existing.id);
+      document
+        .getElementById(`photographer-${existing.id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setAddBusy(true);
+    try {
+      const res = await fetch("/api/photographer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = (await res.json()) as {
+        profile?: Omit<Photographer, "id">;
+        error?: string;
+      };
+      if (!res.ok || !data.profile) {
+        throw new Error(data.error ?? `Add failed (${res.status})`);
+      }
+      const photographer: Photographer = {
+        id: slugForName(data.profile.name),
+        ...data.profile,
+      };
+      addCustomPhotographer(photographer);
+      setAddName("");
+      setOpenId(photographer.id);
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAddBusy(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = PHOTOGRAPHERS.filter((p) => {
+    let list = photographers.filter((p) => {
       if (styleFilter !== "all" && !p.styles.includes(styleFilter)) return false;
       if (!q) return true;
       return (
@@ -31,7 +111,7 @@ export default function Inspiration() {
       return a.styles[0].localeCompare(b.styles[0]) || a.name.localeCompare(b.name);
     });
     return list;
-  }, [query, styleFilter, sort]);
+  }, [photographers, query, styleFilter, sort]);
 
   const grouped = useMemo(() => {
     if (sort !== "style") return null;
@@ -51,8 +131,9 @@ export default function Inspiration() {
         <div className="mb-3 flex items-center gap-3">
           <span className="port h-3 w-3" />
           <span className="engrave-cream text-[10px]">
-            REFERENCE INDEX · {PHOTOGRAPHERS.length.toString().padStart(3, "0")}{" "}
-            PHOTOGRAPHERS ON FILE
+            REFERENCE INDEX ·{" "}
+            {photographers.length.toString().padStart(3, "0")} PHOTOGRAPHERS ON
+            FILE
           </span>
         </div>
         <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
@@ -73,7 +154,7 @@ export default function Inspiration() {
               className="input-port mt-1 px-3 py-2 text-sm"
             >
               <option value="all">All</option>
-              {ALL_STYLES.map((s) => (
+              {allStyles.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
@@ -91,6 +172,36 @@ export default function Inspiration() {
               <option value="name">Name</option>
               <option value="era">Era</option>
             </select>
+          </div>
+        </div>
+
+        {/* Grow the library: Claude builds a structured profile from a name */}
+        <div className="mt-3 border-t border-stone-800 pt-3">
+          <Label>Add a photographer</Label>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <input
+              value={addName}
+              onChange={(e) => setAddName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void addByName();
+              }}
+              placeholder="e.g. Gordon Parks"
+              className="input-port w-64 max-w-full px-3 py-2 text-sm"
+            />
+            <button
+              onClick={() => void addByName()}
+              disabled={addBusy || !addName.trim()}
+              className="btn-chrome px-4 py-2 text-[10px] uppercase tracking-[0.18em]"
+            >
+              <span className="engrave">
+                {addBusy ? "Researching…" : "Add to library"}
+              </span>
+            </button>
+            {addError && (
+              <span className="text-xs" style={{ color: "var(--accent)" }}>
+                {addError}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -165,9 +276,15 @@ function Card({
   onToggle: () => void;
 }) {
   const { info, loading } = usePhotographerWiki(photographer.wikipediaTitle);
+  const custom = isCustomPhotographer(photographer);
 
   return (
-    <div className="plate-black overflow-hidden rounded-md">
+    <div
+      id={`photographer-${photographer.id}`}
+      className={`plate-black overflow-hidden rounded-md ${
+        expanded ? "ring-1 ring-[var(--accent)]" : ""
+      }`}
+    >
       {/* Portrait — matte black frame with corner screws */}
       <div className="relative bg-black p-3">
         <span className="screw absolute left-1.5 top-1.5" />
@@ -216,6 +333,11 @@ function Card({
         )}
 
         <div className="mt-3 flex flex-wrap gap-1.5">
+          {custom && (
+            <span className="rounded-full border border-stone-600 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-stone-400">
+              added by you
+            </span>
+          )}
           {photographer.contemporary && (
             <span
               className="rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider"
@@ -242,16 +364,30 @@ function Card({
             <span className={`port h-2 w-2 ${expanded ? "led-red" : ""}`} />
             {expanded ? "Hide bio" : "Read more"}
           </button>
-          {info?.contentUrl && (
-            <a
-              href={info.contentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-stone-100"
-            >
-              Wikipedia ↗
-            </a>
-          )}
+          <span className="flex items-center gap-3">
+            {custom && (
+              <button
+                onClick={() => {
+                  if (window.confirm(`Remove ${photographer.name} from your library?`)) {
+                    removeCustomPhotographer(photographer.id);
+                  }
+                }}
+                className="text-[10px] uppercase tracking-[0.18em] text-stone-500 hover:text-red-400"
+              >
+                Remove
+              </button>
+            )}
+            {info?.contentUrl && (
+              <a
+                href={info.contentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-stone-100"
+              >
+                Wikipedia ↗
+              </a>
+            )}
+          </span>
         </div>
 
         {expanded && (

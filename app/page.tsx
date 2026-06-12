@@ -23,6 +23,9 @@ export default function Home() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [focusPhotographerId, setFocusPhotographerId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setProfile(loadProfile());
@@ -32,9 +35,21 @@ export default function Home() {
     function onOpenRequest() {
       setOnboardingOpen(true);
     }
+    function onViewPhotographer(e: Event) {
+      const id = (e as CustomEvent<{ id?: string }>).detail?.id;
+      if (!id) return;
+      setFocusPhotographerId(id);
+      setTab("inspiration");
+    }
     window.addEventListener("lensed:open-onboarding", onOpenRequest);
-    return () =>
+    window.addEventListener("lensed:view-photographer", onViewPhotographer);
+    return () => {
       window.removeEventListener("lensed:open-onboarding", onOpenRequest);
+      window.removeEventListener(
+        "lensed:view-photographer",
+        onViewPhotographer,
+      );
+    };
   }, []);
 
   function closeOnboarding(next: UserProfile | null) {
@@ -122,7 +137,12 @@ export default function Home() {
       </nav>
 
       {tab === "photos" && <MyPhotos />}
-      {tab === "inspiration" && <Inspiration />}
+      {tab === "inspiration" && (
+        <Inspiration
+          focusId={focusPhotographerId}
+          onFocusConsumed={() => setFocusPhotographerId(null)}
+        />
+      )}
       {tab === "stats" && <Stats />}
 
       <footer className="mt-16">

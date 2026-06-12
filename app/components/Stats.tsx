@@ -5,11 +5,13 @@ import { loadProfile } from "../lib/storage";
 import { loadAllPhotos } from "../lib/db";
 import { buildPracticePrompts } from "../lib/practice";
 import { recommendPhotographers } from "../lib/recommend";
+import { useLibrary } from "../lib/library";
 import type { StoredPhoto, UserProfile } from "../lib/types";
 
 export default function Stats() {
   const [allPhotos, setAllPhotos] = useState<StoredPhoto[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const library = useLibrary();
 
   useEffect(() => {
     let alive = true;
@@ -56,12 +58,16 @@ export default function Stats() {
   }
 
   const sampleCount = photos.length;
-  const recommendations = recommendPhotographers({
-    genres: counts.genres,
-    moods: counts.moods,
-    subjects: counts.subjects,
-    total: sampleCount,
-  });
+  const recommendations = recommendPhotographers(
+    {
+      genres: counts.genres,
+      moods: counts.moods,
+      subjects: counts.subjects,
+      total: sampleCount,
+    },
+    6,
+    library,
+  );
   const isThin = sampleCount < 5;
 
   return (
@@ -205,9 +211,18 @@ export default function Stats() {
                 className="rounded-md border border-stone-800 bg-stone-950/40 p-4"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <h4 className="font-medium text-stone-100">
-                    {m.photographer.name}
-                  </h4>
+                  <button
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent("lensed:view-photographer", {
+                          detail: { id: m.photographer.id },
+                        }),
+                      )
+                    }
+                    className="text-left font-medium text-stone-100 hover:underline"
+                  >
+                    {m.photographer.name} <span aria-hidden>↗</span>
+                  </button>
                   <span className="flex items-center gap-2">
                     {m.photographer.contemporary && (
                       <span

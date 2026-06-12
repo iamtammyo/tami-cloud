@@ -6,6 +6,7 @@ import { deletePhotoById, loadAllPhotos, putPhoto } from "../lib/db";
 import type { Collection, StoredPhoto, UserProfile } from "../lib/types";
 import { dataUrlToBase64, fileToScaledDataUrl } from "../lib/image";
 import { findCamera } from "../lib/cameras";
+import PhotographerChip from "./PhotographerChip";
 import {
   extractExif,
   formatAperture,
@@ -592,12 +593,7 @@ export default function MyPhotos() {
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {selected.analysis.similarPhotographers.map((n) => (
-              <span
-                key={n}
-                className="rounded-full border border-amber-900/30 bg-amber-50/40 px-3 py-1 text-sm text-stone-800"
-              >
-                {n}
-              </span>
+              <PhotographerChip key={n} name={n} />
             ))}
           </div>
         </div>
