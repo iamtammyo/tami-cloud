@@ -35,29 +35,36 @@ export function useArenaChannel(
   return channel;
 }
 
+export type ArenaDiscovery = {
+  channels: ArenaChannelInfo[] | null;
+  needsToken: boolean;
+};
+
 /** Channels for a set of taste queries, merged and deduped. */
-export function useArenaDiscovery(
-  queries: string[] | null,
-): ArenaChannelInfo[] | null {
-  const [channels, setChannels] = useState<ArenaChannelInfo[] | null>(null);
+export function useArenaDiscovery(queries: string[] | null): ArenaDiscovery {
+  const [state, setState] = useState<ArenaDiscovery>({
+    channels: null,
+    needsToken: false,
+  });
   const key = queries?.join("|") ?? "";
 
   useEffect(() => {
     if (!key) return;
     let cancelled = false;
+    type Resp = { channels?: ArenaChannelInfo[]; needsToken?: boolean };
     Promise.all(
       key.split("|").map((q) =>
         fetch(`/api/arena?mode=channels&q=${encodeURIComponent(q)}`)
-          .then((r) =>
-            r.ok ? (r.json() as Promise<{ channels?: ArenaChannelInfo[] }>) : { channels: [] },
-          )
-          .catch(() => ({ channels: [] as ArenaChannelInfo[] })),
+          .then((r) => (r.ok ? (r.json() as Promise<Resp>) : ({ channels: [] } as Resp)))
+          .catch(() => ({ channels: [] }) as Resp),
       ),
     ).then((results) => {
       if (cancelled) return;
       const seen = new Set<string>();
       const merged: ArenaChannelInfo[] = [];
+      let needsToken = false;
       for (const r of results) {
+        if (r.needsToken) needsToken = true;
         for (const c of r.channels ?? []) {
           if (!seen.has(c.url)) {
             seen.add(c.url);
@@ -65,12 +72,12 @@ export function useArenaDiscovery(
           }
         }
       }
-      setChannels(merged.slice(0, 6));
+      setState({ channels: merged.slice(0, 6), needsToken });
     });
     return () => {
       cancelled = true;
     };
   }, [key]);
 
-  return channels;
+  return state;
 }

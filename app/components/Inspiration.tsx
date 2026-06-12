@@ -242,7 +242,27 @@ export default function Inspiration({
         <IndexTable list={filtered} onOpen={setDetailId} />
       )}
 
-      {discover && discover.length > 0 && (
+      {discover.needsToken && (
+        <div className="mt-14 rounded-md border border-dashed border-stone-700 p-4">
+          <span className="engrave-cream text-[10px]">Wander · via are.na</span>
+          <p className="mt-2 text-sm text-stone-400">
+            Are.na&apos;s search API needs a free access token. Create an app at{" "}
+            <a
+              href="https://dev.are.na"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-stone-200"
+            >
+              dev.are.na
+            </a>
+            , then add its personal access token to Vercel as{" "}
+            <code className="font-mono text-[11px]">ARENA_ACCESS_TOKEN</code> and
+            redeploy — taste-based channel discovery will appear here.
+          </p>
+        </div>
+      )}
+
+      {discover.channels && discover.channels.length > 0 && (
         <div className="mt-14">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <span className="engrave-cream text-[10px]">
@@ -253,7 +273,7 @@ export default function Inspiration({
             </span>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {discover.map((c) => (
+            {discover.channels.map((c) => (
               <a
                 key={c.url}
                 href={c.url}

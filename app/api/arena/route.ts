@@ -40,14 +40,40 @@ function channelUrl(c: ArenaChannel): string {
     : `https://www.are.na/channels/${c.slug ?? ""}`;
 }
 
-async function searchChannels(q: string): Promise<ArenaChannel[]> {
+async function searchChannels(
+  q: string,
+): Promise<{ channels: ArenaChannel[]; authFailed: boolean }> {
   const res = await fetch(
     `https://api.are.na/v2/search/channels?q=${encodeURIComponent(q)}&per_page=10`,
     { headers: arenaHeaders(), next: { revalidate: REVALIDATE_SECONDS } },
   );
+  // Are.na requires auth for search; without ARENA_ACCESS_TOKEN this is
+  // the expected outcome, not an error.
+  if (res.status === 401 || res.status === 403) {
+    console.error(`[arena] search unauthorized (${res.status}) — set ARENA_ACCESS_TOKEN`);
+    return { channels: [], authFailed: true };
+  }
   if (!res.ok) throw new Error(`Are.na search failed (${res.status})`);
   const data = (await res.json()) as { channels?: ArenaChannel[] };
-  return data.channels ?? [];
+  return { channels: data.channels ?? [], authFailed: false };
+}
+
+function slugify(s: string): string {
+  return normalize(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+/** Direct channel lookup is public — no token needed. */
+async function publicChannelBySlug(slug: string): Promise<ArenaChannel | null> {
+  try {
+    const res = await fetch(
+      `https://api.are.na/v2/channels/${encodeURIComponent(slug)}?per_page=1`,
+      { headers: arenaHeaders(), next: { revalidate: REVALIDATE_SECONDS } },
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as ArenaChannel;
+  } catch {
+    return null;
+  }
 }
 
 async function channelThumbs(slug: string, n: number): Promise<string[]> {
@@ -79,12 +105,12 @@ export async function GET(req: Request) {
   }
 
   try {
-    const channels = await searchChannels(q);
+    const { channels, authFailed } = await searchChannels(q);
 
     if (mode === "match") {
       // Best channel FOR a photographer: title must contain the name.
       const target = normalize(q);
-      const match = channels
+      let match = channels
         .filter(
           (c) =>
             c.title &&
@@ -93,6 +119,19 @@ export async function GET(req: Request) {
             normalize(c.title).includes(target),
         )
         .sort((a, b) => (b.length ?? 0) - (a.length ?? 0))[0];
+      if (!match) {
+        // Search may be unavailable without a token; a direct slug guess
+        // ("saul-leiter") hits the public channel endpoint instead.
+        const guess = await publicChannelBySlug(slugify(q));
+        if (
+          guess?.title &&
+          guess.slug &&
+          (guess.length ?? 0) >= 3 &&
+          normalize(guess.title).includes(target)
+        ) {
+          match = guess;
+        }
+      }
       return NextResponse.json({
         channel: match
           ? {
@@ -103,6 +142,12 @@ export async function GET(req: Request) {
             }
           : null,
       });
+    }
+
+    // Discovery needs real search; without a token, say so instead of
+    // silently returning nothing.
+    if (authFailed) {
+      return NextResponse.json({ channels: [], needsToken: true });
     }
 
     // Discovery: top channels for a taste query, with preview thumbs.
