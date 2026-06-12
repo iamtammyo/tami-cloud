@@ -10,6 +10,8 @@ import {
   useLibrary,
 } from "../lib/library";
 import { useWorkImages } from "../lib/commons";
+import { useArenaChannel, useArenaDiscovery } from "../lib/arena";
+import { loadAllPhotos } from "../lib/db";
 import { initials, usePhotographerWiki } from "../lib/wiki";
 import type { GenreTag, Photographer } from "../lib/types";
 
@@ -30,6 +32,39 @@ export default function Inspiration({
   const [addName, setAddName] = useState("");
   const [addBusy, setAddBusy] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [tasteQueries, setTasteQueries] = useState<string[] | null>(null);
+  const discover = useArenaDiscovery(tasteQueries);
+
+  // Taste-based discovery: the queries come from what the user actually
+  // shoots (top genres + dominant mood across analyzed photos).
+  useEffect(() => {
+    void loadAllPhotos().then((photos) => {
+      const genres = new Map<string, number>();
+      const moods = new Map<string, number>();
+      for (const p of photos) {
+        if (!p.analysis) continue;
+        genres.set(p.analysis.genre, (genres.get(p.analysis.genre) ?? 0) + 1);
+        moods.set(p.analysis.mood, (moods.get(p.analysis.mood) ?? 0) + 1);
+      }
+      const topGenres = Array.from(genres.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([g]) => g);
+      const topMood = Array.from(moods.entries()).sort(
+        (a, b) => b[1] - a[1],
+      )[0]?.[0];
+      const qs: string[] = [];
+      if (topGenres[0]) {
+        qs.push(
+          topMood
+            ? `${topMood} ${topGenres[0]} photography`
+            : `${topGenres[0]} photography`,
+        );
+      }
+      if (topGenres[1]) qs.push(`${topGenres[1]} photography`);
+      if (qs.length === 0) qs.push("contemporary photography");
+      setTasteQueries(qs.slice(0, 2));
+    });
+  }, []);
 
   const styleCounts = useMemo(() => {
     const map = new Map<GenreTag, number>();
@@ -205,6 +240,48 @@ export default function Inspiration({
         </div>
       ) : (
         <IndexTable list={filtered} onOpen={setDetailId} />
+      )}
+
+      {discover && discover.length > 0 && (
+        <div className="mt-14">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <span className="engrave-cream text-[10px]">
+              Wander · channels matched to your taste
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-wider text-stone-600">
+              {tasteQueries?.join(" · ")} · via are.na
+            </span>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {discover.map((c) => (
+              <a
+                key={c.url}
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-60 flex-none rounded-md border border-stone-800 p-3 transition hover:border-stone-500"
+              >
+                <div className="grid grid-cols-3 gap-1">
+                  {c.thumbs.slice(0, 3).map((t) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={t}
+                      src={t}
+                      alt=""
+                      className="aspect-square w-full rounded-sm object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                  ))}
+                </div>
+                <div className="mt-2 truncate text-sm text-stone-100">{c.title}</div>
+                <div className="font-mono text-[10px] text-stone-500">
+                  {c.user} · {c.length} blocks ↗
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
       )}
 
       {detail && (
@@ -389,6 +466,7 @@ function DetailView({
     true,
     8,
   );
+  const arenaChannel = useArenaChannel(photographer.name, true);
   const custom = isCustomPhotographer(photographer);
   const connected = relatedPhotographers(photographer, pool);
 
@@ -528,18 +606,29 @@ function DetailView({
         )}
 
         <div className="mt-6 flex items-center justify-between border-t border-stone-800 pt-3">
-          {info?.contentUrl ? (
-            <a
-              href={info.contentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-[10px] uppercase tracking-[0.16em] text-stone-400 hover:text-stone-100"
-            >
-              Wikipedia ↗
-            </a>
-          ) : (
-            <span />
-          )}
+          <span className="flex items-center gap-4">
+            {info?.contentUrl && (
+              <a
+                href={info.contentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-stone-400 hover:text-stone-100"
+              >
+                Wikipedia ↗
+              </a>
+            )}
+            {arenaChannel && (
+              <a
+                href={arenaChannel.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`${arenaChannel.title} · ${arenaChannel.length} blocks`}
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-stone-400 hover:text-stone-100"
+              >
+                On Are.na ↗
+              </a>
+            )}
+          </span>
           {custom && (
             <button
               onClick={() => {
