@@ -29,6 +29,12 @@ export type Analysis = {
   mood: MoodTag;
   palette: string[];
   paletteHex?: string[];
+  /** 1–5 craft ratings; absent on photos analyzed before this field existed. */
+  ratings?: {
+    composition: number;
+    lighting: number;
+    technique: number;
+  };
   composition: string;
   lighting: string;
   technique: string;

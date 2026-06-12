@@ -479,33 +479,63 @@ export default function MyPhotos() {
     <article className="plate-black rounded-md p-5">
       <p className="italic text-stone-300">“{selected.analysis.oneLine}”</p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-        <Tag chrome>{selected.analysis.genre}</Tag>
-        <Tag chrome>{selected.analysis.mood}</Tag>
-        {selected.analysis.subjects.slice(0, 4).map((s) => (
+      {/* Instrument readout: the whole assessment at a glance */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <ReadoutCell label="Genre">
+          <span className="text-sm capitalize text-stone-100">
+            {selected.analysis.genre}
+          </span>
+        </ReadoutCell>
+        <ReadoutCell label="Mood">
+          <span className="text-sm capitalize text-stone-100">
+            {selected.analysis.mood}
+          </span>
+        </ReadoutCell>
+        {selected.analysis.ratings && (
+          <>
+            <ReadoutCell label="Comp">
+              <Meter value={selected.analysis.ratings.composition} />
+            </ReadoutCell>
+            <ReadoutCell label="Light">
+              <Meter value={selected.analysis.ratings.lighting} />
+            </ReadoutCell>
+            <ReadoutCell label="Tech">
+              <Meter value={selected.analysis.ratings.technique} />
+            </ReadoutCell>
+          </>
+        )}
+        <ReadoutCell label="Palette">
+          <span className="flex items-center gap-1.5 py-1">
+            {selected.analysis.palette.map((c, i) => {
+              const hex = selected.analysis?.paletteHex?.[i];
+              const valid = hex && /^#[0-9a-f]{3,8}$/i.test(hex);
+              return valid ? (
+                <span
+                  key={c}
+                  title={c}
+                  className="h-4 w-4 rounded-full border border-black/40"
+                  style={{ background: hex }}
+                />
+              ) : (
+                <span
+                  key={c}
+                  className="font-mono text-[9px] uppercase tracking-wider text-stone-400"
+                >
+                  {c}
+                </span>
+              );
+            })}
+          </span>
+        </ReadoutCell>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+        <span className="font-mono text-[9px] uppercase tracking-wider text-stone-500">
+          Seen
+        </span>
+        {selected.analysis.subjects.slice(0, 5).map((s) => (
           <Tag key={s}>{s}</Tag>
         ))}
-        <span className="ml-auto flex items-center gap-1.5">
-          {selected.analysis.palette.map((c, i) => {
-            const hex = selected.analysis?.paletteHex?.[i];
-            const valid = hex && /^#[0-9a-f]{3,8}$/i.test(hex);
-            return valid ? (
-              <span
-                key={c}
-                title={c}
-                className="h-5 w-5 rounded-full border border-black/50 ring-1 ring-stone-700"
-                style={{ background: hex }}
-              />
-            ) : (
-              <span
-                key={c}
-                className="rounded-full border border-stone-700 px-2 py-0.5 text-[9px] uppercase tracking-wider text-stone-400"
-              >
-                {c}
-              </span>
-            );
-          })}
-        </span>
       </div>
 
       {/* One reading at a time, like an editing app's parameter tabs */}
@@ -535,11 +565,39 @@ export default function MyPhotos() {
       </div>
 
       <div className="mt-5 grid gap-5 md:grid-cols-2">
-        <BulletSection title="Strengths" items={selected.analysis.strengths} />
-        <BulletSection
-          title="Try next time"
-          items={selected.analysis.improvements}
-        />
+        <div>
+          <div className="engrave-cream text-[10px]">Strengths</div>
+          <div className="mt-2 space-y-2">
+            {selected.analysis.strengths.map((s) => (
+              <div
+                key={s}
+                className="flex items-start gap-2.5 rounded-md border border-stone-800 bg-stone-950/40 px-3 py-2.5 text-sm text-stone-200"
+              >
+                <span className="led-green mt-1.5 h-1.5 w-1.5 flex-none" />
+                <span>{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="engrave-cream text-[10px]">Try next time</div>
+          <div className="mt-2 space-y-2">
+            {selected.analysis.improvements.map((it, i) => (
+              <div
+                key={it}
+                className="flex items-start gap-3 rounded-md border border-stone-800 bg-stone-950/40 px-3 py-2.5 text-sm text-stone-200"
+              >
+                <span
+                  className="mt-0.5 font-mono text-[10px]"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {(i + 1).toString().padStart(2, "0")}
+                </span>
+                <span>{it}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {selected.analysis.cameraTips && selected.analysis.cameraTips.length > 0 && (
@@ -552,14 +610,19 @@ export default function MyPhotos() {
                 : "ON YOUR CAMERA"}
             </span>
           </div>
-          <ul className="mt-2 space-y-1.5 text-sm">
-            {selected.analysis.cameraTips.map((tip) => (
-              <li key={tip} className="flex gap-2">
-                <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-700" />
+          <div className="mt-2 space-y-2 text-sm">
+            {selected.analysis.cameraTips.map((tip, i) => (
+              <div key={tip} className="flex items-start gap-3">
+                <span
+                  className="mt-0.5 font-mono text-[10px]"
+                  style={{ color: "var(--accent)" }}
+                >
+                  {(i + 1).toString().padStart(2, "0")}
+                </span>
                 <span>{tip}</span>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
@@ -915,18 +978,40 @@ function Tag({
   );
 }
 
-function BulletSection({ title, items }: { title: string; items: string[] }) {
+function ReadoutCell({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-      <div className="engrave-cream text-[10px]">{title}</div>
-      <ul className="mt-1.5 space-y-1.5 text-sm text-stone-200">
-        {items.map((it) => (
-          <li key={it} className="flex gap-2">
-            <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-400" />
-            <span>{it}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="min-w-[88px] rounded-md border border-stone-800 bg-stone-950/50 px-3 py-2">
+      <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-stone-500">
+        {label}
+      </div>
+      <div className="mt-1 flex items-center">{children}</div>
     </div>
+  );
+}
+
+function Meter({ value }: { value: number }) {
+  const v = Math.max(0, Math.min(5, Math.round(value)));
+  return (
+    <span
+      className="flex items-center gap-0.5 py-1.5"
+      role="img"
+      aria-label={`${v} of 5`}
+    >
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className="h-1.5 w-3 rounded-[1px]"
+          style={{
+            background: i <= v ? "var(--accent)" : "var(--line-soft)",
+          }}
+        />
+      ))}
+    </span>
   );
 }
