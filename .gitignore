@@ -10,3 +10,5 @@ next-env.d.ts
 tsconfig.tsbuildinfo
 .vercel
 .turbo
+monitor/artifacts/
+monitor/.state/
