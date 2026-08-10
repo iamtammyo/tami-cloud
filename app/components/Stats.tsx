@@ -2,17 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PHOTOGRAPHERS } from "../lib/photographers";
-import { loadPhotos, loadProfile } from "../lib/storage";
+import { loadCustomPhotographers, loadPhotos, loadProfile } from "../lib/storage";
 import { buildPracticePrompts } from "../lib/practice";
-import type { GenreTag, StoredPhoto, UserProfile } from "../lib/types";
+import type { GenreTag, Photographer, StoredPhoto, UserProfile } from "../lib/types";
 
 export default function Stats() {
   const [photos, setPhotos] = useState<StoredPhoto[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [customPhotographers, setCustomPhotographers] = useState<Photographer[]>([]);
 
   useEffect(() => {
     setPhotos(loadPhotos());
     setProfile(loadProfile());
+    setCustomPhotographers(loadCustomPhotographers());
 
     function onProfileChange(e: Event) {
       const detail = (e as CustomEvent<UserProfile | null>).detail;
@@ -44,7 +46,10 @@ export default function Stats() {
     );
   }
 
-  const matchedPhotographers = matchPhotographers(counts.genres);
+  const matchedPhotographers = matchPhotographers(
+    counts.genres,
+    customPhotographers,
+  );
   const sampleCount = photos.length;
   const isThin = sampleCount < 5;
 
@@ -304,15 +309,24 @@ function normalize(s: string): string {
   return s.trim().replace(/\.$/, "");
 }
 
-function matchPhotographers(genres: [string, number][]) {
+function matchPhotographers(
+  genres: [string, number][],
+  custom: Photographer[] = [],
+) {
   const top = genres.slice(0, 3).map(([g]) => g as GenreTag);
   if (top.length === 0) return [];
-  const matches = PHOTOGRAPHERS.map((p) => {
-    const overlap = p.styles.filter((s) => top.includes(s));
-    return { photographer: p, matchedStyles: overlap };
-  })
+  const matches = [...custom, ...PHOTOGRAPHERS]
+    .map((p) => {
+      const overlap = p.styles.filter((s) => top.includes(s));
+      return { photographer: p, matchedStyles: overlap };
+    })
     .filter((m) => m.matchedStyles.length > 0)
-    .sort((a, b) => b.matchedStyles.length - a.matchedStyles.length)
+    // Surface the user's own researched picks first when the match is equal.
+    .sort(
+      (a, b) =>
+        b.matchedStyles.length - a.matchedStyles.length ||
+        Number(!!b.photographer.custom) - Number(!!a.photographer.custom),
+    )
     .slice(0, 6);
   return matches;
 }
