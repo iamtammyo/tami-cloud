@@ -103,4 +103,9 @@ export type Photographer = {
   bio: string;
   wikipediaTitle: string;
   quote?: string;
+  /** True for entries the user researched and added themselves. */
+  custom?: boolean;
+  /** Model-supplied caveat when it wasn't fully confident. */
+  note?: string;
+  addedAt?: number;
 };
