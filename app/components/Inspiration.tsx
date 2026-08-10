@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import { PHOTOGRAPHERS } from "../lib/photographers";
 import { loadCustomPhotographers, saveCustomPhotographers } from "../lib/storage";
 import { initials, usePhotographerWiki } from "../lib/wiki";
-import type { GenreTag, Photographer } from "../lib/types";
+import type { GenreTag, Photographer, SourceTier } from "../lib/types";
+
+const TIER_LABEL: Record<SourceTier, string> = {
+  institution: "Museum / gallery",
+  personal: "Their own site",
+  press: "Press",
+  reference: "Reference",
+  other: "Other",
+};
 
 type Sort = "name" | "style" | "era";
 
@@ -160,7 +168,7 @@ export default function Inspiration() {
           <div className="mt-2 flex items-center gap-2">
             <span className="led-red h-2 w-2 animate-pulse" />
             <span className="text-[11px] text-stone-400">
-              Looking up their work, era, and style…
+              Searching galleries, magazines, and archives… (10–30s)
             </span>
           </div>
         )}
@@ -169,8 +177,9 @@ export default function Inspiration() {
         )}
         {!researching && !researchError && (
           <p className="mt-2 text-[10px] text-stone-500">
-            Researched entries are written from the model&apos;s knowledge, so
-            double-check facts before relying on them.
+            Searches the web and prefers museums, galleries, the
+            photographer&apos;s own site, and photography press. Every card lists
+            the pages it read — open &ldquo;Read more&rdquo; to check them.
           </p>
         )}
       </div>
@@ -411,9 +420,52 @@ function Card({
         </div>
 
         {expanded && (
-          <p className="mt-3 text-sm leading-relaxed text-stone-300">
-            {photographer.bio}
-          </p>
+          <>
+            <p className="mt-3 text-sm leading-relaxed text-stone-300">
+              {photographer.bio}
+            </p>
+
+            {photographer.website && (
+              <a
+                href={photographer.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-block text-[11px] text-stone-300 underline decoration-stone-600 underline-offset-2 hover:text-stone-100"
+              >
+                Their own site ↗
+              </a>
+            )}
+
+            {photographer.sources && photographer.sources.length > 0 && (
+              <div className="mt-4 border-t border-stone-800 pt-3">
+                <div className="engrave-cream text-[10px]">
+                  SOURCES
+                  {typeof photographer.searchCount === "number" &&
+                    photographer.searchCount > 0 &&
+                    ` · ${photographer.searchCount} SEARCH${
+                      photographer.searchCount === 1 ? "" : "ES"
+                    }`}
+                </div>
+                <ul className="mt-2 space-y-1.5">
+                  {photographer.sources.map((s) => (
+                    <li key={s.url} className="text-[11px] leading-snug">
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-stone-300 underline decoration-stone-700 underline-offset-2 hover:text-stone-100"
+                      >
+                        {s.title}
+                      </a>
+                      <span className="ml-1.5 text-stone-500">
+                        {TIER_LABEL[s.tier]}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
