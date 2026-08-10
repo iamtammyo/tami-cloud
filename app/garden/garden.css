@@ -1,0 +1,295 @@
+/* ========== The Digital Garden — dreamy literary editorial ==========
+   Parchment, fig ink, olive leaf. Serif everything, small caps for chrome.
+   Scoped under .garden-root so it never leaks into the Lensed app. */
+
+.garden-root {
+  --paper: #f6f0e2;
+  --paper-deep: #ede4cf;
+  --paper-card: rgba(255, 253, 246, 0.65);
+  --ink: #2e2519;
+  --ink-soft: #5a4c3a;
+  --ink-faint: #8d7d66;
+  --fig: #6e2f3c;
+  --fig-bright: #8d3b4b;
+  --leaf: #5a6b45;
+  --leaf-deep: #3d4f2f;
+  --gold: #a3823f;
+  --line: #cfc1a5;
+  --line-soft: #ddd2b9;
+
+  min-height: 100vh;
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(rgba(110, 47, 60, 0.03) 1px, transparent 1px),
+    radial-gradient(rgba(61, 79, 47, 0.025) 1px, transparent 1px),
+    linear-gradient(180deg, #faf5e9 0%, var(--paper) 16%, var(--paper) 84%, #efe6d1 100%);
+  background-size: 7px 7px, 11px 11px, 100% 100%;
+  color: var(--ink);
+  color-scheme: light;
+  font-family: var(--font-garden-text), Georgia, "Times New Roman", serif;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+.garden-root ::selection {
+  background: var(--fig);
+  color: var(--paper);
+}
+
+.g-display {
+  font-family: var(--font-garden-display), Georgia, serif;
+}
+
+.g-smallcaps {
+  font-family: var(--font-garden-text), Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 0.24em;
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+}
+
+.g-smallcaps-dark {
+  color: var(--ink-soft);
+}
+
+/* ========== Rules & ornaments ========== */
+
+.g-rule-double {
+  height: 5px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.g-rule {
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.g-ornament {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--fig);
+}
+.g-ornament::before,
+.g-ornament::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
+/* ========== Buttons, chips, inputs ========== */
+
+.g-btn {
+  font-family: var(--font-garden-text), Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 0.45rem 0.9rem;
+  transition: all 140ms ease;
+  cursor: pointer;
+}
+.g-btn:hover {
+  border-color: var(--fig);
+  color: var(--fig);
+}
+
+.g-btn-fig {
+  background: var(--fig);
+  border-color: var(--fig);
+  color: var(--paper);
+}
+.g-btn-fig:hover {
+  background: var(--fig-bright);
+  border-color: var(--fig-bright);
+  color: var(--paper);
+}
+
+.g-chip {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+  padding: 0.25rem 0.8rem;
+  transition: all 140ms ease;
+  cursor: pointer;
+  background: transparent;
+}
+.g-chip:hover {
+  border-color: var(--ink-soft);
+}
+.g-chip-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.g-input {
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--ink);
+  font-family: var(--font-garden-text), Georgia, serif;
+  padding: 0.5rem 0.85rem;
+}
+.g-input::placeholder {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+.g-input:focus {
+  outline: none;
+  border-color: var(--fig);
+  box-shadow: 0 0 0 3px rgba(110, 47, 60, 0.12);
+}
+
+/* ========== Cards & index entries ========== */
+
+.g-card {
+  background: var(--paper-card);
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 10px 24px -20px rgba(46, 37, 25, 0.45);
+}
+
+.g-entry {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.85rem 0.25rem;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  background: transparent;
+  break-inside: avoid;
+}
+.g-entry:hover .g-entry-title {
+  color: var(--fig);
+  font-style: italic;
+}
+
+.g-entry-title {
+  font-family: var(--font-garden-display), Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+  transition: color 140ms ease;
+}
+
+/* ========== Growth stages ========== */
+
+.stage-seedling { color: var(--leaf); }
+.stage-budding { color: var(--gold); }
+.stage-evergreen { color: var(--leaf-deep); }
+
+/* ========== Note body typography ========== */
+
+.g-note-body p {
+  margin: 0 0 1.1rem;
+}
+
+.g-note-body h2 {
+  font-family: var(--font-garden-display), Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-style: italic;
+  margin: 1.8rem 0 0.8rem;
+}
+
+.g-note-body ul {
+  list-style: none;
+  margin: 0 0 1.1rem;
+  padding-left: 1.4rem;
+}
+.g-note-body li {
+  position: relative;
+  margin-bottom: 0.35rem;
+}
+.g-note-body li::before {
+  content: "❧";
+  position: absolute;
+  left: -1.4rem;
+  color: var(--leaf);
+  font-size: 0.85em;
+}
+
+.g-note-body blockquote {
+  margin: 1.4rem 0;
+  padding: 0.2rem 0 0.2rem 1.3rem;
+  border-left: 2px solid var(--fig);
+  font-family: var(--font-garden-display), Georgia, serif;
+  font-size: 1.18rem;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.g-dropcap > p:first-child::first-letter {
+  font-family: var(--font-garden-display), Georgia, serif;
+  float: left;
+  font-size: 3.9rem;
+  line-height: 0.82;
+  padding: 0.35rem 0.6rem 0 0;
+  color: var(--fig);
+  font-weight: 500;
+}
+
+/* ========== Wiki links ========== */
+
+.g-wikilink {
+  font: inherit;
+  color: var(--fig);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--fig-bright);
+  transition: all 120ms ease;
+}
+.g-wikilink:hover {
+  color: var(--fig-bright);
+  border-bottom-style: solid;
+  font-style: italic;
+}
+
+.g-wikilink-absent {
+  color: var(--ink-faint);
+  border-bottom-color: var(--ink-faint);
+  font-style: italic;
+}
+.g-wikilink-absent:hover {
+  color: var(--leaf);
+  border-bottom-color: var(--leaf);
+}
+
+/* ========== Editor ========== */
+
+.g-textarea {
+  min-height: 320px;
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.g-stage-option {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 0.6rem 0.85rem;
+  cursor: pointer;
+  transition: all 140ms ease;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+}
+.g-stage-option:hover {
+  border-color: var(--ink-soft);
+}
+.g-stage-option-active {
+  border-color: var(--fig);
+  background: rgba(110, 47, 60, 0.06);
+}
