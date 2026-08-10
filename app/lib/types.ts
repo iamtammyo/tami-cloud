@@ -93,6 +93,19 @@ export type Collection = {
   createdAt: number;
 };
 
+export type SourceTier =
+  | "institution"
+  | "personal"
+  | "press"
+  | "reference"
+  | "other";
+
+export type PhotographerSource = {
+  url: string;
+  title: string;
+  tier: SourceTier;
+};
+
 export type Photographer = {
   id: string;
   name: string;
@@ -103,6 +116,12 @@ export type Photographer = {
   bio: string;
   wikipediaTitle: string;
   quote?: string;
+  /** The photographer's own site or estate archive, when one was found. */
+  website?: string;
+  /** Pages the research actually read, verified against the search results. */
+  sources?: PhotographerSource[];
+  /** How many web searches the lookup ran. */
+  searchCount?: number;
   /** True for entries the user researched and added themselves. */
   custom?: boolean;
   /** Model-supplied caveat when it wasn't fully confident. */
