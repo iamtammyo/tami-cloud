@@ -1,0 +1,1295 @@
+<title>Worry Jar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..500;1,6..72,200..400&family=IBM+Plex+Mono:wght@400;500&family=Shantell+Sans:ital,wght@0,300..600;1,300..500&display=swap">
+
+<style>
+  :root{
+    --ground:#14110F;
+    --ground-lift:#1F1A17;
+    --paper:#E9E0CE;
+    --paper-dim:#C9BFA9;
+    --ink:#1B2230;
+    --glass:#8FA79E;
+    --lamp:#E0A25C;
+    --wax:#8C4A34;
+    --hush:#7C736A;
+    --hush-bright:#A79C90;
+
+    --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --serif:"Newsreader",Georgia,"Times New Roman",serif;
+    --hand:"Shantell Sans","Segoe Print","Bradley Hand",cursive;
+
+    --ease:cubic-bezier(.22,.61,.36,1);
+    --ease-in:cubic-bezier(.55,.06,.68,.19);
+  }
+
+  *{box-sizing:border-box}
+
+  body{
+    margin:0;
+    background:var(--ground);
+    color:var(--hush-bright);
+    font-family:var(--serif);
+    min-height:100vh;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  #scene{
+    position:fixed; inset:0;
+    width:100%; height:100%;
+    display:block;
+    touch-action:none;
+  }
+
+  #room{
+    position:fixed; inset:0;
+    pointer-events:none;
+    display:grid;
+    grid-template-rows:auto 1fr auto;
+  }
+
+  /* ── masthead ─────────────────────────────────────── */
+  .masthead{
+    padding:clamp(18px,3.4vw,34px) clamp(18px,4vw,44px) 0;
+    display:flex; justify-content:space-between; align-items:baseline; gap:20px;
+    transition:opacity .7s var(--ease);
+  }
+  .mark{
+    font-family:var(--mono);
+    font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--hush);
+  }
+  .mark b{color:var(--hush-bright); font-weight:500}
+  .tally{
+    font-family:var(--mono);
+    font-size:11px; letter-spacing:.12em;
+    color:var(--hush);
+    font-variant-numeric:tabular-nums;
+    text-align:right;
+  }
+  .tally .sealed{color:#6C7F8E}
+
+  /* ── centre stage copy ────────────────────────────── */
+  .stage{
+    display:grid; place-items:center;
+    padding:0 24px;
+  }
+  .whisper{
+    text-align:center;
+    max-width:30ch;
+    font-size:clamp(19px,2.7vw,27px);
+    font-weight:200; font-style:italic;
+    line-height:1.45;
+    color:var(--hush-bright);
+    text-wrap:balance;
+    opacity:0;
+    transform:translateY(10px);
+    transition:opacity .9s var(--ease),transform .9s var(--ease);
+  }
+  .whisper.on{opacity:.92; transform:none}
+  .whisper small{
+    display:block;
+    margin-top:14px;
+    font-family:var(--mono); font-style:normal;
+    font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--hush); opacity:.75;
+  }
+
+  /* ── the pad of paper at the bottom edge ──────────── */
+  .pad{
+    justify-self:center;
+    position:relative;
+    width:min(390px,72vw);
+    height:92px;
+    margin-bottom:-18px;
+    background:none; border:0; padding:0;
+    cursor:pointer;
+    pointer-events:auto;
+    perspective:900px;
+    transition:opacity .5s var(--ease),transform .5s var(--ease);
+  }
+  .pad:disabled{cursor:default}
+  .pad.away{transform:translateY(30px)}
+  .sheetEdge{
+    position:absolute; left:50%; bottom:0;
+    width:100%; height:80px;
+    border-radius:5px 5px 0 0;
+    transform-origin:50% 100%;
+    transition:transform .55s var(--ease);
+    box-shadow:0 -14px 30px rgba(0,0,0,.5);
+  }
+  .sheetEdge.e3{background:linear-gradient(to top,#4E463B,#8A7C68);transform:translateX(-50%) translateY(16px) rotate(-1.6deg) scale(.955)}
+  .sheetEdge.e2{background:linear-gradient(to top,#5A5246,#A2937B);transform:translateX(-50%) translateY(9px) rotate(1deg) scale(.98)}
+  .sheetEdge.e1{background:linear-gradient(to top,#6B6053,#C6B89E);transform:translateX(-50%) translateY(3px)}
+  .pad:hover .sheetEdge.e1,
+  .pad:focus-visible .sheetEdge.e1{transform:translateX(-50%) translateY(-13px) rotate(-.5deg)}
+  .pad:hover .sheetEdge.e2,
+  .pad:focus-visible .sheetEdge.e2{transform:translateX(-50%) translateY(4px) rotate(1.2deg) scale(.985)}
+  .padLabel{
+    position:absolute; left:0; right:0; top:-4px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--hush);
+    transition:color .4s var(--ease),transform .5s var(--ease);
+  }
+  .pad:hover .padLabel,.pad:focus-visible .padLabel{color:var(--lamp); transform:translateY(-8px)}
+  .pad:focus-visible{outline:none}
+  .pad:focus-visible .padLabel{text-decoration:underline; text-underline-offset:5px}
+
+  /* ── the sheet you write on ───────────────────────── */
+  .sheetWrap{
+    position:fixed; left:50%; bottom:0;
+    width:min(460px,88vw,50vh);
+    transform:translateX(-50%) translateY(102%);
+    transition:transform .95s var(--ease);
+    pointer-events:none;
+    z-index:5;
+  }
+  .sheetWrap.up{transform:translateX(-50%) translateY(-4vh) rotate(.45deg); pointer-events:auto}
+  .sheetWrap.gone{transition:transform .5s var(--ease-in),opacity .4s linear; opacity:0; transform:translateX(-50%) translateY(-6vh) scale(.9)}
+
+  .sheet{
+    position:relative;
+    aspect-ratio:1/1.2;
+    border-radius:3px 3px 2px 2px;
+    background:
+      radial-gradient(130% 100% at 22% 4%,rgba(255,236,206,.5),transparent 58%),
+      linear-gradient(158deg,#E7DEC9 0%,#DED3BB 46%,#C3B79B 100%);
+    box-shadow:
+      0 2px 0 rgba(0,0,0,.3),
+      0 34px 70px -20px rgba(0,0,0,.8),
+      0 0 110px -34px rgba(224,162,92,.4);
+    overflow:hidden;
+    cursor:crosshair;
+    transform:rotate(-.45deg);
+  }
+  .sheet::before{ /* ruled lines */
+    content:"";
+    position:absolute; inset:0;
+    background:repeating-linear-gradient(to bottom,transparent 0 37px,rgba(27,34,48,.09) 37px 38px);
+    background-position:0 54px;
+    pointer-events:none;
+  }
+  .sheet::after{ /* the room pressing in at the far corner */
+    content:"";
+    position:absolute; inset:0;
+    background:radial-gradient(120% 105% at 18% 2%,transparent 42%,rgba(38,28,18,.2) 100%);
+    pointer-events:none;
+  }
+  #ink{position:absolute; inset:0; width:100%; height:100%; touch-action:none}
+
+  .placeholder{
+    position:absolute; left:26px; top:44px; right:26px;
+    font-family:var(--hand);
+    font-size:23px; font-weight:300;
+    color:rgba(27,34,48,.26);
+    pointer-events:none;
+    transition:opacity .35s var(--ease);
+  }
+  .placeholder.hide{opacity:0}
+
+  .sheetFoot{
+    position:absolute; left:0; right:0; bottom:0;
+    padding:12px 20px 14px;
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:linear-gradient(to top,rgba(214,203,182,.96),rgba(214,203,182,0));
+  }
+  .modeHint{
+    font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:rgba(27,34,48,.5);
+  }
+
+  /* ── controls on paper ────────────────────────────── */
+  .btn{
+    font-family:var(--mono);
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    padding:9px 15px;
+    border-radius:2px;
+    border:1px solid rgba(27,34,48,.3);
+    background:transparent;
+    color:rgba(27,34,48,.78);
+    cursor:pointer;
+    transition:background .25s var(--ease),color .25s var(--ease),border-color .25s var(--ease),opacity .25s;
+  }
+  .btn:hover:not(:disabled){background:rgba(27,34,48,.86); color:#EFE7D6; border-color:rgba(27,34,48,.86)}
+  .btn:focus-visible{outline:2px solid var(--wax); outline-offset:2px}
+  .btn:disabled{opacity:.32; cursor:default}
+  .btn.ghost{border-color:transparent; color:rgba(27,34,48,.5)}
+  .btn.ghost:hover{background:rgba(27,34,48,.08); color:rgba(27,34,48,.9)}
+
+  /* ── the question (sorting) ───────────────────────── */
+  .ask{
+    position:absolute; inset:0;
+    background:linear-gradient(to bottom,rgba(231,222,201,.72),rgba(226,215,194,.97) 30%);
+    backdrop-filter:blur(1.5px);
+    display:flex; flex-direction:column; justify-content:center; gap:22px;
+    padding:clamp(22px,5vw,40px);
+    opacity:0; pointer-events:none;
+    transition:opacity .5s var(--ease);
+  }
+  .ask.on{opacity:1; pointer-events:auto}
+  .ask q{
+    font-family:var(--serif);
+    font-size:clamp(20px,2.9vw,25px);
+    font-weight:200; font-style:italic;
+    line-height:1.4;
+    color:#1B2230;
+    quotes:none;
+    text-wrap:balance;
+  }
+  .ask .eyebrow{
+    font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase;
+    color:rgba(27,34,48,.45);
+  }
+  .choices{display:flex; flex-direction:column; gap:9px}
+  .choice{
+    text-align:left;
+    font-family:var(--serif); font-size:17px; font-weight:300;
+    letter-spacing:0; text-transform:none;
+    padding:14px 16px;
+    border:1px solid rgba(27,34,48,.22);
+    background:rgba(255,255,255,.22);
+    color:#1B2230;
+    border-radius:2px; cursor:pointer;
+    transition:background .25s var(--ease),border-color .25s var(--ease),transform .25s var(--ease);
+  }
+  .choice:hover{background:rgba(255,255,255,.6); border-color:rgba(27,34,48,.5); transform:translateX(3px)}
+  .choice:focus-visible{outline:2px solid var(--wax); outline-offset:2px}
+  .choice::before{
+    content:""; position:absolute; left:-1px; top:14px; bottom:14px; width:2px;
+    background:rgba(27,34,48,.45);
+  }
+  .choice.seal::before{background:var(--wax)}
+  .choice{position:relative}
+  .choice small{
+    display:block; margin-top:5px;
+    font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    color:rgba(27,34,48,.45);
+  }
+
+  .stepBox{display:flex; flex-direction:column; gap:12px}
+  .stepBox input{
+    font-family:var(--hand); font-size:20px; font-weight:300;
+    color:#1B2230;
+    background:transparent;
+    border:0; border-bottom:1px solid rgba(27,34,48,.3);
+    padding:6px 2px 8px;
+  }
+  .stepBox input:focus{outline:none; border-bottom-color:var(--wax)}
+  .stepBox input::placeholder{color:rgba(27,34,48,.28)}
+  .chips{display:flex; gap:7px; flex-wrap:wrap}
+  .chip{
+    font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    padding:7px 11px; border-radius:99px;
+    border:1px solid rgba(27,34,48,.25);
+    background:transparent; color:rgba(27,34,48,.6);
+    cursor:pointer; transition:all .2s var(--ease);
+  }
+  .chip[aria-pressed="true"]{background:#1B2230; color:#EFE7D6; border-color:#1B2230}
+  .chip:focus-visible{outline:2px solid var(--wax); outline-offset:2px}
+  .askRow{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:4px}
+
+  /* ── after-seal line near the jar ─────────────────── */
+  .sealLine{
+    position:fixed; left:50%; transform:translateX(-50%) translateY(6px);
+    bottom:14vh;
+    font-family:var(--serif); font-style:italic; font-weight:200;
+    font-size:clamp(16px,2.1vw,20px);
+    color:var(--hush-bright);
+    text-align:center; max-width:26ch;
+    opacity:0; pointer-events:none;
+    transition:opacity .8s var(--ease),transform .8s var(--ease);
+    z-index:4;
+  }
+  .sealLine.on{opacity:.9; transform:translateX(-50%) translateY(0)}
+
+  /* ── reading a slip ───────────────────────────────── */
+  .readMeta{
+    position:fixed; left:50%; bottom:9vh; transform:translateX(-50%);
+    display:flex; gap:10px; align-items:center;
+    font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--hush);
+    opacity:0; transition:opacity .5s var(--ease);
+    z-index:6; pointer-events:none;
+  }
+  .readMeta.on{opacity:1; pointer-events:auto}
+  .readMeta .tag{padding:5px 10px; border:1px solid rgba(167,156,144,.3); border-radius:99px}
+  .readMeta .tag.wax{color:#C9765A; border-color:rgba(201,118,90,.4)}
+
+  .hint{
+    position:fixed; right:clamp(18px,4vw,44px);
+    bottom:clamp(16px,3.4vh,30px);
+    font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--hush); opacity:0;
+    transition:opacity .6s var(--ease);
+    pointer-events:none;
+    z-index:6;
+  }
+  .hint.on{opacity:.6}
+
+  .dim{opacity:0 !important}
+
+  /* Wide screens compose the room off-centre: the jar stands right, you read
+     and write on the left, and nothing ever covers the vessel. Declared last so
+     nothing above quietly wins. */
+  @media (min-width:900px){
+    .stage{place-items:center start; padding-left:clamp(28px,6vw,92px)}
+    .whisper{text-align:left; max-width:20ch}
+    .pad{position:absolute; left:34%; bottom:-10px; margin:0; transform:translateX(-50%)}
+    .pad.away{transform:translateX(-50%) translateY(30px)}
+    .sheetWrap{left:34%}
+    .sealLine{left:65%}
+  }
+
+  .pad.away{opacity:0; pointer-events:none}
+
+  @media (max-width:640px){
+    .mark .suffix{display:none}
+    .mark,.tally{font-size:10px}
+    .masthead{padding-top:16px}
+    .sheetFoot{padding:10px 14px 12px}
+    .btn{padding:8px 12px}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms !important; transition-duration:.16s !important}
+  }
+</style>
+
+<canvas id="scene"></canvas>
+
+<div id="room">
+  <header class="masthead" id="masthead">
+    <div class="mark"><b>Worry jar</b><span class="suffix"> &nbsp;/&nbsp; visual prototype</span></div>
+    <div class="tally" id="tally"></div>
+  </header>
+
+  <div class="stage">
+    <p class="whisper" id="whisper">
+      It doesn&rsquo;t have to be solved tonight. It just has to be somewhere other than your head.
+    </p>
+  </div>
+
+  <button class="pad" id="pad" aria-label="Take a page">
+    <span class="padLabel">Take a page</span>
+    <span class="sheetEdge e3"></span>
+    <span class="sheetEdge e2"></span>
+    <span class="sheetEdge e1"></span>
+  </button>
+</div>
+
+<div class="sheetWrap" id="sheetWrap">
+  <div class="sheet" id="sheet">
+    <canvas id="ink"></canvas>
+    <div class="placeholder" id="placeholder">write it here&hellip;</div>
+
+    <div class="sheetFoot" id="sheetFoot">
+      <span class="modeHint" id="modeHint">draw it &middot; T to type</span>
+      <span style="display:flex;gap:8px">
+        <button class="btn ghost" id="clearBtn">clear</button>
+        <button class="btn" id="doneBtn" disabled>done</button>
+      </span>
+    </div>
+
+    <div class="ask" id="ask">
+      <div id="askStep1">
+        <p class="eyebrow">One question</p>
+        <q>Is there a step you could take on this &mdash; one that&rsquo;s actually within your control?</q>
+        <div class="choices" style="margin-top:20px">
+          <button class="choice" id="mineBtn">Yes, there is
+            <small>it goes in open &middot; one step</small>
+          </button>
+          <button class="choice seal" id="notMineBtn">No, this one&rsquo;s not mine to fix
+            <small>it goes in sealed &middot; no step</small>
+          </button>
+        </div>
+        <div class="askRow">
+          <button class="btn ghost" id="notNowBtn">not now &mdash; just put it in</button>
+        </div>
+      </div>
+
+      <div id="askStep2" style="display:none">
+        <p class="eyebrow">The one step</p>
+        <div class="stepBox">
+          <input id="stepInput" placeholder="the smallest true next thing" autocomplete="off">
+          <div class="chips" role="group" aria-label="When">
+            <button class="chip" data-tf="this-month" aria-pressed="false">This month</button>
+            <button class="chip" data-tf="later" aria-pressed="true">Later</button>
+            <button class="chip" data-tf="someday" aria-pressed="false">Someday</button>
+          </div>
+        </div>
+        <div class="askRow">
+          <button class="btn ghost" id="backBtn">back</button>
+          <button class="btn" id="dropBtn">put it in the jar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="sealLine" id="sealLine">Sealed. It&rsquo;s written down &mdash; you don&rsquo;t have to hold it.</p>
+
+<div class="readMeta" id="readMeta"></div>
+<div class="hint" id="hint">click a slip to open it</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cv = document.getElementById("scene");
+  const ctx = cv.getContext("2d");
+  const $ = id => document.getElementById(id);
+
+  /* ── palette ─────────────────────────────────────── */
+  const C = {
+    ground:"#14110F", lift:"#1F1A17",
+    paper:"#E9E0CE", paperDim:"#C9BFA9",
+    ink:"#1B2230", glass:"#8FA79E",
+    lamp:"#E0A25C", wax:"#8C4A34",
+  };
+
+  let W = 0, H = 0, DPR = 1;
+  const jar = { cx:0, baseY:0, w:0, h:0, neck:.75, wall:0 };
+  let wide = true;
+  let camera = 0;            // 0 = resting, 1 = sheet is up (jar lifts + dims)
+  let cameraTarget = 0;
+  let tilt = 0, tiltTarget = 0;
+  let lidClose = 0;          // 0 open .. 1 shut, animates on a seal
+  let glint = 0;
+
+  function layout(){
+    DPR = Math.min(devicePixelRatio || 1, 2.5);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+
+    wide = W >= 900;
+    jar.h  = Math.min(H * (wide ? .50 : .42), 470);
+    jar.w  = jar.h * .78;
+    jar.cx = wide ? W * .655 : W / 2;
+    jar.baseY = wide ? H * .74 : H * .66;
+    jar.wall = jar.w * .021;
+  }
+  addEventListener("resize", () => { layout(); slips.forEach(clampInside); });
+
+  /* ── jar profile: half-width as a fraction of jar.w/2 ── */
+  const smooth = t => t*t*(3-2*t);
+  function prof(u){
+    if (u < 0)    return .93;
+    if (u <= .035) return .93 + .07 * smooth(u/.035);
+    if (u <= .70)  return 1 - .014 * Math.sin((u-.035)/.665 * Math.PI);
+    if (u <= .855){                              // the shoulder rolls, it doesn't bevel
+      const k = (u-.70)/.155;
+      return 1 + (jar.neck - 1) * Math.sin(k * Math.PI/2);
+    }
+    if (u <= .955) return jar.neck;
+    return jar.neck * (1 + .045 * smooth((u-.955)/.045));
+  }
+  const uAt   = y => (jar.baseY - y) / jar.h;
+  const outerHalf = y => prof(uAt(y)) * jar.w / 2;
+  const innerHalf = y => Math.max(2, outerHalf(y) - jar.wall);
+  const floorY = () => jar.baseY - jar.wall * 1.4;
+  const mouthY = () => jar.baseY - jar.h * .995;
+
+  function jarPath(inset){
+    const p = new Path2D(), steps = 46;
+    const top = jar.baseY - jar.h, bot = jar.baseY;
+    p.moveTo(jar.cx - outerHalf(bot) + inset, bot - inset);
+    for (let i = 0; i <= steps; i++){
+      const y = bot + (top - bot) * (i/steps);
+      p.lineTo(jar.cx - outerHalf(y) + inset, y);
+    }
+    for (let i = steps; i >= 0; i--){
+      const y = bot + (top - bot) * (i/steps);
+      p.lineTo(jar.cx + outerHalf(y) - inset, y);
+    }
+    p.closePath();
+    return p;
+  }
+
+  /* ── slips ───────────────────────────────────────── */
+  const slips = [];
+  const G = .42, REST = .16, FRICTION = .9, ANG_DAMP = .93;
+  const slipSize = () => jar.w * .33;
+
+  function makeSlip(o){
+    const s = slipSize();
+    return {
+      text:o.text||"", sealed:!!o.sealed, step:o.step||"", tf:o.tf||"later",
+      thumb:o.thumb||null, img:null,
+      x:o.x ?? jar.cx, y:o.y ?? mouthY(),
+      vx:o.vx ?? (Math.random()-.5)*1.4, vy:o.vy ?? 1.2,
+      a:o.a ?? (Math.random()-.5)*.9, va:o.va ?? (Math.random()-.5)*.06,
+      z:(Math.random()*2-1),
+      w:s*(.92+Math.random()*.14), h:s*(.66+Math.random()*.12),
+      hue:Math.random()*.4, asleep:false, open:0,
+    };
+    }
+  function hydrate(s){
+    if (s.thumb && !s.img){
+      const im = new Image();
+      im.onload = () => { s.img = im; };
+      im.src = s.thumb;
+    }
+    return s;
+  }
+  function clampInside(s){
+    const lim = innerHalf(s.y) - s.w*.42;
+    s.x = Math.min(jar.cx + lim, Math.max(jar.cx - lim, s.x));
+    s.y = Math.min(floorY() - s.h*.42, s.y);
+  }
+
+  function physics(){
+    for (const s of slips){
+      if (s.asleep) continue;
+      s.vy += G; s.vx *= .995;
+      s.x += s.vx; s.y += s.vy;
+      s.a += s.va; s.va *= ANG_DAMP;
+
+      const r = Math.max(s.w, s.h) * .46;
+      const lim = innerHalf(s.y) - r;
+      if (s.x < jar.cx - lim){ s.x = jar.cx - lim; s.vx = Math.abs(s.vx)*REST; s.va += .012; }
+      if (s.x > jar.cx + lim){ s.x = jar.cx + lim; s.vx = -Math.abs(s.vx)*REST; s.va -= .012; }
+      const fl = floorY() - r*.82;
+      if (s.y > fl){
+        s.y = fl; s.vy = -s.vy*REST; s.vx *= FRICTION;
+        s.va += (Math.random()-.5)*.03;
+        s.a *= .965;                     // folded paper lies flat-ish
+      }
+    }
+    // separation
+    for (let it = 0; it < 3; it++){
+      for (let i = 0; i < slips.length; i++){
+        for (let j = i+1; j < slips.length; j++){
+          const a = slips[i], b = slips[j];
+          const ra = Math.max(a.w,a.h)*.44, rb = Math.max(b.w,b.h)*.44;
+          let dx = b.x-a.x, dy = (b.y-a.y)*1.05;
+          let d = Math.hypot(dx,dy) || .001;
+          const min = (ra+rb)*.86;
+          if (d < min){
+            const push = (min-d)/d*.42;
+            dx *= push; dy *= push;
+            a.x -= dx; a.y -= dy; b.x += dx; b.y += dy;
+            a.va -= dx*.0016; b.va += dx*.0016;
+            a.asleep = b.asleep = false;
+          }
+        }
+      }
+    }
+    for (const s of slips){
+      clampInside(s);
+      if (Math.abs(s.vx) < .06 && Math.abs(s.vy) < .3 && Math.abs(s.va) < .004) s.asleep = true;
+      else s.asleep = false;
+    }
+  }
+
+  /* ── drawing the room ────────────────────────────── */
+  const motes = Array.from({length: reduced ? 0 : 26}, () => ({
+    x:Math.random(), y:Math.random(), r:Math.random()*1.5+.4,
+    s:Math.random()*.16+.03, p:Math.random()*6.28,
+  }));
+
+  function drawRoom(t){
+    const dim = 1 - camera*.32;
+
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,"#0F0D0C"); g.addColorStop(.55,C.ground); g.addColorStop(1,"#100E0D");
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+    // lamp pool, high and to the left — one light source in the room
+    const lx = jar.cx - jar.w*.55, ly = jar.baseY - jar.h*1.25;
+    const lamp = ctx.createRadialGradient(lx,ly,0,lx,ly,Math.max(W,H)*.72);
+    lamp.addColorStop(0,`rgba(224,162,92,${.16*dim})`);
+    lamp.addColorStop(.32,`rgba(224,162,92,${.055*dim})`);
+    lamp.addColorStop(1,"rgba(224,162,92,0)");
+    ctx.fillStyle = lamp; ctx.fillRect(0,0,W,H);
+
+    // the shelf the jar stands on
+    const sy = jar.baseY;
+    const sh = ctx.createLinearGradient(0,sy-2,0,H);
+    sh.addColorStop(0,`rgba(46,38,32,${.95*dim})`);
+    sh.addColorStop(.18,`rgba(31,26,23,${.98*dim})`);
+    sh.addColorStop(1,"rgba(14,12,11,1)");
+    ctx.fillStyle = sh; ctx.fillRect(0,sy,W,H-sy);
+    ctx.strokeStyle = `rgba(224,162,92,${.13*dim})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,sy+.5); ctx.lineTo(W,sy+.5); ctx.stroke();
+
+    // dust in the light
+    for (const m of motes){
+      const y = (m.y + t*m.s*.00004) % 1;
+      const x = m.x + Math.sin(t*.0004 + m.p)*.012;
+      const px = x*W, py = y*H;
+      const near = 1 - Math.min(1, Math.hypot(px-lx,py-ly)/(Math.max(W,H)*.5));
+      ctx.globalAlpha = .1 + near*.28*dim;
+      ctx.fillStyle = "#F3D7AE";
+      ctx.beginPath(); ctx.arc(px,py,m.r,0,6.284); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawSlipBody(s, scale){
+    const w = s.w*scale, h = s.h*scale;
+    const r = Math.min(w,h)*.09;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(-w/2+r,-h/2);
+    ctx.arcTo( w/2,-h/2, w/2, h/2, r);
+    ctx.arcTo( w/2, h/2,-w/2, h/2, r);
+    ctx.arcTo(-w/2, h/2,-w/2,-h/2, r);
+    ctx.arcTo(-w/2,-h/2, w/2,-h/2, r);
+    ctx.closePath();
+    ctx.clip();
+
+    const pg = ctx.createLinearGradient(-w/2,-h/2,w/2,h/2);
+    if (s.sealed){                                   // sealed reads cool, and stays cool
+      pg.addColorStop(0,"#BDC3C2"); pg.addColorStop(.5,"#A2A9A9"); pg.addColorStop(1,"#7E8686");
+    } else {
+      pg.addColorStop(0,"#F3EAD6"); pg.addColorStop(.55,"#E0D5BC"); pg.addColorStop(1,"#B8AC92");
+    }
+    ctx.fillStyle = pg; ctx.fillRect(-w/2,-h/2,w,h);
+
+    if (s.img){
+      ctx.globalAlpha = s.sealed ? .3 : .5;
+      ctx.globalCompositeOperation = "multiply";
+      const ar = s.img.width / s.img.height;
+      let iw = w*.86, ih = iw/ar;
+      if (ih > h*.8){ ih = h*.8; iw = ih*ar; }
+      ctx.drawImage(s.img, -iw/2, -ih/2, iw, ih);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+    }
+
+    // the crease from folding
+    ctx.strokeStyle = "rgba(60,50,38,.30)"; ctx.lineWidth = Math.max(.6,w*.008);
+    ctx.beginPath(); ctx.moveTo(-w/2,-h*.06); ctx.lineTo(w/2,h*.02); ctx.stroke();
+    const cg = ctx.createLinearGradient(0,-h*.1,0,h*.14);
+    cg.addColorStop(0,"rgba(255,244,226,.16)"); cg.addColorStop(.5,"rgba(0,0,0,.14)"); cg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle = cg; ctx.fillRect(-w/2,-h*.1,w,h*.24);
+
+    if (s.sealed){          // one wax dot — the only red in the room
+      ctx.fillStyle = "rgba(140,74,52,.92)";
+      ctx.beginPath(); ctx.arc(w*.27,-h*.24, Math.min(w,h)*.11, 0, 6.284); ctx.fill();
+      ctx.fillStyle = "rgba(255,210,180,.22)";
+      ctx.beginPath(); ctx.arc(w*.25,-h*.27, Math.min(w,h)*.045, 0, 6.284); ctx.fill();
+    }
+    ctx.restore();
+
+    ctx.strokeStyle = s.sealed ? "rgba(20,18,16,.4)" : "rgba(30,24,18,.32)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-w/2+r,-h/2);
+    ctx.arcTo( w/2,-h/2, w/2, h/2, r);
+    ctx.arcTo( w/2, h/2,-w/2, h/2, r);
+    ctx.arcTo(-w/2, h/2,-w/2,-h/2, r);
+    ctx.arcTo(-w/2,-h/2, w/2,-h/2, r);
+    ctx.closePath(); ctx.stroke();
+  }
+
+  function drawJar(t){
+    const dim = 1 - camera*.28;
+    ctx.save();
+    // when a page is up the room pulls back and the jar lifts out of the way
+    ctx.translate(0, -camera * (wide ? H*.03 : H*.13));
+    // the whole vessel leans a touch toward the pointer — parallax, not spin
+    ctx.translate(jar.cx, jar.baseY);
+    ctx.rotate(tilt * .012);
+    ctx.translate(-jar.cx, -jar.baseY);
+
+    const outer = jarPath(0), inner = jarPath(jar.wall);
+
+    // shadow + caustic pooled on the shelf
+    ctx.save();
+    const csx = jar.cx + tilt*jar.w*.12;
+    const shadow = ctx.createRadialGradient(csx,jar.baseY+4,0,csx,jar.baseY+4,jar.w*.86);
+    shadow.addColorStop(0,`rgba(0,0,0,${.82*dim})`);
+    shadow.addColorStop(.5,`rgba(0,0,0,${.3*dim})`);
+    shadow.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle = shadow;
+    ctx.beginPath(); ctx.ellipse(csx,jar.baseY+5,jar.w*.82,jar.w*.13,0,0,6.284); ctx.fill();
+    const caus = ctx.createRadialGradient(csx+jar.w*.26,jar.baseY+7,0,csx+jar.w*.26,jar.baseY+7,jar.w*.3);
+    caus.addColorStop(0,`rgba(226,170,104,${.2*dim})`);
+    caus.addColorStop(1,"rgba(226,170,104,0)");
+    ctx.fillStyle = caus;
+    ctx.beginPath(); ctx.ellipse(csx+jar.w*.24,jar.baseY+6,jar.w*.3,jar.w*.06,0,0,6.284); ctx.fill();
+    ctx.restore();
+
+    // back of the glass, seen through the front
+    ctx.save();
+    ctx.clip(inner);
+    const back = ctx.createLinearGradient(0,jar.baseY-jar.h,0,jar.baseY);
+    back.addColorStop(0,`rgba(143,167,158,${.05*dim})`);
+    back.addColorStop(1,`rgba(143,167,158,${.14*dim})`);
+    ctx.fillStyle = back; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = `rgba(214,231,222,${.16*dim})`;
+    ctx.lineWidth = jar.wall*.8;
+    ctx.stroke(inner);
+    ctx.restore();
+
+    // the slips, inside
+    ctx.save();
+    ctx.clip(inner);
+    const sorted = slips.slice().sort((a,b) => a.z - b.z);
+    for (const s of sorted){
+      const depth = .84 + s.z*.14;
+      const px = s.x + s.z * tilt * jar.w * .05;
+      ctx.save();
+      ctx.translate(px, s.y);
+      ctx.rotate(s.a);
+      ctx.globalAlpha = (s.z < 0 ? .84 : 1) * dim;
+      drawSlipBody(s, depth);
+      ctx.restore();
+    }
+    // glass darkens what sits behind it
+    const tint = ctx.createLinearGradient(jar.cx-jar.w/2,0,jar.cx+jar.w/2,0);
+    tint.addColorStop(0,"rgba(24,34,32,.5)");
+    tint.addColorStop(.22,"rgba(24,34,32,.05)");
+    tint.addColorStop(.78,"rgba(24,34,32,.1)");
+    tint.addColorStop(1,"rgba(24,34,32,.55)");
+    ctx.fillStyle = tint; ctx.fillRect(0,0,W,H);
+    ctx.restore();
+
+    // front glass
+    ctx.save();
+    ctx.clip(outer);
+    const face = ctx.createLinearGradient(jar.cx-jar.w/2,0,jar.cx+jar.w/2,0);
+    face.addColorStop(0,`rgba(197,219,209,${.20*dim})`);
+    face.addColorStop(.14,`rgba(197,219,209,${.045*dim})`);
+    face.addColorStop(.55,"rgba(197,219,209,0)");
+    face.addColorStop(.9,`rgba(197,219,209,${.07*dim})`);
+    face.addColorStop(1,`rgba(224,240,232,${.24*dim})`);
+    ctx.fillStyle = face; ctx.fillRect(0,0,W,H);
+
+    // the specular streak, sliding with the pointer
+    const hx = jar.cx - jar.w*.29 + tilt*jar.w*.13;
+    const hw = jar.w*.075;
+    const hl = ctx.createLinearGradient(hx-hw,0,hx+hw,0);
+    hl.addColorStop(0,"rgba(255,255,255,0)");
+    hl.addColorStop(.5,`rgba(255,252,244,${(.2+glint*.3)*dim})`);
+    hl.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle = hl;
+    ctx.fillRect(hx-hw, jar.baseY-jar.h*.86, hw*2, jar.h*.74);
+
+    const hx2 = jar.cx + jar.w*.33 + tilt*jar.w*.07;
+    const hl2 = ctx.createLinearGradient(hx2-hw*.4,0,hx2+hw*.4,0);
+    hl2.addColorStop(0,"rgba(255,255,255,0)");
+    hl2.addColorStop(.5,`rgba(240,248,244,${.13*dim})`);
+    hl2.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle = hl2;
+    ctx.fillRect(hx2-hw*.4, jar.baseY-jar.h*.7, hw*.8, jar.h*.5);
+
+    // thick glass at the base
+    const bt = ctx.createLinearGradient(0,jar.baseY-jar.h*.09,0,jar.baseY);
+    bt.addColorStop(0,"rgba(190,214,204,0)");
+    bt.addColorStop(1,`rgba(206,228,218,${.2*dim})`);
+    ctx.fillStyle = bt;
+    ctx.fillRect(jar.cx-jar.w,jar.baseY-jar.h*.09,jar.w*2,jar.h*.09);
+    ctx.restore();
+
+    // rim of the vessel
+    ctx.strokeStyle = `rgba(222,240,232,${.28*dim})`;
+    ctx.lineWidth = 1.2;
+    ctx.stroke(outer);
+
+    drawLid(dim);
+    ctx.restore();
+  }
+
+  function drawLid(dim){
+    const my = mouthY();
+    const half = jar.neck * jar.w/2 * 1.055;
+    const lift = (1 - lidClose) * jar.h * .065;
+    const y = my - lift;
+    const bandH = jar.h*.052;
+
+    ctx.save();
+    ctx.translate(jar.cx, y);
+    ctx.rotate((1-lidClose) * -.07);
+
+    const band = ctx.createLinearGradient(-half,0,half,0);
+    band.addColorStop(0,`rgba(96,92,84,${dim})`);
+    band.addColorStop(.2,`rgba(196,190,176,${dim})`);
+    band.addColorStop(.42,`rgba(128,122,112,${dim})`);
+    band.addColorStop(.72,`rgba(168,160,148,${dim})`);
+    band.addColorStop(1,`rgba(78,74,68,${dim})`);
+    ctx.fillStyle = band;
+    ctx.beginPath();
+    ctx.roundRect(-half, -bandH, half*2, bandH, [2,2,1,1]);
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(58,54,50,${dim})`;
+    ctx.beginPath(); ctx.ellipse(0,-bandH,half,half*.15,0,0,6.284); ctx.fill();
+    const top = ctx.createLinearGradient(-half,-bandH,half,-bandH);
+    top.addColorStop(0,`rgba(150,144,134,${dim})`);
+    top.addColorStop(.35,`rgba(206,199,186,${dim})`);
+    top.addColorStop(1,`rgba(104,99,92,${dim})`);
+    ctx.strokeStyle = top; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(0,-bandH,half*.97,half*.14,0,Math.PI,6.284); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ── the sheet, folded and thrown ────────────────── */
+  let flyer = null;
+  function launch(from, payload){
+    flyer = {
+      t:0, dur: reduced ? 380 : 1150,
+      x0:from.x, y0:from.y, w0:from.w, h0:from.h,
+      payload,
+    };
+  }
+  function drawFlyer(dt){
+    if (!flyer) return;
+    flyer.t += dt;
+    const p = Math.min(1, flyer.t / flyer.dur);
+    const s = flyer.payload;
+
+    // fold: three creases in the first 40%, then the throw
+    const fp = Math.min(1, p/.4);
+    const fold = smooth(fp);
+    const targetW = s.w, targetH = s.h;
+    const w = flyer.w0 + (targetW - flyer.w0) * fold;
+    const h = flyer.h0 + (targetH - flyer.h0) * Math.min(1, fold*1.15);
+
+    const tp = Math.max(0, (p-.35)/.65);
+    const e = smooth(Math.min(1,tp));
+    const mx = mouthY();
+    const cxT = jar.cx, cyT = mx - jar.h*.06;
+    const ctrlX = flyer.x0 + (cxT-flyer.x0)*.3;
+    const ctrlY = Math.min(flyer.y0, cyT) - jar.h*.34;
+    const x = (1-e)*(1-e)*flyer.x0 + 2*(1-e)*e*ctrlX + e*e*cxT;
+    const y = (1-e)*(1-e)*flyer.y0 + 2*(1-e)*e*ctrlY + e*e*cyT;
+
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(e * 1.9 + fp*.15);
+    ctx.globalAlpha = 1;
+    const tmp = { ...s, w, h };
+    drawSlipBody(tmp, 1);
+    // creases flashing as it folds
+    if (fp < 1){
+      ctx.strokeStyle = `rgba(255,246,228,${(1-fp)*.5})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-w/2,0); ctx.lineTo(w/2,0);
+      ctx.moveTo(0,-h/2); ctx.lineTo(0,h/2); ctx.stroke();
+    }
+    ctx.restore();
+
+    if (p >= 1){
+      const born = makeSlip({ ...s, x:jar.cx + (Math.random()-.5)*jar.w*.1, y:mx, vy:2.2, va:(Math.random()-.5)*.1 });
+      born.w = s.w; born.h = s.h; born.thumb = s.thumb; hydrate(born);
+      slips.push(born);
+      trim(); save(); paintTally();
+      flyer = null;
+      if (born.sealed) sealMoment();
+      showHint();
+    }
+  }
+
+  /* ── opening a slip ──────────────────────────────── */
+  let reading = null, readT = 0;
+  function drawReading(dt){
+    if (!reading) return;
+    readT = Math.min(1, readT + dt/ (reduced?150:520));
+    const e = smooth(readT);
+    ctx.save();
+    ctx.fillStyle = `rgba(12,10,9,${.86*e})`;
+    ctx.fillRect(0,0,W,H);
+
+    const s = reading;
+    const cx = W/2, cy = H*.44;
+    const x = s.x + (cx - s.x)*e, y = s.y + (cy - s.y)*e;
+    const scale = 1 + (Math.min(W*.72, H*.5) / s.w - 1) * e;
+
+    ctx.translate(x,y);
+    ctx.rotate(s.a * (1-e));
+    const card = { ...s, w:s.w*scale, h:s.h*scale*(1 + 1.05*e) };
+    drawSlipBody(card, 1);
+
+    if (e > .35 && s.img){
+      ctx.globalAlpha = (e-.35)/.65;
+      ctx.globalCompositeOperation = "multiply";
+      const ar = s.img.width/s.img.height;
+      let iw = card.w*.88, ih = iw/ar;
+      if (ih > card.h*.72){ ih = card.h*.72; iw = ih*ar; }
+      ctx.drawImage(s.img, -iw/2, -ih/2 - card.h*.04, iw, ih);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+
+  function openSlip(s){
+    reading = s; readT = 0;
+    const meta = $("readMeta");
+    meta.innerHTML = s.sealed
+      ? `<span class="tag wax">sealed &middot; no step</span><span class="tag">opened ${(s.opened=(s.opened||0)+1)}&times;</span>`
+      : `<span class="tag">${s.step ? s.step.slice(0,54) : "no step yet"}</span><span class="tag">${s.tf.replace("-"," ")}</span>`;
+    meta.classList.add("on");
+    $("hint").classList.remove("on");
+  }
+  function closeSlip(){
+    reading = null;
+    $("readMeta").classList.remove("on");
+    showHint();
+  }
+
+  /* ── main loop ───────────────────────────────────── */
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(48, now - last); last = now;
+    camera += (cameraTarget - camera) * .07;
+    tilt   += (tiltTarget - tilt) * .06;
+    lidClose += ((flyer ? 0 : 1) - lidClose) * .09;
+    glint *= .94;
+
+    ctx.clearRect(0,0,W,H);
+    drawRoom(now);
+    physics();
+    drawJar(now);
+    drawFlyer(dt);
+    drawReading(dt);
+    requestAnimationFrame(frame);
+  }
+
+  /* ── pointer ─────────────────────────────────────── */
+  addEventListener("pointermove", e => { tiltTarget = (e.clientX / W) * 2 - 1; });
+  cv.addEventListener("pointerdown", e => {
+    if (reading){ closeSlip(); return; }
+    if (phase !== "idle") return;
+    const px = e.clientX, py = e.clientY;
+    let hit = null;
+    for (let i = slips.length-1; i >= 0; i--){
+      const s = slips[i];
+      if (Math.hypot(px - s.x, py - s.y) < Math.max(s.w,s.h)*.5){ hit = s; break; }
+    }
+    if (hit) openSlip(hit);
+  });
+  addEventListener("keydown", e => {
+    if (e.key === "Escape"){ if (reading) closeSlip(); else if (phase !== "idle") backToRoom(); }
+  });
+
+  /* ── ink on paper ────────────────────────────────── */
+  const inkCv = $("ink"), ink = inkCv.getContext("2d");
+  let inkDPR = 1, drawing = false, lastPt = null, hasInk = false;
+  let typeMode = false, typed = "";
+
+  function sizeInk(){
+    const r = inkCv.getBoundingClientRect();
+    if (!r.width) return;
+    inkDPR = Math.min(devicePixelRatio || 1, 2.5);
+    const prev = hasInk ? cloneInk() : null;
+    inkCv.width = r.width*inkDPR; inkCv.height = r.height*inkDPR;
+    ink.setTransform(inkDPR,0,0,inkDPR,0,0);
+    ink.lineCap = "round"; ink.lineJoin = "round";
+    if (prev) ink.drawImage(prev, 0,0, r.width, r.height);
+    if (typeMode) renderTyped();
+  }
+  function cloneInk(){
+    const c = document.createElement("canvas");
+    c.width = inkCv.width; c.height = inkCv.height;
+    c.getContext("2d").drawImage(inkCv,0,0);
+    return c;
+  }
+  function inkPos(e){
+    const r = inkCv.getBoundingClientRect();
+    return { x:e.clientX - r.left, y:e.clientY - r.top };
+  }
+  inkCv.addEventListener("pointerdown", e => {
+    if (typeMode || phase !== "write") return;
+    inkCv.setPointerCapture(e.pointerId);
+    drawing = true; lastPt = inkPos(e); lastPt.w = 2.6;
+    markInk();
+  });
+  inkCv.addEventListener("pointermove", e => {
+    if (!drawing) return;
+    const p = inkPos(e);
+    const d = Math.hypot(p.x-lastPt.x, p.y-lastPt.y);
+    const target = Math.max(1.1, 4.4 - d*.30);
+    const w = lastPt.w + (target - lastPt.w)*.4;
+    ink.strokeStyle = "rgba(27,34,48,.92)";
+    ink.lineWidth = w;
+    ink.beginPath();
+    ink.moveTo(lastPt.x, lastPt.y);
+    ink.quadraticCurveTo(lastPt.x, lastPt.y, (lastPt.x+p.x)/2, (lastPt.y+p.y)/2);
+    ink.lineTo(p.x, p.y);
+    ink.stroke();
+    p.w = w; lastPt = p;
+  });
+  const endStroke = () => { drawing = false; };
+  inkCv.addEventListener("pointerup", endStroke);
+  inkCv.addEventListener("pointercancel", endStroke);
+  inkCv.addEventListener("pointerleave", endStroke);
+
+  function markInk(){
+    hasInk = true;
+    $("placeholder").classList.add("hide");
+    $("doneBtn").disabled = false;
+  }
+  function clearInk(){
+    ink.clearRect(0,0,inkCv.width,inkCv.height);
+    hasInk = false; typed = "";
+    $("placeholder").classList.remove("hide");
+    $("doneBtn").disabled = true;
+  }
+
+  function renderTyped(){
+    const r = inkCv.getBoundingClientRect();
+    ink.clearRect(0,0,inkCv.width,inkCv.height);
+    if (!typed) return;
+    const size = Math.max(19, r.width*.055);
+    ink.font = `300 ${size}px "Shantell Sans", cursive`;
+    ink.fillStyle = "rgba(27,34,48,.9)";
+    ink.textBaseline = "alphabetic";
+    const maxW = r.width - 52, lineH = 38;
+    const words = (typed + " ").split(/\s+/);
+    let line = "", y = 54, lines = [];
+    for (const word of words){
+      const test = line ? line + " " + word : word;
+      if (ink.measureText(test).width > maxW && line){ lines.push(line); line = word; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    for (const l of lines){
+      let x = 26;
+      for (const ch of l){                       // a little tremor so it isn't typeset
+        ink.save();
+        ink.translate(x, y + Math.sin(x*.09)*1.2);
+        ink.rotate((Math.sin(x*.31)*.9) * Math.PI/180);
+        ink.fillText(ch, 0, 0);
+        ink.restore();
+        x += ink.measureText(ch).width;
+      }
+      y += lineH;
+      if (y > r.height - 70) break;
+    }
+  }
+
+  const hiddenInput = document.createElement("textarea");
+  Object.assign(hiddenInput.style, {
+    position:"fixed", opacity:"0", pointerEvents:"none", left:"-9999px", top:"0",
+  });
+  document.body.appendChild(hiddenInput);
+  hiddenInput.addEventListener("input", () => {
+    typed = hiddenInput.value;
+    renderTyped();
+    if (typed.trim()) markInk(); else clearInk();
+  });
+
+  function setTypeMode(on){
+    typeMode = on;
+    $("modeHint").textContent = on ? "typing · reload to draw by hand" : "draw it · T to type";
+    $("sheet").style.cursor = on ? "text" : "crosshair";
+    clearInk();
+    if (on) setTimeout(() => hiddenInput.focus(), 30);
+    else hiddenInput.blur();
+  }
+  addEventListener("keydown", e => {
+    if (phase !== "write") return;
+    if (e.key === "t" && !typeMode && !e.metaKey && !e.ctrlKey){ e.preventDefault(); setTypeMode(true); }
+    else if (e.key === "t" && typeMode && e.altKey){ setTypeMode(false); }
+    else if (!typeMode && e.key.length === 1 && !e.metaKey && !e.ctrlKey){
+      setTypeMode(true); hiddenInput.value = e.key; typed = e.key; renderTyped(); markInk();
+    }
+  });
+
+  /* ── phases ──────────────────────────────────────── */
+  let phase = "idle";
+  let pending = null;
+
+  function takePage(){
+    phase = "write";
+    cameraTarget = 1;
+    $("sheetWrap").classList.remove("gone");
+    $("sheetWrap").classList.add("up");
+    $("whisper").classList.remove("on");
+    $("pad").classList.add("away");
+    $("pad").disabled = true;
+    $("hint").classList.remove("on");
+    $("sealLine").classList.remove("on");
+    setTimeout(sizeInk, 60);
+    setTimeout(() => { if (!typeMode) inkCv.focus?.(); }, 500);
+  }
+
+  function backToRoom(){
+    phase = "idle";
+    cameraTarget = 0;
+    $("sheetWrap").classList.remove("up");
+    $("ask").classList.remove("on");
+    $("pad").classList.remove("away");
+    $("pad").disabled = false;
+    clearInk(); setTypeMode(false);
+    setTimeout(showHint, 400);
+  }
+
+  $("pad").addEventListener("click", takePage);
+
+  $("clearBtn").addEventListener("click", () => { hiddenInput.value = ""; clearInk(); });
+  $("doneBtn").addEventListener("click", () => {
+    phase = "sort";
+    $("askStep1").style.display = "";
+    $("askStep2").style.display = "none";
+    $("ask").classList.add("on");
+    hiddenInput.blur();
+  });
+
+  let tf = "later";
+  document.querySelectorAll(".chip").forEach(c => {
+    c.addEventListener("click", () => {
+      document.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed","false"));
+      c.setAttribute("aria-pressed","true");
+      tf = c.dataset.tf;
+    });
+  });
+
+  $("mineBtn").addEventListener("click", () => {
+    $("askStep1").style.display = "none";
+    $("askStep2").style.display = "";
+    setTimeout(() => $("stepInput").focus(), 40);
+  });
+  $("backBtn").addEventListener("click", () => {
+    $("askStep2").style.display = "none";
+    $("askStep1").style.display = "";
+  });
+  $("notMineBtn").addEventListener("click", () => commit({ sealed:true }));
+  $("notNowBtn").addEventListener("click", () => commit({ sealed:false, unsorted:true }));
+  $("dropBtn").addEventListener("click", () => commit({ sealed:false, step:$("stepInput").value.trim(), tf }));
+
+  function thumbnail(){
+    const src = inkCv;
+    const maxW = 200;
+    const scale = Math.min(1, maxW / (src.width/inkDPR));
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(src.width/inkDPR*scale));
+    c.height = Math.max(1, Math.round(src.height/inkDPR*scale));
+    const g = c.getContext("2d");
+    g.drawImage(src, 0,0, c.width, c.height);
+    try { return c.toDataURL("image/webp", .72); }
+    catch { return c.toDataURL("image/png"); }
+  }
+
+  function commit(opts){
+    const rect = $("sheet").getBoundingClientRect();
+    const s = slipSize();
+    const payload = {
+      text: typed || "(handwritten)",
+      sealed: !!opts.sealed,
+      step: opts.step || "",
+      tf: opts.tf || "later",
+      thumb: hasInk ? thumbnail() : null,
+      w: s, h: s*.74, sealedGlint:0,
+    };
+    if (payload.thumb){
+      const im = new Image(); im.src = payload.thumb;
+      payload.img = im;
+    }
+    launch({ x:rect.left + rect.width/2, y:rect.top + rect.height/2, w:rect.width*.86, h:rect.height*.86 }, payload);
+
+    $("ask").classList.remove("on");
+    $("sheetWrap").classList.remove("up");
+    $("sheetWrap").classList.add("gone");
+    phase = "idle";
+    cameraTarget = 0;
+    $("pad").classList.remove("away");
+    $("pad").disabled = false;
+    $("stepInput").value = "";
+    setTimeout(() => { $("sheetWrap").classList.remove("gone"); clearInk(); setTypeMode(false); }, 600);
+  }
+
+  function sealMoment(){
+    glint = 1;
+    $("sealLine").classList.add("on");
+    setTimeout(() => $("sealLine").classList.remove("on"), 4200);
+  }
+
+  function showHint(){
+    if (slips.length && phase === "idle" && !reading) $("hint").classList.add("on");
+    setTimeout(() => $("hint").classList.remove("on"), 5000);
+  }
+
+  function paintTally(){
+    const sealed = slips.filter(s => s.sealed).length;
+    $("tally").innerHTML = slips.length
+      ? `${slips.length} in the jar${sealed ? ` &nbsp;<span class="sealed">&middot; ${sealed} sealed</span>` : ""}`
+      : "";
+  }
+
+  /* ── persistence ─────────────────────────────────── */
+  const KEY = "worry-jar-visual:v1";
+  function trim(){ while (slips.length > 34) slips.shift(); }
+  function save(){
+    try {
+      localStorage.setItem(KEY, JSON.stringify(slips.map(s => ({
+        text:s.text, sealed:s.sealed, step:s.step, tf:s.tf, thumb:s.thumb, opened:s.opened||0,
+      }))));
+    } catch {}
+  }
+  function load(){
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  }
+
+  /* ── seed: the real ones from the session ────────── */
+  const SEED = [
+    { text:"Lease expires in January and I don't know what I'm doing with everything in the flat", sealed:false, step:"Walk the flat, write categories only", tf:"this-month" },
+    { text:"Portugal accommodation — I signed for dates I can't use any more", sealed:false, step:"Ask in writing what it costs to move the dates", tf:"this-month" },
+    { text:"Selling and giving away my things", sealed:false, step:"Nothing this month. This month is lists only.", tf:"later" },
+    { text:"Dad travelling around Nigeria", sealed:true, step:"", tf:"later" },
+    { text:"I don't know anyone in Portugal", sealed:true, step:"", tf:"later" },
+  ];
+
+  function seedThumb(text){
+    const c = document.createElement("canvas");
+    c.width = 200; c.height = 150;
+    const g = c.getContext("2d");
+    g.font = '300 15px "Shantell Sans", cursive';
+    g.fillStyle = "rgba(27,34,48,.9)";
+    const words = text.split(" ");
+    let line = "", y = 26;
+    for (const w of words){
+      const t = line ? line + " " + w : w;
+      if (g.measureText(t).width > 176 && line){
+        g.save(); g.translate(12,y); g.rotate(-.008); g.fillText(line,0,0); g.restore();
+        line = w; y += 22;
+      } else line = t;
+      if (y > 140) break;
+    }
+    if (line && y <= 140){ g.save(); g.translate(12,y); g.rotate(-.008); g.fillText(line,0,0); g.restore(); }
+    return c.toDataURL("image/png");
+  }
+
+  function boot(){
+    layout();
+    const saved = load();
+    const source = saved && saved.length ? saved : SEED.map(s => ({ ...s, thumb:null }));
+    source.forEach((s, i) => {
+      const slip = makeSlip({
+        ...s,
+        x: jar.cx + (Math.random()-.5)*jar.w*.4,
+        y: jar.baseY - jar.h*.55 - i*jar.w*.2,
+        vy: 0,
+      });
+      slip.thumb = s.thumb || seedThumb(s.text);
+      hydrate(slip);
+      slips.push(slip);
+    });
+    paintTally();
+    for (let i = 0; i < 220; i++) physics();   // let them settle before the first frame
+    requestAnimationFrame(frame);
+    setTimeout(() => $("whisper").classList.add("on"), 500);
+    setTimeout(showHint, 2600);
+  }
+
+  let booted = false;
+  const bootOnce = () => { if (!booted){ booted = true; boot(); } };
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(bootOnce);
+  setTimeout(bootOnce, 1400);   // never wait on a font host to draw the room
+})();
+</script>
