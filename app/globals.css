@@ -2,377 +2,222 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ========== Theme tokens ========== */
+/* ========== DFE tokens: cream, light blue, dusty blue, near-black, warm brown ========== */
 
-:root,
-[data-theme="dark"] {
-  color-scheme: dark;
+:root {
+  --desk-cream: #f2ecdf;
+  --desk-paper: #faf7f0;
+  --desk-paper-2: #f4efe4;
+  --desk-line: #d8d0bf;
+  --desk-line-strong: #b9ae97;
+  --desk-ink: #16151a;
+  --desk-ink-2: #3a3833;
+  --desk-muted: #7a7466;
+  --desk-blue: #b7cde6;
+  --desk-blue-2: #d6e3f2;
+  --desk-dusty: #5b7897;
+  --desk-brown: #6b4a2e;
+  --desk-brown-2: #a07a58;
+  --desk-shadow: 0 30px 60px -20px rgba(22, 21, 26, 0.35), 0 8px 20px -10px rgba(22, 21, 26, 0.25);
 
-  --body: #141315;
-  --body-grain-light: rgba(255, 255, 255, 0.018);
-  --body-grain-dark: rgba(255, 255, 255, 0.012);
-
-  --panel-bg: #1a191c;
-  --panel-grain-1: rgba(255, 255, 255, 0.02);
-  --panel-grain-2: rgba(0, 0, 0, 0.25);
-  --panel-border: #2a292d;
-  --panel-shadow-top: rgba(255, 255, 255, 0.04);
-  --panel-shadow-bottom: rgba(0, 0, 0, 0.6);
-
-  --text-primary: #efece6;
-  --text-secondary: #c8c4b8;
-  --text-muted: #8a8680;
-  --text-faint: #5a564f;
-
-  --cream-bg-from: #f4eedb;
-  --cream-bg-to: #e6dfc6;
-  --cream-line: #c9c1a8;
-  --cream-ink: #4a3f24;
-
-  --input-bg: #0a090b;
-  --input-border: #050506;
-  --input-text: #efece6;
-
-  --line-soft: #2a292d;
-  --hover-line: #4a4750;
+  --font-serif: "Instrument Serif", "Times New Roman", Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-hand: "Caveat", "Comic Sans MS", cursive;
 }
 
-[data-theme="light"] {
-  color-scheme: light;
-
-  /* Cream camera body, like a vintage chrome-trimmed Olympus PEN */
-  --body: #efe8d6;
-  --body-grain-light: rgba(0, 0, 0, 0.025);
-  --body-grain-dark: rgba(0, 0, 0, 0.018);
-
-  --panel-bg: #e3dac0;
-  --panel-grain-1: rgba(255, 255, 255, 0.5);
-  --panel-grain-2: rgba(120, 100, 60, 0.08);
-  --panel-border: #c9c1a8;
-  --panel-shadow-top: rgba(255, 255, 255, 0.7);
-  --panel-shadow-bottom: rgba(0, 0, 0, 0.08);
-
-  --text-primary: #2c2820;
-  --text-secondary: #4a4434;
-  --text-muted: #6e6650;
-  --text-faint: #9a9176;
-
-  --cream-bg-from: #fbf7e8;
-  --cream-bg-to: #ebe4ce;
-  --cream-line: #b8b094;
-  --cream-ink: #3a3220;
-
-  --input-bg: #f7f1de;
-  --input-border: #b8b094;
-  --input-text: #2c2820;
-
-  --line-soft: #c9c1a8;
-  --hover-line: #8a8268;
-}
-
-/* ========== Base ========== */
-
-html,
-body {
-  background: var(--body);
-  color: var(--text-primary);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  transition: background-color 200ms ease;
+html {
+  background: var(--desk-cream);
+  color: var(--desk-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
-  background-image:
-    radial-gradient(var(--body-grain-light) 1px, transparent 1px),
-    radial-gradient(var(--body-grain-dark) 1px, transparent 1px);
-  background-size: 3px 3px, 5px 5px;
-  background-position: 0 0, 1.5px 1.5px;
+  min-height: 100vh;
 }
 
 ::selection {
-  background: var(--cream-bg-from);
-  color: var(--cream-ink);
+  background: var(--desk-blue);
+  color: var(--desk-ink);
 }
 
-/* ========== Materials ========== */
+/* ========== Type registers ========== */
 
-.plate-black {
-  background-color: var(--panel-bg);
-  background-image:
-    radial-gradient(var(--panel-grain-1) 1px, transparent 1px),
-    radial-gradient(var(--panel-grain-2) 1px, transparent 1px);
-  background-size: 3px 3px, 6px 6px;
-  border: 1px solid var(--panel-border);
-  box-shadow:
-    inset 0 1px 0 var(--panel-shadow-top),
-    inset 0 -1px 0 var(--panel-shadow-bottom);
-  color: var(--text-primary);
+.t-serif {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
 }
 
-.plate-chrome {
-  background: linear-gradient(
-    180deg,
-    #fafafc 0%,
-    #d4d6dc 22%,
-    #9b9ea5 50%,
-    #d4d6dc 78%,
-    #fafafc 100%
-  );
-  color: #1c1b1d;
-  border-top: 1px solid rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 1px 0 rgba(0, 0, 0, 0.4);
-}
-
-.plate-cream {
-  background: linear-gradient(180deg, var(--cream-bg-from) 0%, var(--cream-bg-to) 100%);
-  color: var(--cream-ink);
-  border: 1px solid var(--cream-line);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.05);
-}
-
-/* ========== Knurling ========== */
-
-.knurl-h {
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.55) 0,
-    rgba(255, 255, 255, 0.55) 1px,
-    rgba(0, 0, 0, 0.25) 1px,
-    rgba(0, 0, 0, 0.25) 3px
-  );
-}
-
-.knurl-dark {
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.06) 0,
-    rgba(255, 255, 255, 0.06) 1px,
-    rgba(0, 0, 0, 0.45) 1px,
-    rgba(0, 0, 0, 0.45) 3px
-  );
-}
-
-/* ========== Engraved typography ========== */
-
-.engrave {
-  color: #2c2c30;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
-  letter-spacing: 0.12em;
+.t-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
-.engrave-deep {
-  color: #1c1b1d;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.85),
-    0 -1px 0 rgba(0, 0, 0, 0.25);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+.t-hand {
+  font-family: var(--font-hand);
+  font-weight: 500;
+  line-height: 1.15;
 }
 
-.engrave-cream {
-  color: var(--cream-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.1em;
+.t-body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--desk-ink-2);
 }
 
-[data-theme="light"] .engrave-cream {
-  color: var(--text-secondary);
-}
+/* ========== Desktop surface ========== */
 
-.wordmark {
-  font-family: "Times New Roman", Georgia, serif;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-/* ========== Buttons & dials ========== */
-
-.btn-chrome {
-  background: linear-gradient(180deg, #fdfdff 0%, #d6d8de 50%, #aeb1b8 100%);
-  color: #1c1b1d;
-  border: 1px solid #6a6d73;
-  border-radius: 9999px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.15),
-    0 1px 0 rgba(0, 0, 0, 0.35);
-  transition: transform 0.06s ease;
-}
-.btn-chrome:active {
-  transform: translateY(1px);
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.3),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.5);
-}
-.btn-chrome:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.btn-black {
-  background: linear-gradient(180deg, #2a292c 0%, #161517 100%);
-  color: #efece6;
-  border: 1px solid #050506;
-  border-radius: 9999px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.6),
-    0 1px 0 rgba(0, 0, 0, 0.5);
-}
-
-.dial {
-  background:
-    radial-gradient(circle at 30% 28%, #fdfdff, #c2c5cb 40%, #7d8086 95%);
-  border: 1px solid #4f5258;
-  border-radius: 9999px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 2px rgba(0, 0, 0, 0.35),
-    0 2px 4px rgba(0, 0, 0, 0.6);
-}
-
-.dial-active {
-  background:
-    radial-gradient(circle at 30% 28%, #fdf6e0, #ddd2a8 35%, #8a7e54 95%);
-  border-color: #4d4527;
-}
-
-/* ========== Ports & screws ========== */
-
-.port {
-  background:
-    radial-gradient(circle at 35% 30%, #232225 0%, #050506 70%, #000 100%);
-  border-radius: 9999px;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 2px 4px rgba(0, 0, 0, 0.85),
-    0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.port-light {
-  background:
-    radial-gradient(circle at 35% 30%, #b8babf 0%, #6e7177 60%, #3b3d42 100%);
-  border-radius: 9999px;
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.45),
-    inset 0 2px 3px rgba(0, 0, 0, 0.55),
-    0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.screw {
-  width: 8px;
-  height: 8px;
-  background:
-    radial-gradient(circle at 35% 30%, #d6d8de, #6f7278 70%, #3f4146 100%);
-  border-radius: 9999px;
+.desk {
   position: relative;
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.4);
+  isolation: isolate;
+  min-height: 100vh;
+  background-color: var(--desk-cream);
 }
-.screw::after {
+
+.desk::before {
+  /* wallpaper, fixed without background-attachment (iOS ignores that) */
   content: "";
-  position: absolute;
-  inset: 1px;
-  background: linear-gradient(45deg, transparent 45%, rgba(0, 0, 0, 0.5) 45%, rgba(0, 0, 0, 0.5) 55%, transparent 55%);
-  border-radius: 9999px;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--desk-cream);
+  background-image: var(--wallpaper, none);
+  background-size: cover;
+  background-position: center;
 }
 
-/* ========== LED indicators ========== */
-
-.led-red {
-  background:
-    radial-gradient(circle at 30% 30%, #ff8b75 0%, #c13a2a 45%, #5a1208 100%);
-  border-radius: 9999px;
-  box-shadow:
-    0 0 8px rgba(193, 58, 42, 0.6),
-    inset 0 0 2px rgba(255, 180, 150, 0.6),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+.desk::after {
+  /* paper grain */
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(22, 21, 26, 0.035) 1px, transparent 1px),
+    radial-gradient(rgba(255, 255, 255, 0.35) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 2px 3px;
+  mix-blend-mode: multiply;
+  z-index: 50;
 }
 
-.led-green {
-  background:
-    radial-gradient(circle at 30% 30%, #b3ffb0 0%, #3aa340 45%, #0f3c14 100%);
-  border-radius: 9999px;
-  box-shadow:
-    0 0 6px rgba(58, 163, 64, 0.5),
-    inset 0 0 2px rgba(180, 255, 180, 0.5),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+/* ========== Menubar ========== */
+
+.menubar {
+  background: rgba(250, 247, 240, 0.82);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid var(--desk-line);
 }
 
-/* ========== Inputs ========== */
+/* ========== Icons ========== */
 
-.input-port {
-  background: var(--input-bg);
-  color: var(--input-text);
-  border: 1px solid var(--input-border);
-  border-radius: 4px;
-  box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.4),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+.icon-btn {
+  border-radius: 10px;
+  transition: background-color 120ms ease, transform 120ms ease;
 }
-.input-port:focus {
-  outline: none;
-  border-color: var(--cream-bg-from);
-  box-shadow:
-    inset 0 2px 3px rgba(0, 0, 0, 0.4),
-    0 0 0 2px rgba(193, 167, 100, 0.35);
+.icon-btn:hover {
+  background: rgba(22, 21, 26, 0.05);
+}
+.icon-btn:focus-visible {
+  outline: 2px solid var(--desk-dusty);
+  outline-offset: 2px;
+}
+.icon-btn:active {
+  transform: scale(0.98);
 }
 
-/* ========== Sprocket-hole divider ========== */
+/* ========== Window ========== */
 
-.sprocket {
-  background:
-    radial-gradient(circle, #050506 4px, transparent 4.5px) 0 0 / 14px 100% repeat-x,
-    var(--panel-bg);
-  height: 16px;
-  border-top: 1px solid var(--panel-border);
-  border-bottom: 1px solid var(--panel-border);
+.window-backdrop {
+  background: rgba(22, 21, 26, 0.18);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
-[data-theme="light"] .sprocket {
-  background:
-    radial-gradient(circle, #1c1b1d 4px, transparent 4.5px) 0 0 / 14px 100% repeat-x,
-    var(--panel-bg);
+.window {
+  background: var(--desk-paper);
+  border: 1px solid var(--desk-line-strong);
+  box-shadow: var(--desk-shadow);
+  animation: window-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-/* ========== Theme-aware text helpers (override Tailwind stone-* in light) ========== */
-
-[data-theme="light"] .text-stone-100,
-[data-theme="light"] .text-stone-200,
-[data-theme="light"] .text-stone-300 {
-  color: var(--text-primary);
-}
-[data-theme="light"] .text-stone-400 {
-  color: var(--text-secondary);
-}
-[data-theme="light"] .text-stone-500 {
-  color: var(--text-muted);
-}
-[data-theme="light"] .text-stone-600 {
-  color: var(--text-muted);
+.window-titlebar {
+  background: var(--desk-ink);
+  color: var(--desk-cream);
 }
 
-[data-theme="light"] .border-stone-700,
-[data-theme="light"] .border-stone-800 {
-  border-color: var(--line-soft);
+.window-sidebar {
+  background: var(--desk-paper-2);
+  border-right: 1px solid var(--desk-line);
 }
 
-[data-theme="light"] .bg-stone-900,
-[data-theme="light"] .bg-stone-950,
-[data-theme="light"] .bg-stone-950\/40,
-[data-theme="light"] .bg-stone-950\/60,
-[data-theme="light"] .bg-stone-950\/80 {
-  background-color: rgba(0, 0, 0, 0.04);
+.window-info {
+  background: var(--desk-paper-2);
+  border-left: 1px solid var(--desk-line);
 }
 
-[data-theme="light"] .ring-black,
-[data-theme="light"] .ring-black\/60 {
-  --tw-ring-color: rgba(0, 0, 0, 0.15);
+@keyframes window-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window {
+    animation: none;
+  }
+  .icon-btn,
+  .icon-btn:active {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ========== Sticky note ========== */
+
+.sticky-note {
+  background: linear-gradient(180deg, #e3ecf7 0%, var(--desk-blue-2) 100%);
+  border: 1px solid rgba(91, 120, 151, 0.35);
+  box-shadow: 0 12px 24px -14px rgba(22, 21, 26, 0.45);
+  transform: rotate(-1.5deg);
+}
+
+/* ========== Row hover ========== */
+
+.row {
+  border-bottom: 1px solid var(--desk-line);
+  transition: background-color 100ms ease;
+}
+.row:hover {
+  background: rgba(183, 205, 230, 0.25);
+}
+.row[aria-current="page"] {
+  background: rgba(183, 205, 230, 0.45);
+}
+
+/* ========== Utilities ========== */
+
+.hairline {
+  border-color: var(--desk-line);
+}
+
+.ink-link {
+  text-decoration: underline;
+  text-decoration-color: var(--desk-line-strong);
+  text-underline-offset: 3px;
+}
+.ink-link:hover {
+  text-decoration-color: var(--desk-ink);
 }
