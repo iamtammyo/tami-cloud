@@ -21,7 +21,13 @@ export function loadPhotos(): StoredPhoto[] {
 
 export function savePhotos(photos: StoredPhoto[]): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
+  try {
+    window.localStorage.setItem(PHOTOS_KEY, JSON.stringify(photos));
+  } catch {
+    throw new Error(
+      "Browser storage is full. Remove a few frames to make room for new ones.",
+    );
+  }
 }
 
 export function loadCollections(): Collection[] {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   loadCollections,
   loadPhotos,
@@ -8,11 +8,10 @@ import {
   saveCollections,
   savePhotos,
 } from "../lib/storage";
-import type { Analysis, Collection, StoredPhoto, UserProfile } from "../lib/types";
+import type { Analysis, Collection, Exif, StoredPhoto, UserProfile } from "../lib/types";
 import { dataUrlToBase64, fileToScaledDataUrl } from "../lib/image";
 import { findCamera } from "../lib/cameras";
 import {
-  exifSummaryLine,
   extractExif,
   formatAperture,
   formatCamera,
@@ -41,12 +40,10 @@ export default function MyPhotos() {
     setProfile(loadProfile());
 
     function onProfileChange(e: Event) {
-      const detail = (e as CustomEvent<UserProfile | null>).detail;
-      setProfile(detail);
+      setProfile((e as CustomEvent<UserProfile | null>).detail);
     }
     window.addEventListener("lensed:profile-changed", onProfileChange);
-    return () =>
-      window.removeEventListener("lensed:profile-changed", onProfileChange);
+    return () => window.removeEventListener("lensed:profile-changed", onProfileChange);
   }, []);
 
   const visiblePhotos = useMemo(() => {
@@ -65,27 +62,16 @@ export default function MyPhotos() {
     }
   }, [visiblePhotos, selectedId]);
 
-  const targetCollectionId = useMemo(() => {
-    if (view === "all" || view === "uncategorized") return undefined;
-    return view;
-  }, [view]);
+  const targetCollectionId = useMemo(
+    () => (view === "all" || view === "uncategorized" ? undefined : view),
+    [view],
+  );
 
   function buildCameraContext() {
     if (!profile) return null;
     const camera = findCamera(profile.cameraId);
-    if (camera) {
-      return {
-        fullName: camera.fullName,
-        detailed: true,
-        controls: camera.controls,
-      };
-    }
-    if (profile.customCameraName) {
-      return {
-        fullName: profile.customCameraName,
-        detailed: false,
-      };
-    }
+    if (camera) return { fullName: camera.fullName, detailed: true, controls: camera.controls };
+    if (profile.customCameraName) return { fullName: profile.customCameraName, detailed: false };
     return null;
   }
 
@@ -98,7 +84,9 @@ export default function MyPhotos() {
       const next: StoredPhoto[] = [];
       for (const file of Array.from(files)) {
         const exif = await extractExif(file);
-        const thumb = await fileToScaledDataUrl(file, 480, 0.8);
+        // 800px keeps the full-width stage sharp; it is also what localStorage
+        // has to hold, so the browser's ~5MB quota fills around 35 frames.
+        const thumb = await fileToScaledDataUrl(file, 800, 0.82);
         const big = await fileToScaledDataUrl(file, 1568, 0.85);
         const res = await fetch("/api/analyze", {
           method: "POST",
@@ -128,8 +116,10 @@ export default function MyPhotos() {
         });
       }
       const merged = [...next, ...photos];
-      setPhotos(merged);
+      // Persist first: if storage is full this throws and the UI never shows
+      // frames that would vanish on reload.
       savePhotos(merged);
+      setPhotos(merged);
       if (next[0]) setSelectedId(next[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -147,9 +137,7 @@ export default function MyPhotos() {
   }
 
   function movePhoto(id: string, collectionId: string | undefined) {
-    const next = photos.map((p) =>
-      p.id === id ? { ...p, collectionId } : p,
-    );
+    const next = photos.map((p) => (p.id === id ? { ...p, collectionId } : p));
     setPhotos(next);
     savePhotos(next);
   }
@@ -161,18 +149,11 @@ export default function MyPhotos() {
       setNewName("");
       return;
     }
-    const exists = collections.some(
-      (c) => c.name.toLowerCase() === name.toLowerCase(),
-    );
-    if (exists) {
+    if (collections.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
       setError(`A collection called "${name}" already exists.`);
       return;
     }
-    const c: Collection = {
-      id: crypto.randomUUID(),
-      name,
-      createdAt: Date.now(),
-    };
+    const c: Collection = { id: crypto.randomUUID(), name, createdAt: Date.now() };
     const next = [...collections, c];
     setCollections(next);
     saveCollections(next);
@@ -203,111 +184,80 @@ export default function MyPhotos() {
   }
 
   const selected = visiblePhotos.find((p) => p.id === selectedId) ?? null;
+  const selectedIndex = selected ? visiblePhotos.indexOf(selected) : -1;
   const totalUncat = photos.filter((p) => !p.collectionId).length;
+  const cameraName =
+    findCamera(profile?.cameraId ?? null)?.fullName ?? profile?.customCameraName ?? null;
 
   return (
-    <div>
-      {/* Collection bar */}
-      <div className="plate-black mb-6 rounded-md p-3">
-        <div className="mb-2 flex items-center gap-2 px-1">
-          <span className="port h-2 w-2" />
-          <span className="engrave-cream text-[10px]">COLLECTIONS</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <CollectionChip
-            label="All"
-            count={photos.length}
-            active={view === "all"}
-            onClick={() => setView("all")}
-          />
-          <CollectionChip
-            label="Uncategorized"
-            count={totalUncat}
-            active={view === "uncategorized"}
-            onClick={() => setView("uncategorized")}
-          />
-          {collections.map((c) => {
-            const n = photos.filter((p) => p.collectionId === c.id).length;
-            const active = view === c.id;
-            return (
-              <span key={c.id} className="relative inline-flex">
-                <CollectionChip
-                  label={c.name}
-                  count={n}
-                  active={active}
-                  onClick={() => setView(c.id)}
-                />
-                {active && (
-                  <button
-                    onClick={() => deleteCollection(c.id)}
-                    title="Delete collection"
-                    className="-ml-1 mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] hover:text-red-400"
-                  >
-                    ×
-                  </button>
-                )}
-              </span>
-            );
-          })}
-          {creating ? (
-            <span className="inline-flex items-center gap-1">
-              <input
-                autoFocus
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") createCollection();
-                  if (e.key === "Escape") {
-                    setCreating(false);
-                    setNewName("");
-                  }
-                }}
-                placeholder="Collection name"
-                className="input-port px-3 py-1 text-sm"
-              />
-              <button
-                onClick={createCollection}
-                className="btn-chrome px-3 py-1 text-[10px] uppercase tracking-wider"
-              >
-                <span className="engrave">Add</span>
-              </button>
-              <button
-                onClick={() => {
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <Chip active={view === "all"} onClick={() => setView("all")}>
+          All <Count n={photos.length} />
+        </Chip>
+        <Chip active={view === "uncategorized"} onClick={() => setView("uncategorized")}>
+          Uncategorized <Count n={totalUncat} />
+        </Chip>
+        {collections.map((c) => {
+          const n = photos.filter((p) => p.collectionId === c.id).length;
+          const active = view === c.id;
+          return (
+            <span key={c.id} className="inline-flex items-center">
+              <Chip active={active} onClick={() => setView(c.id)}>
+                {c.name} <Count n={n} />
+              </Chip>
+              {active && (
+                <button
+                  onClick={() => deleteCollection(c.id)}
+                  title="Delete collection"
+                  className="ml-1 px-1 text-[13px] text-fg3 transition-colors hover:text-accent"
+                >
+                  ×
+                </button>
+              )}
+            </span>
+          );
+        })}
+        {creating ? (
+          <span className="inline-flex items-center gap-2">
+            <input
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") createCollection();
+                if (e.key === "Escape") {
                   setCreating(false);
                   setNewName("");
-                }}
-                className="text-[10px] uppercase tracking-wider text-stone-500 hover:text-stone-300"
-              >
-                Cancel
-              </button>
-            </span>
-          ) : (
-            <button
-              onClick={() => setCreating(true)}
-              className="inline-flex items-center gap-1 rounded-full border border-dashed border-stone-600 px-3 py-1 text-[10px] uppercase tracking-wider text-stone-300 hover:border-stone-400 hover:text-stone-100"
-            >
-              + New
+                }
+              }}
+              placeholder="Collection name"
+              className="input py-1.5 text-[13px]"
+            />
+            <button onClick={createCollection} className="btn py-1.5">
+              Add
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* Control deck */}
-      <div className="plate-black mb-6 flex flex-wrap items-center justify-between gap-4 rounded-md p-4">
-        <div className="flex items-center gap-3">
-          <span className="port h-3 w-3" />
-          <span className="engrave-cream text-[10px]">
-            FILM BAY ·{" "}
-            {targetCollectionId
-              ? `LOAD INTO "${collections.find((c) => c.id === targetCollectionId)?.name ?? ""}"`
-              : "LOAD JPEG / PNG / WEBP"}
+            <button
+              onClick={() => {
+                setCreating(false);
+                setNewName("");
+              }}
+              className="text-[12px] text-fg3 hover:text-fg2"
+            >
+              Cancel
+            </button>
           </span>
-        </div>
-        <div className="flex items-center gap-3">
+        ) : (
+          <button onClick={() => setCreating(true)} className="chip border-dashed">
+            + New
+          </button>
+        )}
+
+        <div className="ml-auto flex items-center gap-4">
           {busy && (
-            <span className="flex items-center gap-2">
-              <span className="led-red h-2 w-2 animate-pulse" />
-              <span className="engrave-cream text-[10px]">EXPOSING…</span>
+            <span className="flex items-center gap-2 text-[12px] text-fg3">
+              <span className="dot dot-accent animate-pulse" />
+              Analyzing…
             </span>
           )}
           <input
@@ -318,333 +268,236 @@ export default function MyPhotos() {
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
           />
-          <button
-            onClick={() => inputRef.current?.click()}
-            disabled={busy}
-            className="btn-chrome relative px-5 py-2 text-[11px] uppercase tracking-[0.18em]"
-          >
-            <span className="engrave">Load Photos</span>
+          <button onClick={() => inputRef.current?.click()} disabled={busy} className="btn">
+            Upload
           </button>
         </div>
       </div>
 
       {error && (
-        <div className="plate-cream mb-6 rounded-md px-4 py-3 text-sm">
-          <span className="engrave-cream text-[10px]">ERROR</span>
-          <p className="mt-1">{error}</p>
+        <div
+          className="rounded-lg px-4 py-3 text-[13px] text-fg"
+          style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)" }}
+        >
+          {error}
         </div>
       )}
 
-      {visiblePhotos.length === 0 ? (
-        <div className="plate-black rounded-md px-8 py-16 text-center">
-          <div className="engrave-cream text-xs">FRAME 000</div>
-          <p className="mt-3">No exposures in this collection yet.</p>
-          <p className="mt-1 text-sm text-stone-500">
-            Load a photo to receive a written critique.
+      {!selected ? (
+        <div className="py-24 text-center">
+          <p className="font-display text-[32px] text-fg">
+            {view === "all" ? "No frames yet." : "Nothing in this collection yet."}
           </p>
+          <p className="mt-2 text-[14px] text-fg2">Upload a photo to get a written critique.</p>
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
+            className="btn mt-6"
+          >
+            Upload a photo
+          </button>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          <aside className="plate-black space-y-2 rounded-md p-3">
-            <div className="mb-2 flex items-center justify-between px-1">
-              <span className="engrave-cream text-[10px]">FILMSTRIP</span>
-              <span className="engrave-cream text-[10px]">
-                {visiblePhotos.length.toString().padStart(3, "0")}
-              </span>
+        <>
+          <figure className="card overflow-hidden">
+            <div className="grid min-h-[280px] place-items-center bg-elev2">
+              <img
+                key={selected.id}
+                src={selected.thumbDataUrl}
+                alt={selected.filename}
+                className="fade-in max-h-[72vh] w-full object-contain"
+              />
             </div>
-            {visiblePhotos.map((p, i) => {
+          </figure>
+
+          <div className="rail flex items-center gap-2 overflow-x-auto py-1">
+            {visiblePhotos.map((p) => {
               const active = p.id === selectedId;
               return (
                 <button
                   key={p.id}
                   onClick={() => setSelectedId(p.id)}
-                  className={`flex w-full items-center gap-3 rounded-md border p-2 text-left transition ${
-                    active
-                      ? "border-stone-200 bg-stone-900/80"
-                      : "border-stone-800 hover:border-stone-700"
+                  title={p.filename}
+                  className={`h-16 w-16 flex-none overflow-hidden rounded-md ring-2 transition ${
+                    active ? "ring-accent" : "ring-transparent opacity-70 hover:opacity-100"
                   }`}
                 >
-                  <span className="relative">
-                    <img
-                      src={p.thumbDataUrl}
-                      alt={p.filename}
-                      className="h-14 w-14 rounded-sm object-cover ring-1 ring-black"
-                    />
-                    {active && (
-                      <span className="led-red absolute -right-1 -top-1 h-2 w-2" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm">{p.filename}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-stone-500">
-                      №{(visiblePhotos.length - i).toString().padStart(3, "0")} ·{" "}
-                      {p.analysis.genre} · {p.analysis.mood}
-                    </div>
-                  </div>
+                  <img src={p.thumbDataUrl} alt="" className="h-full w-full object-cover" />
                 </button>
               );
             })}
-          </aside>
+            <span className="ml-auto flex-none pl-4 font-mono text-[11px] text-fg3">
+              {selectedIndex + 1} / {visiblePhotos.length}
+            </span>
+          </div>
 
-          {selected && (
-            <article className="plate-black rounded-md p-5">
-              <div className="mb-5 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <div className="relative rounded-md p-3 ring-1 ring-black/60">
-                  <span className="screw absolute left-1.5 top-1.5" />
-                  <span className="screw absolute right-1.5 top-1.5" />
-                  <span className="screw absolute bottom-1.5 left-1.5" />
-                  <span className="screw absolute bottom-1.5 right-1.5" />
-                  <img
-                    src={selected.thumbDataUrl}
-                    alt={selected.filename}
-                    className="w-full rounded-sm object-cover"
-                  />
-                </div>
-                <div>
-                  <div className="plate-cream rounded-sm px-3 py-2">
-                    <div className="engrave-cream text-[9px]">FILE</div>
-                    <div className="font-mono text-sm">{selected.filename}</div>
+          <hr className="border-hair" />
+
+          <div className="grid gap-10 md:grid-cols-12 md:gap-12">
+            <div className="space-y-8 md:col-span-7">
+              <p className="font-display text-[24px] italic leading-snug text-fg">
+                “{selected.analysis.oneLine}”
+              </p>
+              <Section label="Composition">{selected.analysis.composition}</Section>
+              <Section label="Lighting">{selected.analysis.lighting}</Section>
+              <Section label="Technique">{selected.analysis.technique}</Section>
+              <div className="grid gap-8 sm:grid-cols-2">
+                <List label="Strengths" items={selected.analysis.strengths} />
+                <List label="Try next time" items={selected.analysis.improvements} />
+              </div>
+              {selected.analysis.cameraTips && selected.analysis.cameraTips.length > 0 && (
+                <div className="card p-5">
+                  <div className="flex items-center gap-2">
+                    <span className="dot dot-ok" />
+                    <span className="label">On your {cameraName ?? "camera"}</span>
                   </div>
-                  {selected.exif && <ExifPanel exif={selected.exif} />}
-                  <p className="mt-3 italic text-stone-300">
-                    “{selected.analysis.oneLine}”
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                    <Tag chrome>{selected.analysis.genre}</Tag>
-                    <Tag chrome>{selected.analysis.mood}</Tag>
-                    {selected.analysis.subjects.slice(0, 4).map((s) => (
-                      <Tag key={s}>{s}</Tag>
+                  <ul className="mt-3 space-y-2 text-[14px] leading-relaxed text-fg">
+                    {selected.analysis.cameraTips.map((tip) => (
+                      <li key={tip} className="flex gap-3">
+                        <span className="mt-2 h-1 w-1 flex-none rounded-full bg-fg3" />
+                        <span>{tip}</span>
+                      </li>
                     ))}
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {selected.analysis.palette.map((c) => (
-                      <div
-                        key={c}
-                        className="plate-cream rounded-sm px-2 py-1 text-[10px] uppercase tracking-wider"
-                      >
-                        {c}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2">
-                      <span className="engrave-cream text-[10px]">
-                        COLLECTION
-                      </span>
-                      <select
-                        value={selected.collectionId ?? ""}
-                        onChange={(e) =>
-                          movePhoto(selected.id, e.target.value || undefined)
-                        }
-                        className="input-port px-2 py-1 text-sm"
-                      >
-                        <option value="">Uncategorized</option>
-                        {collections.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <button
-                      onClick={() => deletePhoto(selected.id)}
-                      className="text-[10px] uppercase tracking-[0.18em] text-stone-500 hover:text-red-400"
-                    >
-                      Eject frame
-                    </button>
-                  </div>
+                  </ul>
                 </div>
-              </div>
-
-              <Divider />
-
-              <div className="grid gap-5 md:grid-cols-3">
-                <Section title="Composition">{selected.analysis.composition}</Section>
-                <Section title="Lighting">{selected.analysis.lighting}</Section>
-                <Section title="Technique">{selected.analysis.technique}</Section>
-              </div>
-
-              <Divider />
-
-              <div className="grid gap-5 md:grid-cols-2">
-                <BulletSection title="Strengths" items={selected.analysis.strengths} />
-                <BulletSection
-                  title="Try next time"
-                  items={selected.analysis.improvements}
-                />
-              </div>
-
-              {selected.analysis.cameraTips &&
-                selected.analysis.cameraTips.length > 0 && (
-                  <div className="plate-cream mt-6 rounded-md px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="led-green h-2 w-2" />
-                      <span className="engrave-cream text-[10px]">
-                        {profile && (findCamera(profile.cameraId)?.fullName || profile.customCameraName)
-                          ? `ON YOUR ${(findCamera(profile.cameraId)?.fullName || profile.customCameraName || "").toUpperCase()}`
-                          : "ON YOUR CAMERA"}
-                      </span>
-                    </div>
-                    <ul className="mt-2 space-y-1.5 text-sm">
-                      {selected.analysis.cameraTips.map((tip) => (
-                        <li key={tip} className="flex gap-2">
-                          <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-700" />
-                          <span>{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
+              )}
               {selected.analysis.similarPhotographers.length > 0 && (
-                <div className="plate-cream mt-6 rounded-md px-4 py-3">
-                  <div className="engrave-cream text-[10px]">
-                    REFERENCE LIBRARY · STUDY THESE
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                <Section label="Study these">
+                  <div className="flex flex-wrap gap-1.5">
                     {selected.analysis.similarPhotographers.map((n) => (
-                      <span
-                        key={n}
-                        className="rounded-full border border-amber-900/30 bg-amber-50/40 px-3 py-1 text-sm text-stone-800"
-                      >
+                      <span key={n} className="chip">
                         {n}
                       </span>
                     ))}
                   </div>
-                </div>
+                </Section>
               )}
-            </article>
-          )}
-        </div>
+            </div>
+
+            <aside className="space-y-6 self-start md:sticky md:top-28 md:col-span-5">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="truncate font-mono text-[13px] text-fg">{selected.filename}</span>
+                <button
+                  onClick={() => deletePhoto(selected.id)}
+                  className="flex-none text-[12px] text-fg3 transition-colors hover:text-accent"
+                >
+                  Remove
+                </button>
+              </div>
+              {selected.exif && <ShotData exif={selected.exif} />}
+              <div className="flex flex-wrap gap-1.5">
+                <span className="chip chip-on">{selected.analysis.genre}</span>
+                <span className="chip chip-on">{selected.analysis.mood}</span>
+                {selected.analysis.subjects.slice(0, 4).map((s) => (
+                  <span key={s} className="chip">
+                    {s}
+                  </span>
+                ))}
+              </div>
+              <div>
+                <div className="label mb-2">Palette</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selected.analysis.palette.map((c) => (
+                    <span key={c} className="chip">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="label mb-2">Collection</div>
+                <select
+                  value={selected.collectionId ?? ""}
+                  onChange={(e) => movePhoto(selected.id, e.target.value || undefined)}
+                  className="input w-full"
+                >
+                  <option value="">Uncategorized</option>
+                  {collections.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </aside>
+          </div>
+        </>
       )}
     </div>
   );
 }
 
-function CollectionChip({
-  label,
-  count,
+function Chip({
   active,
   onClick,
+  children,
 }: {
-  label: string;
-  count: number;
   active: boolean;
   onClick: () => void;
+  children: ReactNode;
 }) {
-  if (active) {
-    return (
-      <button
-        onClick={onClick}
-        className="btn-chrome inline-flex items-center gap-2 px-3 py-1"
-      >
-        <span className="led-red h-1.5 w-1.5" />
-        <span className="engrave text-[11px]">{label}</span>
-        <span className="engrave text-[10px] opacity-70">
-          {count.toString().padStart(2, "0")}
-        </span>
-      </button>
-    );
-  }
   return (
-    <button
-      onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-full border border-stone-700 px-3 py-1 text-stone-300 hover:border-stone-500"
-    >
-      <span className="text-[11px] uppercase tracking-[0.16em]">{label}</span>
-      <span className="text-[10px] text-stone-500">
-        {count.toString().padStart(2, "0")}
-      </span>
+    <button onClick={onClick} className={`chip ${active ? "chip-on" : ""}`}>
+      {children}
     </button>
   );
 }
 
-function ExifPanel({ exif }: { exif: import("../lib/types").Exif }) {
-  const camera = formatCamera(exif);
-  const summary = exifSummaryLine(exif);
-  const cells: { label: string; value: string | null }[] = [
-    { label: "FOCAL", value: formatFocal(exif.focalLength) },
-    { label: "APERTURE", value: formatAperture(exif.aperture) },
-    { label: "SHUTTER", value: formatShutter(exif.shutterSeconds) },
-    { label: "ISO", value: formatIso(exif.iso)?.replace("ISO ", "") ?? null },
-  ];
-  const hasAny = camera || exif.lensModel || summary;
-  if (!hasAny) return null;
+function Count({ n }: { n: number }) {
+  return <span className="font-mono text-[11px] opacity-60">{n}</span>;
+}
+
+function ShotData({ exif }: { exif: Exif }) {
+  const rows = (
+    [
+      ["Camera", formatCamera(exif)],
+      ["Lens", exif.lensModel ?? null],
+      ["Focal length", formatFocal(exif.focalLength)],
+      ["Aperture", formatAperture(exif.aperture)],
+      ["Shutter", formatShutter(exif.shutterSeconds)],
+      ["ISO", formatIso(exif.iso)?.replace("ISO ", "") ?? null],
+    ] as [string, string | null][]
+  ).filter((r): r is [string, string] => !!r[1]);
+  if (rows.length === 0) return null;
   return (
-    <div className="plate-cream mt-2 rounded-sm px-3 py-2">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="engrave-cream text-[9px]">SHOT DATA</span>
-        <span className="font-mono text-[10px] text-stone-700">
-          {camera ?? "—"}
-        </span>
-      </div>
-      {exif.lensModel && (
-        <div className="mt-0.5 truncate font-mono text-[10px] text-stone-700">
-          {exif.lensModel}
-        </div>
-      )}
-      <div className="mt-2 grid grid-cols-4 gap-1 text-center">
-        {cells.map((c) => (
-          <div key={c.label} className="rounded-sm border border-stone-400/40 bg-white/40 px-1 py-1">
-            <div className="text-[8px] uppercase tracking-wider text-stone-600">
-              {c.label}
-            </div>
-            <div className="font-mono text-[11px] text-stone-900">
-              {c.value ?? "—"}
-            </div>
+    <div>
+      <div className="label mb-2">Shot data</div>
+      <dl className="font-mono text-[12px]">
+        {rows.map(([k, v]) => (
+          <div
+            key={k}
+            className="flex justify-between gap-4 border-b border-hair py-1.5 last:border-0"
+          >
+            <dt className="text-fg3">{k}</dt>
+            <dd className="text-right text-fg">{v}</dd>
           </div>
         ))}
-      </div>
+      </dl>
     </div>
   );
 }
 
-function Tag({
-  children,
-  chrome = false,
-}: {
-  children: React.ReactNode;
-  chrome?: boolean;
-}) {
-  if (chrome) {
-    return (
-      <span className="btn-chrome inline-flex items-center px-3 py-1 text-[11px]">
-        <span className="engrave">{children}</span>
-      </span>
-    );
-  }
+function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <span className="rounded-full border border-stone-700 px-2.5 py-1 text-stone-300">
-      {children}
-    </span>
+    <section>
+      <div className="label mb-2">{label}</div>
+      <div className="text-[15px] leading-relaxed text-fg">{children}</div>
+    </section>
   );
 }
 
-function Divider() {
-  return <div className="my-5 sprocket rounded-sm" />;
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function List({ label, items }: { label: string; items: string[] }) {
   return (
-    <div>
-      <div className="engrave-cream text-[10px]">{title}</div>
-      <p className="mt-1.5 text-sm text-stone-200">{children}</p>
-    </div>
-  );
-}
-
-function BulletSection({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div>
-      <div className="engrave-cream text-[10px]">{title}</div>
-      <ul className="mt-1.5 space-y-1.5 text-sm text-stone-200">
+    <section>
+      <div className="label mb-2">{label}</div>
+      <ul className="space-y-2 text-[14px] leading-relaxed text-fg">
         {items.map((it) => (
-          <li key={it} className="flex gap-2">
-            <span className="mt-1 h-1.5 w-1.5 flex-none rounded-full bg-stone-400" />
+          <li key={it} className="flex gap-3">
+            <span className="mt-2 h-1 w-1 flex-none rounded-full bg-fg3" />
             <span>{it}</span>
           </li>
         ))}
       </ul>
-    </div>
+    </section>
   );
 }
