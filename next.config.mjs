@@ -1,11 +1,6 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "picsum.photos" },
-      { protocol: "https", hostname: "fastly.picsum.photos" },
-    ],
-  },
-};
+// No `images` config on purpose: nothing renders through next/image, so the
+// optimizer route accepts no remote sources.
+const nextConfig = {};
 
 export default nextConfig;
