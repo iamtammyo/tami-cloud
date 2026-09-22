@@ -9,7 +9,7 @@ export const site = {
   thesis: "You can choose your life. Watch me do it.",
   status: "Open to brand work",
   /** Wallpaper lives in /public. Swap for your own photo, same filename. */
-  wallpaper: "/wallpaper.svg",
+  wallpaper: "/wallpaper.jpg",
   /** Menubar left, next to the name. */
   descriptor: "Writer · Creator · Photographer",
 };
@@ -19,7 +19,7 @@ export const sticky = {
   title: "this week",
   lines: [
     "building this site in public",
-    "shoot the wallpaper (own photo, not stock)",
+    "bliss.jpg is a placeholder, shoot my own",
     "reply to the beehiiv email",
     "why not me?",
   ],
