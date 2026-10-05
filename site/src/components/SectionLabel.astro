@@ -1,0 +1,11 @@
+---
+/* Tracked-caps wayfinding label, e.g. "PHOTOGRAPHY / 02". */
+interface Props {
+  text: string;
+  index?: number;
+}
+const { text, index } = Astro.props;
+const num = index === undefined ? null : String(index).padStart(2, '0');
+---
+
+<p class="label">{text}{num && <span aria-hidden="true"> / {num}</span>}</p>

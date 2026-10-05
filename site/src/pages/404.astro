@@ -1,0 +1,26 @@
+---
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import SectionLabel from '~/components/SectionLabel.astro';
+---
+
+<BaseLayout title="Page not found" noindex>
+  <div class="wrap not-found">
+    <SectionLabel text="Error" index={404} />
+    <h1>This page wandered off.</h1>
+    <div class="prose">
+      <p>The link may be old, or the page moved when the site was rebuilt. Here are some places to pick back up:</p>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/work">Work</a></li>
+        <li><a href="/photography">Photography</a></li>
+        <li><a href="/contact">Get in touch</a></li>
+      </ul>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .not-found { padding-block: var(--space-xl) var(--space-l); }
+  h1 { margin-block: var(--space-s) var(--space-m); }
+  ul { padding-left: 1.2em; }
+</style>

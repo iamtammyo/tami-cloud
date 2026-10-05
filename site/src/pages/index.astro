@@ -1,0 +1,102 @@
+---
+/*
+  Phase 1 homepage: shows the foundations with stand-in copy.
+  Phase 3 replaces this with the `home` singleton and the Latest strip.
+*/
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import SectionLabel from '~/components/SectionLabel.astro';
+
+const doors = [
+  { label: 'Work at Buffer', description: 'Reports, series and the long-form writing I lead.', href: '/work' },
+  { label: 'Writing and newsletters', description: 'Articles across publications and the newsletters I edit.', href: '/work' },
+  { label: 'Photography', description: 'Bodies of work and exhibition history.', href: '/photography' },
+  { label: 'Creator and partnerships', description: 'The Remote Path, and working with brands.', href: '/creator' },
+];
+---
+
+<BaseLayout>
+  <section class="wrap hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <SectionLabel text="Index" index={0} />
+      <h1 id="hero-title">
+        Photographer, writer and creator. Content lead at <span class="em">Buffer</span>.
+      </h1>
+      <p class="intro prose">
+        Stand-in intro paragraph. In phase 3 this comes from the home singleton in the admin, so it can change without touching code.
+      </p>
+      <p class="aside-hand" aria-hidden="true">start anywhere</p>
+    </div>
+    <div class="hero-image" role="img" aria-label="Placeholder for the hero photograph">
+      <span class="label">Hero photograph</span>
+    </div>
+  </section>
+
+  <section class="wrap doors" aria-labelledby="doors-title">
+    <h2 id="doors-title" class="visually-hidden">Where to go</h2>
+    <ol>
+      {
+        doors.map((door, i) => (
+          <li>
+            <a href={door.href}>
+              <span class="label">0{i + 1}</span>
+              <span class="door-title">{door.label}</span>
+              <span class="door-desc">{door.description}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    display: grid;
+    gap: var(--space-l);
+    padding-block: var(--space-xl);
+    align-items: end;
+  }
+  @media (min-width: 56rem) {
+    .hero { grid-template-columns: 1.15fr 1fr; gap: var(--space-xl); }
+  }
+  .hero h1 {
+    margin-block: var(--space-s) var(--space-m);
+    font-size: var(--step-4);
+    font-variation-settings: 'opsz' 144;
+  }
+  .intro { color: var(--color-text-muted); }
+  .aside-hand { margin-top: var(--space-m); transform: rotate(-3deg); transform-origin: left; }
+
+  .hero-image {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 5;
+    background: var(--color-surface);
+    border: 1px solid var(--color-rule);
+  }
+
+  .doors ol {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--color-text);
+  }
+  .doors li { border-bottom: 1px solid var(--color-rule); }
+  .doors a {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2xs);
+    height: 100%;
+    padding: var(--space-m) var(--space-s) var(--space-l) 0;
+    color: var(--color-text);
+    text-decoration: none;
+  }
+  .door-title {
+    font-family: var(--font-display);
+    font-size: var(--step-2);
+    line-height: var(--leading-tight);
+  }
+  .doors a:hover .door-title { color: var(--color-accent); }
+  .door-desc { font-size: var(--step--1); color: var(--color-text-muted); }
+</style>
