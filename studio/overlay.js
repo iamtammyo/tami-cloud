@@ -244,8 +244,70 @@
     });
   }
 
+  // ---------- B-roll ----------
+  // A segment can carry broll: {clipId, layout, in, span}. It covers that
+  // caption plus `span` following captions, starting `in` seconds into the clip.
+
+  var LAYOUTS = {
+    full: { label: "Full screen", hint: "B-roll fills the frame; your voice keeps playing" },
+    pip: { label: "Picture in picture", hint: "B-roll in a box at the upper right, you stay on screen" },
+    split: { label: "Split screen", hint: "B-roll on top, you in the bottom half" }
+  };
+
+  // Placements in timeline order, from the segments' broll fields.
+  function placements(segments) {
+    var segs = (segments || []).slice().sort(function (a, b) { return a.start - b.start; });
+    var out = [];
+    segs.forEach(function (s, i) {
+      var b = s.broll;
+      if (!b || !b.clipId) return;
+      var last = segs[Math.min(segs.length - 1, i + (b.span || 0))];
+      out.push({ segId: s.id, clipId: b.clipId, layout: LAYOUTS[b.layout] ? b.layout : "full", in: b.in || 0, start: s.start, end: last.end });
+    });
+    return out;
+  }
+
+  // The B-roll on screen at time t (the latest one to start wins).
+  function placementAt(pl, t) {
+    var hit = null;
+    pl.forEach(function (p) { if (t >= p.start && t < p.end) hit = p; });
+    return hit;
+  }
+
+  // Source crop (sx, sy, sw, sh) that fills a dw x dh box, centred on fy.
+  function coverCrop(cw, ch, dw, dh, fy) {
+    var r = dw / dh, sw = cw, sh = cw / r;
+    if (sh > ch) { sh = ch; sw = ch * r; }
+    var sx = (cw - sw) / 2, sy = clamp(ch * (fy == null ? 0.5 : fy) - sh / 2, 0, ch - sh);
+    return { sx: sx, sy: sy, sw: sw, sh: sh };
+  }
+
+  // Where things go for a layout on a W x H frame. The preview canvas and the
+  // ffmpeg render both draw from these rectangles.
+  //   b:  the B-roll clip (cw x ch) -> {sx,sy,sw,sh, dx,dy,dw,dh}
+  //   a2: for split, the A-roll (aw x ah) re-cropped into the bottom half
+  function brollRects(layout, W, H, cw, ch, aw, ah) {
+    var b, a2 = null, c;
+    if (layout === "pip") {
+      var dw = W * 0.42, dh = dw * ch / cw;
+      if (dh > H * 0.42) { dh = H * 0.42; dw = dh * cw / ch; }
+      b = { sx: 0, sy: 0, sw: cw, sh: ch, dx: W - dw - W * 0.05, dy: H * 0.13, dw: dw, dh: dh };
+    } else if (layout === "split") {
+      c = coverCrop(cw, ch, W, H / 2, 0.5);
+      b = { sx: c.sx, sy: c.sy, sw: c.sw, sh: c.sh, dx: 0, dy: 0, dw: W, dh: H / 2 };
+      // Faces usually sit a little above the middle of a talking-head frame.
+      var ca = coverCrop(aw, ah, W, H / 2, 0.42);
+      a2 = { sx: ca.sx, sy: ca.sy, sw: ca.sw, sh: ca.sh, dx: 0, dy: H / 2, dw: W, dh: H / 2 };
+    } else {
+      c = coverCrop(cw, ch, W, H, 0.5);
+      b = { sx: c.sx, sy: c.sy, sw: c.sw, sh: c.sh, dx: 0, dy: 0, dw: W, dh: H };
+    }
+    return { b: b, a2: a2 };
+  }
+
   global.EditBay = {
-    STYLES: STYLES, PLACES: PLACES, MOTIONS: MOTIONS, SFX: SFX, DEFAULT_LOOK: DEFAULT_LOOK,
-    look: look, tokenize: tokenize, layout: layout, draw: draw, cuesBetween: cuesBetween
+    STYLES: STYLES, PLACES: PLACES, MOTIONS: MOTIONS, SFX: SFX, DEFAULT_LOOK: DEFAULT_LOOK, LAYOUTS: LAYOUTS,
+    look: look, tokenize: tokenize, layout: layout, draw: draw, cuesBetween: cuesBetween,
+    placements: placements, placementAt: placementAt, brollRects: brollRects
   };
 })(typeof window !== "undefined" ? window : globalThis);
