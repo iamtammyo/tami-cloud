@@ -1,0 +1,11 @@
+{
+  "source": "Buffer",
+  "organization": "Tami's Socials",
+  "updatedAt": "2026-10-14",
+  "windowDays": 90,
+  "channels": {
+    "linkedin": { "handle": "tamilore-o", "posts": 27, "impressions": 83590, "reach": 53005, "reactions": 2328, "comments": 129, "shares": 1, "engagementRate": 2.28 },
+    "instagram": { "handle": "tamioladipo", "posts": 51, "views": 65787, "reach": 44655, "reactions": 3429, "comments": 251, "shares": 304, "saves": 389, "engagementRate": 10.2 },
+    "tiktok": { "handle": "tripleotami", "posts": 30, "views": 15074, "reach": 12813, "reactions": 1442, "comments": 84, "shares": 32, "engagementRate": 10.34 }
+  }
+}

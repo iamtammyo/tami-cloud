@@ -1,0 +1,36 @@
+portrait:
+  alt: Portrait of Tami Oladipo
+eyebrow: Writer and photographer, based in Lagos
+headline: I'm a writer, photographer and all-around _creative_ person.
+intro: >-
+  My current life goal is to define and develop a creative practice. I have 6
+  years' work experience creating written and visual content for companies like
+  Buffer, Appcues and Notion.
+cards:
+  - title: Photography
+    text: Series from Lagos and the places I pass through
+    link: /photography
+    external: false
+    colour: paper
+    photo:
+      alt: ''
+  - title: Partner with me
+    text: Media kit, rates and past brand work
+    link: /partnerships
+    external: false
+    colour: periwinkle
+    photo:
+      alt: ''
+  - title: Writing
+    text: Articles and data stories, on my portfolio site
+    link: ''
+    external: true
+    colour: paper
+    photo:
+      alt: ''
+brandsHeading: Brands I've made content with
+brands:
+  - name: Buffer
+  - name: Appcues
+  - name: Notion
+  - name: Slate

@@ -1,0 +1,20 @@
+---
+import Base from '~/layouts/Base.astro';
+import Headline from '~/components/Headline.astro';
+---
+
+<Base title="Page not found" noindex>
+  <section class="band grain-strong lost">
+    <div class="inner stack">
+      <p class="eyebrow">404</p>
+      <Headline as="h1" class="display-m upper" text="This page got _lost_" />
+      <p class="lead">The link may be old, or the page moved when the site was rebuilt.</p>
+      <p><a class="btn" href="/">Back to the start</a></p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .lost { background: var(--periwinkle-deep); --script: var(--paper); --eyebrow: var(--ink); }
+  .stack { gap: 24px; }
+</style>

@@ -1,0 +1,18 @@
+title: '[Series name]'
+status: public
+order: 3
+place: ''
+year: ''
+camera: ''
+lead:
+  alt: ''
+  caption: ''
+pair: []
+note: ''
+detail:
+  alt: ''
+  caption: ''
+more:
+  - { alt: '', caption: '' }
+  - { alt: '', caption: '' }
+  - { alt: '', caption: '' }

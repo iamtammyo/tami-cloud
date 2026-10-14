@@ -1,0 +1,18 @@
+---
+/* Shown only while developing, where a feature still needs a setting before it can work on the live site. */
+interface Props {
+  text: string;
+}
+const { text } = Astro.props;
+---
+
+{import.meta.env.DEV && <p class="setup-note">Setup needed (only you can see this): {text}</p>}
+
+<style>
+  .setup-note {
+    border: 1.5px dashed currentColor;
+    padding: 12px 16px;
+    font-size: var(--text-sm);
+    max-width: 30rem;
+  }
+</style>

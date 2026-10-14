@@ -1,0 +1,104 @@
+---
+import '@fontsource/cormorant-garamond/400.css';
+import '@fontsource/cormorant-garamond/400-italic.css';
+import '@fontsource/cormorant-garamond/500.css';
+import '@fontsource-variable/hanken-grotesk';
+import '@fontsource/mrs-saint-delafield';
+import '~/styles/global.css';
+import Header from '~/components/Header.astro';
+import { getSite, SITE_NAME } from '~/lib/content';
+
+const DEFAULT_DESCRIPTION =
+  'Writer, photographer and all-around creative person based in Lagos. Photography, brand partnerships and writing.';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  /** Sets link, eyebrow and active-nav colours for the page. */
+  theme?: 'blue' | 'photo' | 'partner';
+  /** Home has its own masthead in the left panel. */
+  header?: boolean;
+  noindex?: boolean;
+  /** Adds schema.org Person data (Home and About). */
+  person?: boolean;
+}
+
+const {
+  title,
+  description = DEFAULT_DESCRIPTION,
+  ogImage,
+  theme = 'blue',
+  header = true,
+  noindex = false,
+  person = false,
+} = Astro.props;
+
+const personLd = person
+  ? JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: SITE_NAME,
+      url: new URL('/', Astro.site).href,
+      jobTitle: 'Writer and photographer',
+      homeLocation: { '@type': 'Place', name: 'Lagos, Nigeria' },
+      worksFor: { '@type': 'Organization', name: 'Buffer' },
+      sameAs: (await getSite()).socials.map((s) => s.url),
+    })
+  : null;
+
+const fullTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImageUrl = ogImage ? new URL(ogImage, Astro.site) : null;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#f2ebdd" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+    <meta name="twitter:card" content={ogImageUrl ? 'summary_large_image' : 'summary'} />
+    <link rel="sitemap" href="/sitemap.xml" />
+    {personLd && <script type="application/ld+json" set:html={personLd} />}
+    <slot name="head" />
+  </head>
+  <body class={`theme-${theme}`}>
+    <a class="skip-link" href="#main">Skip to content</a>
+    {header && <Header />}
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <slot name="footer" />
+  </body>
+</html>
+
+<style is:global>
+  .theme-blue { --link: var(--blue); --nav-active: var(--blue); --eyebrow: var(--blue); --script: var(--blue); }
+  .theme-photo { --link: var(--rust); --nav-active: var(--rust); --eyebrow: var(--rust); --script: var(--cream); }
+  .theme-partner { --link: var(--wine); --nav-active: var(--wine); --eyebrow: var(--wine); --script: var(--wine); }
+
+  .skip-link {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 100;
+    padding: 10px 16px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: var(--text-sm);
+    transform: translateY(-200%);
+  }
+  .skip-link:focus { transform: none; color: var(--paper); }
+</style>

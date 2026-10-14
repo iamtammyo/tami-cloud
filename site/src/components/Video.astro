@@ -1,0 +1,69 @@
+---
+/*
+  A video slot. YouTube links render a privacy-enhanced embed that loads only
+  when clicked; any other URL becomes a link over the poster.
+*/
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import Slot from './Slot.astro';
+
+interface Props {
+  url?: string;
+  poster?: ImageMetadata | null;
+  posterAlt?: string;
+  label: string;
+  title: string;
+}
+const { url, poster, posterAlt = '', label, title } = Astro.props;
+const yt = url?.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/)?.[1];
+---
+
+{
+  !url ? (
+    <Slot label={label} tone="wine" ratio="4 / 5" image={poster} alt={posterAlt} sizes="(min-width: 760px) 50vw, 100vw" />
+  ) : yt ? (
+    <div class="video" data-yt={yt} data-title={title}>
+      {poster ? <Image src={poster} alt={posterAlt} class="poster" /> : <div class="poster blank" />}
+      <button type="button" class="play">Play video<span class="visually-hidden">: {title}</span></button>
+    </div>
+  ) : (
+    <a class="video" href={url} target="_blank" rel="noopener">
+      {poster ? <Image src={poster} alt={posterAlt} class="poster" /> : <div class="poster blank" />}
+      <span class="play">Watch<span class="visually-hidden">: {title} (opens in a new tab)</span> ↗</span>
+    </a>
+  )
+}
+
+<script>
+  document.querySelectorAll<HTMLElement>('.video[data-yt]').forEach((el) => {
+    el.querySelector('button')?.addEventListener('click', () => {
+      const f = document.createElement('iframe');
+      f.src = `https://www.youtube-nocookie.com/embed/${el.dataset.yt}?autoplay=1`;
+      f.title = el.dataset.title ?? 'Video';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture';
+      f.allowFullscreen = true;
+      el.replaceChildren(f);
+      f.focus();
+    });
+  });
+</script>
+
+<style>
+  .video { position: relative; display: block; aspect-ratio: 4 / 5; background: var(--wine-soft); }
+  .video :global(iframe), .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 0; }
+  .play {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    min-height: 44px;
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+    border: 0;
+    background: var(--cream);
+    color: var(--wine);
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+  }
+</style>

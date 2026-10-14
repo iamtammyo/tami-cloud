@@ -1,0 +1,58 @@
+---
+import { getSite, SITE_NAME } from '~/lib/content';
+
+const { nav } = await getSite();
+
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const current = (href: string) => path === href || path.startsWith(`${href}/`);
+---
+
+<header class="header">
+  <a class="name" href="/">{SITE_NAME}</a>
+  <nav aria-label="Main">
+    <ul role="list">
+      {
+        nav.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              aria-current={current(item.href) ? 'page' : undefined}
+              {...(item.external && { target: '_blank', rel: 'noopener' })}
+            >
+              {item.label}
+              {item.external && <span aria-hidden="true"> ↗</span>}
+              {item.external && <span class="visually-hidden"> (opens in a new tab)</span>}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 32px;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 28px var(--gutter);
+    border-bottom: var(--rule);
+  }
+  .name {
+    font-weight: 300;
+    font-size: clamp(1.75rem, 1.4rem + 1vw, 2.125rem);
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  ul { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 15px; }
+  nav a { color: var(--ink); text-decoration: none; }
+  nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  nav a[aria-current='page'] {
+    color: var(--nav-active, var(--blue));
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+</style>

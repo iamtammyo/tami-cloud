@@ -1,0 +1,53 @@
+/*
+  Design tokens, taken from the Figma-to-ReadyMag redesign boards.
+  Two colours were nudged to pass WCAG AA (see BRIEF.md, "Contrast").
+  Run `npm run contrast` after changing any colour.
+*/
+:root {
+  /* Neutrals */
+  --ink: #1e1a17;
+  --cream: #f2ebdd;        /* page background */
+  --paper: #fbf6ec;        /* cards, inputs, light text on dark */
+  --sand: #e2d7c2;         /* image placeholders, soft rules */
+  --muted: #6a5a44;        /* secondary text */
+
+  /* Home and About */
+  --blue: #34428a;         /* eyebrows, links, script on cream */
+  --periwinkle: #8e9bd3;   /* cards with ink text */
+  --periwinkle-deep: #7887c4; /* bands with cream script (design had #8e9bd3, 2.5:1) */
+
+  /* Photography */
+  --terracotta: #c86a42;   /* design had #b4552f, ink on it was 3.5:1 */
+  --rust: #8e3f20;         /* links and meta on cream */
+
+  /* Partnerships */
+  --wine: #4a1f27;
+  --wine-soft: #63303a;
+  --sky: #9cc3e6;          /* script and eyebrows on wine */
+
+  /* Type */
+  --font-sans: 'Hanken Grotesk Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-script: 'Mrs Saint Delafield', cursive;
+
+  --text-xs: 0.8125rem;    /* 13px eyebrows, captions */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;     /* 18px lead paragraphs */
+
+  --display-xl: clamp(2.75rem, 1.6rem + 4.6vw, 4.75rem);  /* 76px */
+  --display-l: clamp(2.5rem, 1.6rem + 3.4vw, 4rem);       /* 64px */
+  --display-m: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);    /* 56px */
+  --display-s: clamp(2rem, 1.5rem + 2vw, 3rem);           /* 48px */
+  --display-xs: clamp(1.625rem, 1.3rem + 1.2vw, 2.125rem);/* 34px */
+  --card-title: clamp(1.5rem, 1.3rem + 0.7vw, 1.875rem);  /* 30px */
+
+  --tracking: 0.14em;
+
+  /* Space */
+  --gutter: clamp(1.25rem, 0.5rem + 3.6vw, 3.5rem);       /* 56px */
+  --section: clamp(3.5rem, 2rem + 4.5vw, 5.5rem);         /* 80 to 88px */
+  --max: 80rem;            /* 1280px */
+  --max-inner: 73rem;      /* 1168px */
+  --rule: 1.5px solid var(--ink);
+}

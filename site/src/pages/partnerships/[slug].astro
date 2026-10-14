@@ -1,0 +1,141 @@
+---
+import Base from '~/layouts/Base.astro';
+import Headline from '~/components/Headline.astro';
+import Slot from '~/components/Slot.astro';
+import Video from '~/components/Video.astro';
+import { caseStudies } from '~/lib/cases';
+import { plainText } from '~/lib/script';
+
+export async function getStaticPaths() {
+  const all = await caseStudies();
+  return all.map((c, i) => ({ params: { slug: c.id }, props: { cs: c, next: all[i + 1] } }));
+}
+
+const { cs, next } = Astro.props;
+const d = cs.data;
+---
+
+<Base
+  title={`${plainText(d.headline)} (${d.brand} case study)`}
+  theme="partner"
+  description={`Case study: ${d.card.title}. A brand partnership with ${d.brand}.`}
+>
+  <section class="hero" aria-labelledby="cs-title">
+    <div class="hero-photo grain-strong">
+      <Slot image={d.hero.image} alt={d.hero.alt} label="[Hero still from the campaign]" tone="wine" height="100%" eager sizes="(min-width: 960px) 50vw, 100vw" />
+    </div>
+    <div class="hero-copy">
+      <a class="small" href="/partnerships">‹ All partnerships</a>
+      <p class="eyebrow">Case study · {d.brand}</p>
+      <Headline as="h1" id="cs-title" class="display-m upper" text={d.headline} />
+      <dl class="facts">
+        {d.facts.map((f) => <div><dt class="eyebrow">{f.label}</dt><dd>{f.value}</dd></div>)}
+      </dl>
+    </div>
+  </section>
+
+  <section class="brief" aria-labelledby="brief-title">
+    <h2 id="brief-title" class="eyebrow">The brief</h2>
+    <p class="serif display-xs brief-text">{d.brief}</p>
+  </section>
+
+  <section class="angles band grain-strong" aria-labelledby="angles-title">
+    <div class="inner stack angles-inner">
+      <h2 id="angles-title" class="eyebrow">{d.anglesHeading || 'The videos'}</h2>
+      <div class="angle-grid">
+        {
+          d.angles.map((a, i) => (
+            <article class="angle">
+              <Video url={a.videoUrl} poster={a.poster.image} posterAlt={a.poster.alt} label={`[Video ${i + 1}]`} title={a.title} />
+              <p class="eyebrow">{a.eyebrow}</p>
+              <h3 class="serif angle-title">{a.title}</h3>
+              <p>{a.body}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap system" aria-labelledby="system-title">
+    <Headline id="system-title" class="display-s" text={d.systemHeadline} />
+    <p class="lead system-body">{d.systemBody}</p>
+    <div class="system-grid">
+      {d.systemImages.map((img, i) => (
+        <Slot image={img.image} alt={img.alt} label={`[Image ${i + 1}]`} height="260px" sizes="(min-width: 1000px) 33vw, 100vw" />
+      ))}
+    </div>
+  </section>
+
+  <section class="wrap results" aria-labelledby="results-title">
+    <h2 id="results-title" class="eyebrow">What happened</h2>
+    <dl class="stats">
+      {d.results.map((r) => <div><dt>{r.label}</dt><dd class="serif stat-value">{r.value}</dd></div>)}
+    </dl>
+    {
+      d.quote && (
+        <figure class="quote">
+          <blockquote class="serif">{d.quote}</blockquote>
+          {d.quoteBy && <figcaption class="small">{d.quoteBy}</figcaption>}
+        </figure>
+      )
+    }
+  </section>
+
+  <nav class="pager band grain-strong" aria-label="Case studies">
+    <div class="inner pager-inner">
+      <a href="/partnerships">‹ Back to partner with me</a>
+      {next && <a href={`/partnerships/${next.id}`}>Next: {next.data.brand} ›</a>}
+    </div>
+  </nav>
+</Base>
+
+<style>
+  .hero { display: flex; flex-wrap: wrap; min-height: 600px; border-bottom: var(--rule); }
+  .hero-photo { flex: 1 1 460px; min-height: 460px; display: flex; }
+  .hero-copy {
+    flex: 1 1 460px;
+    padding: 64px var(--gutter);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 24px;
+    border-top: var(--rule);
+    padding-top: 20px;
+    --eyebrow: var(--muted);
+  }
+  .facts dt { font-size: 12px; }
+  .facts dd { margin: 4px 0 0; }
+
+  .brief { max-width: 56.25rem; margin-inline: auto; padding: 80px var(--gutter); display: flex; flex-direction: column; gap: 20px; }
+  .brief-text { font-weight: 400; }
+
+  .angles { background: var(--wine); color: var(--cream); --eyebrow: var(--sky); }
+  .angles-inner { gap: 32px; }
+  .angle-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; }
+  .angle { display: flex; flex-direction: column; gap: 14px; line-height: 1.55; }
+  .angle-title { font-size: clamp(1.625rem, 1.4rem + 0.7vw, 2rem); line-height: 1.1; }
+
+  .system { display: flex; flex-direction: column; gap: 28px; padding-block: 80px; }
+  .system-body { max-width: 45rem; }
+  .system-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+
+  .results { display: flex; flex-direction: column; gap: 24px; padding-bottom: 80px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); border-top: var(--rule); }
+  .stats > div { padding: 24px 20px 24px 0; display: flex; flex-direction: column; gap: 8px; }
+  .stats dd { margin: 0; }
+  .stat-value { font-size: var(--display-m); line-height: 1; order: -1; }
+  .stats dt { font-size: 15px; }
+  .quote { margin: 16px 0 0; max-width: 51rem; display: flex; flex-direction: column; gap: 12px; }
+  .quote blockquote { font-style: italic; font-weight: 400; font-size: clamp(1.5rem, 1.2rem + 1vw, 1.875rem); line-height: 1.3; }
+
+  .pager { background: var(--wine); padding-block: 56px; }
+  .pager-inner { display: flex; flex-wrap: wrap; gap: 20px 40px; justify-content: space-between; }
+  .pager a { color: var(--sky); }
+  .pager a:hover { color: var(--cream); }
+</style>
