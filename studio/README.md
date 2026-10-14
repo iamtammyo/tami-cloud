@@ -11,7 +11,7 @@ Page: https://claude.ai/artifact/3a5mbjaZoxzj6pRFiDKZ7R
 | Piece | Job |
 | --- | --- |
 | `overlay.js` | Draws every caption at a given time. The page previews with it, and `render.mjs` draws export frames with the same file, so the preview matches the render. |
-| `edit-bay.html` | The Edit Bay page: upload, caption cards (Text / Style / Place / Motion / Sound), live monitor, safe zones, notes for Claude, render history. Published with `overlay.js` and `sfx.js`. |
+| `edit-bay.html` | The Edit Bay page: upload, Media tab for A-roll and B-roll, caption cards (Text / Style / Place / Motion / Sound / B-roll), clickable timeline, composited live monitor, safe zones, notes for Claude, render history. Published with `overlay.js` and `sfx.js`. |
 | `prepare.mjs` | Makes a web-friendly preview copy (under 18 MB) and caption segments from Whisper or an SRT file. |
 | `render.mjs` | Renders `overlay.js` frame by frame in headless Chromium, composites it over the source in ffmpeg, and mixes in sound effects. Use `--preview` for a 720p copy under 18 MB. |
 | `collect.mjs` | Turns a dump of the page's database (plus downloaded clips) into the `edit.json` that `render.mjs` reads. |
@@ -23,7 +23,7 @@ Setup: `cd studio && npm install`. ffmpeg must be on the path.
 
 ## The loop (for Claude)
 
-The page's database has three parts:
+The page's database has four parts:
 
 - `project/main`: `source {assetId, name, clipId}`, `video {w,h,fps,duration}`, `note {text, done}`, `render {status: requested|rendering|done|failed}`
 - `clips/<id>`: `assetId`, `proxyAssetId`, `name`, `role` (`a`|`b`), `main`, `duration`, `w`, `h`, plus Claude's `desc`, `tags`, `suggestedRole`
