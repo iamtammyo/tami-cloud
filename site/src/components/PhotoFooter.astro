@@ -1,0 +1,27 @@
+---
+import { emailHref, emailText, social } from '~/data/site';
+import { photography } from '~/data/photography';
+---
+
+<footer class="photo-footer grain-strong">
+  <span>{photography.footer}: <a href={emailHref()}>{emailText()}</a></span>
+  <span class="links">
+    <a href={social('Instagram').href} rel="me noopener">Instagram</a>
+    <a href={social('LinkedIn').href} rel="me noopener">LinkedIn</a>
+  </span>
+</footer>
+
+<style>
+  .photo-footer {
+    background: var(--terracotta);
+    padding: 40px var(--gutter);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 32px;
+    justify-content: space-between;
+    font-size: var(--text-sm);
+    overflow: hidden;
+  }
+  a { color: var(--ink); }
+  .links { display: flex; gap: 20px; }
+</style>

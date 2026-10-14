@@ -1,12 +1,9 @@
-// Checks every text colour token in src/styles/tokens.css against --color-bg
-// for WCAG 2.2 AA. Run with: npm run contrast
+// Checks the text/background pairs the design actually uses against WCAG 2.2 AA.
+// Run with: npm run contrast
 import { readFileSync } from 'node:fs';
 
 const css = readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8');
-const root = css.slice(0, css.indexOf('}'));
-const tokens = Object.fromEntries(
-  [...root.matchAll(/--(color-[\w-]+):\s*(#[0-9a-fA-F]{6})/g)].map((m) => [m[1], m[2]])
-);
+const t = Object.fromEntries([...css.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})/g)].map((m) => [m[1], m[2]]));
 
 const lum = (hex) => {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -20,23 +17,29 @@ const ratio = (a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
-// Minimum ratio each token must hit, by what it is used for.
-const rules = {
-  'color-text': 4.5,
-  'color-text-muted': 4.5,
-  'color-accent': 4.5, // links and body-size emphasis
-  'color-accent-muted': 3, // large text and UI only
-  'color-warm': 3, // large text and UI only
-  'color-focus': 3, // focus ring (non-text contrast)
-};
+// [text, background, minimum, where it is used]
+const pairs = [
+  ['ink', 'cream', 4.5, 'body text'],
+  ['muted', 'cream', 4.5, 'secondary text'],
+  ['muted', 'sand', 4.5, 'placeholder labels'],
+  ['blue', 'cream', 4.5, 'eyebrows, links'],
+  ['rust', 'cream', 4.5, 'photography links and meta'],
+  ['wine', 'cream', 4.5, 'partnership eyebrows'],
+  ['paper', 'ink', 4.5, 'home left panel'],
+  ['ink', 'periwinkle', 4.5, 'home card text'],
+  ['ink', 'periwinkle-deep', 4.5, 'band text'],
+  ['paper', 'periwinkle-deep', 3, 'script words on bands (large)'],
+  ['ink', 'terracotta', 4.5, 'photography hero text'],
+  ['cream', 'terracotta', 3, 'script word on terracotta (large)'],
+  ['cream', 'wine', 4.5, 'text on wine'],
+  ['sky', 'wine', 4.5, 'eyebrows on wine'],
+  ['cream', 'wine-soft', 4.5, 'labels on wine-soft'],
+];
 
-const bg = tokens['color-bg'];
 let failed = false;
-for (const [name, min] of Object.entries(rules)) {
-  if (!tokens[name]) continue;
-  const r = ratio(tokens[name], bg);
-  const ok = r >= min;
-  if (!ok) failed = true;
-  console.log(`${ok ? 'pass' : 'FAIL'}  --${name} ${tokens[name]} on ${bg}: ${r.toFixed(2)}:1 (needs ${min}:1)`);
+for (const [fg, bg, min, use] of pairs) {
+  const r = ratio(t[fg], t[bg]);
+  if (r < min) failed = true;
+  console.log(`${r >= min ? 'pass' : 'FAIL'}  ${fg} on ${bg}: ${r.toFixed(2)}:1 (needs ${min}) ${use}`);
 }
 process.exit(failed ? 1 : 0);

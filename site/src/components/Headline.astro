@@ -1,0 +1,16 @@
+---
+import { splitScript } from '~/lib/script';
+
+interface Props {
+  text: string;
+  as?: 'h1' | 'h2' | 'h3' | 'p' | 'span';
+  class?: string;
+  id?: string;
+}
+const { text, as: Tag = 'h2', class: className, id } = Astro.props;
+const parts = splitScript(text);
+---
+
+<Tag class:list={['serif', className]} id={id}>
+  {parts.map((p) => (p.script ? <span class="script">{p.text}</span> : p.text))}
+</Tag>

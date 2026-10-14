@@ -1,8 +1,140 @@
 ---
-import BaseLayout from '~/layouts/BaseLayout.astro';
-import Placeholder from '~/components/Placeholder.astro';
+import Base from '~/layouts/Base.astro';
+import Headline from '~/components/Headline.astro';
+import { about } from '~/data/about';
+import { emailHref, emailText, site, socials } from '~/data/site';
+
+const contactAction = site.contactAction || (site.email ? `mailto:${site.email}` : '');
 ---
 
-<BaseLayout title="About">
-  <Placeholder label="About" index={1} title="About Tami" phase={3} />
-</BaseLayout>
+<Base title="About and contact" description="About Tami Oladipo, writer and photographer in Lagos, and how to get in touch.">
+  <section class="hello grain-strong" aria-label="Hello">
+    <!-- Replace with one of Tami's photographs as a full-bleed background -->
+    <span class="photo-label">{about.photoLabel}</span>
+    <div class="note">
+      <span class="note-script" aria-hidden="true">hello</span>
+      <span class="note-text">{about.hello}</span>
+    </div>
+  </section>
+
+  <section class="wrap story">
+    <div class="story-copy">
+      <Headline as="h1" class="story-title" text={about.headline} />
+      {about.paragraphs.map((para) => <p class="lead">{para}</p>)}
+    </div>
+    <aside class="working" aria-labelledby="working-title">
+      <h2 id="working-title" class="eyebrow">What I'm working on</h2>
+      <ul role="list">
+        {about.workingOn.map((w) => <li><span class="serif working-name">{w.name}</span><span>{w.text}</span></li>)}
+      </ul>
+    </aside>
+  </section>
+
+  <section id="contact" class="contact band grain-strong" aria-labelledby="contact-title">
+    <div class="inner contact-inner">
+      <div class="contact-copy">
+        <Headline id="contact-title" class="display-m upper" text="Get in _touch_" />
+        <p>{about.contactIntro} <a href={emailHref()}>{emailText()}</a>.</p>
+
+        <form class="newsletter" action={site.newsletter.action || undefined} method="post">
+          <label class="eyebrow" for="news-email">{site.newsletter.name} newsletter</label>
+          <div class="news-row">
+            <input class="input" id="news-email" name="email" type="email" autocomplete="email" placeholder="you@email.com" required />
+            <button class="btn" type="submit">Subscribe</button>
+          </div>
+        </form>
+      </div>
+
+      <form
+        class="contact-form"
+        action={contactAction || undefined}
+        method="post"
+        enctype={contactAction.startsWith('mailto:') ? 'text/plain' : undefined}
+      >
+        <div class="field">
+          <label for="c-name">Name</label>
+          <input class="input" id="c-name" name="name" type="text" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label for="c-email">Email</label>
+          <input class="input" id="c-email" name="email" type="email" autocomplete="email" required />
+        </div>
+        <div class="field wide">
+          <label for="c-topic">What's it about</label>
+          <select class="input" id="c-topic" name="topic">
+            {about.topics.map((t) => <option>{t}</option>)}
+          </select>
+        </div>
+        <div class="field wide">
+          <label for="c-msg">Message</label>
+          <textarea class="input" id="c-msg" name="message" rows="5" required></textarea>
+        </div>
+        <button class="btn send" type="submit">Send</button>
+      </form>
+    </div>
+  </section>
+
+  <footer slot="footer" class="footer">
+    <span>{site.name} · {site.place}</span>
+    <ul role="list">{socials.map((s) => <li><a href={s.href} rel="me noopener">{s.label}</a></li>)}</ul>
+  </footer>
+</Base>
+
+<style>
+  .hello {
+    min-height: clamp(26rem, 50vw, 35rem);
+    background: var(--periwinkle-deep);
+    display: grid;
+    place-items: center;
+    padding: 40px;
+    overflow: hidden;
+  }
+  .photo-label { position: absolute; left: 28px; bottom: 24px; font-size: var(--text-xs); }
+  .note {
+    width: min(400px, 100%);
+    aspect-ratio: 1;
+    background: rgb(242 235 221 / 0.42);
+    transform: rotate(-4deg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 32px;
+    text-align: center;
+  }
+  .note-script { font-family: var(--font-script); font-size: clamp(6rem, 4rem + 6vw, 8.75rem); line-height: 0.85; color: var(--paper); }
+  .note-text { font-size: 1.25rem; font-weight: 500; }
+
+  .story { display: flex; flex-wrap: wrap; gap: 56px; padding-block: 88px; }
+  .story-copy { flex: 1.4 1 480px; display: flex; flex-direction: column; gap: 24px; }
+  .story-copy :global(.story-title) { font-size: clamp(2.25rem, 1.6rem + 2.4vw, 3.25rem); line-height: 1.08; }
+  .story-copy .lead { max-width: 38.75rem; line-height: 1.6; }
+  .working { flex: 1 1 320px; align-self: flex-start; border-top: var(--rule); }
+  .working h2 { font-weight: 400; padding: 16px 0 6px; }
+  .working li { padding: 16px 0; border-bottom: 1px solid var(--sand); display: flex; flex-direction: column; gap: 4px; font-size: 15px; line-height: 1.5; }
+  .working li:last-child { border-bottom: 0; }
+  .working-name { font-size: 1.625rem; }
+
+  .contact { background: var(--periwinkle-deep); --script: var(--paper); --link: var(--ink); }
+  .contact-inner { display: flex; flex-wrap: wrap; gap: 56px; }
+  .contact-copy { flex: 1 1 360px; display: flex; flex-direction: column; gap: 20px; }
+  .contact-copy p { font-size: 17px; line-height: 1.55; max-width: 26rem; }
+  .newsletter { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; max-width: 26rem; }
+  .news-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .news-row .input { flex: 1 1 200px; width: auto; }
+  .contact-form { flex: 1.2 1 420px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 30rem) { .contact-form { grid-template-columns: 1fr; } }
+  .wide { grid-column: 1 / -1; }
+  .send { grid-column: 1 / -1; justify-self: start; min-height: 52px; padding: 0 28px; font-size: 16px; }
+
+  .footer {
+    padding: 32px var(--gutter);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 32px;
+    justify-content: space-between;
+    font-size: var(--text-sm);
+  }
+  .footer ul { display: flex; flex-wrap: wrap; gap: 20px; }
+</style>

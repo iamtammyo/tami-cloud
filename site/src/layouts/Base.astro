@@ -1,22 +1,21 @@
 ---
-import '@fontsource-variable/fraunces/opsz.css';
-import '@fontsource-variable/fraunces/opsz-italic.css';
-import '@fontsource-variable/dm-sans';
-import '@fontsource/caveat/500.css';
+import '@fontsource/cormorant-garamond/400.css';
+import '@fontsource/cormorant-garamond/400-italic.css';
+import '@fontsource/cormorant-garamond/500.css';
+import '@fontsource-variable/hanken-grotesk';
+import '@fontsource/mrs-saint-delafield';
 import '~/styles/global.css';
-import Masthead from '~/components/Masthead.astro';
-import Footer from '~/components/Footer.astro';
-import { site } from '~/config/site';
+import Header from '~/components/Header.astro';
+import { site } from '~/data/site';
 
 interface Props {
-  /** Page title; the site name is appended. Omit on the homepage. */
   title?: string;
   description?: string;
-  /** Absolute or root-relative path to the Open Graph image. */
   ogImage?: string;
-  /** Quieter variant for photography: more space, minimal chrome. */
-  variant?: 'default' | 'quiet';
-  /** For brand pitch pages, held work and the like. */
+  /** Sets link, eyebrow and active-nav colours for the page. */
+  theme?: 'blue' | 'photo' | 'partner';
+  /** Home has its own masthead in the left panel. */
+  header?: boolean;
   noindex?: boolean;
 }
 
@@ -24,17 +23,18 @@ const {
   title,
   description = site.description,
   ogImage,
-  variant = 'default',
+  theme = 'blue',
+  header = true,
   noindex = false,
 } = Astro.props;
 
-const fullTitle = title ? `${title} | ${site.name}` : site.title;
+const fullTitle = title ? `${title} | ${site.name}` : site.name;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImageUrl = ogImage ? new URL(ogImage, Astro.site) : null;
 ---
 
 <!doctype html>
-<html lang={site.locale}>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -43,8 +43,7 @@ const ogImageUrl = ogImage ? new URL(ogImage, Astro.site) : null;
     <link rel="canonical" href={canonical} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#f5f0e6" />
-
+    <meta name="theme-color" content="#f2ebdd" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={site.name} />
     <meta property="og:title" content={fullTitle} />
@@ -52,39 +51,33 @@ const ogImageUrl = ogImage ? new URL(ogImage, Astro.site) : null;
     <meta property="og:url" content={canonical} />
     {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
     <meta name="twitter:card" content={ogImageUrl ? 'summary_large_image' : 'summary'} />
-
     <slot name="head" />
   </head>
-  <body data-variant={variant}>
+  <body class={`theme-${theme}`}>
     <a class="skip-link" href="#main">Skip to content</a>
-    <Masthead variant={variant} />
+    {header && <Header />}
     <main id="main" tabindex="-1">
       <slot />
     </main>
-    <Footer variant={variant} />
+    <slot name="footer" />
   </body>
 </html>
 
-<style>
+<style is:global>
+  .theme-blue { --link: var(--blue); --nav-active: var(--blue); --eyebrow: var(--blue); --script: var(--blue); }
+  .theme-photo { --link: var(--rust); --nav-active: var(--rust); --eyebrow: var(--rust); --script: var(--cream); }
+  .theme-partner { --link: var(--wine); --nav-active: var(--wine); --eyebrow: var(--wine); --script: var(--wine); }
+
   .skip-link {
     position: absolute;
-    top: var(--space-2xs);
-    left: var(--space-2xs);
+    top: 8px;
+    left: 8px;
     z-index: 100;
-    padding: var(--space-2xs) var(--space-s);
-    background: var(--color-text);
-    color: var(--color-bg);
-    font-family: var(--font-label);
-    font-size: var(--step--1);
-    letter-spacing: var(--tracking-label);
-    text-transform: uppercase;
-    text-decoration: none;
+    padding: 10px 16px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: var(--text-sm);
     transform: translateY(-200%);
   }
-  .skip-link:focus { transform: none; }
-
-  main {
-    flex: 1;
-    outline: none;
-  }
+  .skip-link:focus { transform: none; color: var(--paper); }
 </style>

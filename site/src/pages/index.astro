@@ -1,102 +1,247 @@
 ---
-/*
-  Phase 1 homepage: shows the foundations with stand-in copy.
-  Phase 3 replaces this with the `home` singleton and the Latest strip.
-*/
-import BaseLayout from '~/layouts/BaseLayout.astro';
-import SectionLabel from '~/components/SectionLabel.astro';
-
-const doors = [
-  { label: 'Work at Buffer', description: 'Reports, series and the long-form writing I lead.', href: '/work' },
-  { label: 'Writing and newsletters', description: 'Articles across publications and the newsletters I edit.', href: '/work' },
-  { label: 'Photography', description: 'Bodies of work and exhibition history.', href: '/photography' },
-  { label: 'Creator and partnerships', description: 'The Remote Path, and working with brands.', href: '/creator' },
-];
+import Base from '~/layouts/Base.astro';
+import Headline from '~/components/Headline.astro';
+import { home } from '~/data/home';
+import { Image } from 'astro:assets';
+import { emailHref, emailText, nav, site, socials } from '~/data/site';
+import { portrait } from '~/lib/assets';
 ---
 
-<BaseLayout>
-  <section class="wrap hero" aria-labelledby="hero-title">
-    <div class="hero-copy">
-      <SectionLabel text="Index" index={0} />
-      <h1 id="hero-title">
-        Photographer, writer and creator. Content lead at <span class="em">Buffer</span>.
-      </h1>
-      <p class="intro prose">
-        Stand-in intro paragraph. In phase 3 this comes from the home singleton in the admin, so it can change without touching code.
-      </p>
-      <p class="aside-hand" aria-hidden="true">start anywhere</p>
-    </div>
-    <div class="hero-image" role="img" aria-label="Placeholder for the hero photograph">
-      <span class="label">Hero photograph</span>
-    </div>
-  </section>
-
-  <section class="wrap doors" aria-labelledby="doors-title">
-    <h2 id="doors-title" class="visually-hidden">Where to go</h2>
-    <ol>
+<Base header={false}>
+  <div class="split">
+    <section class="panel grain-strong" aria-label="Introduction">
       {
-        doors.map((door, i) => (
-          <li>
-            <a href={door.href}>
-              <span class="label">0{i + 1}</span>
-              <span class="door-title">{door.label}</span>
-              <span class="door-desc">{door.description}</span>
-            </a>
-          </li>
-        ))
+        portrait ? (
+          <Image
+            class="portrait-img"
+            src={portrait}
+            alt="Portrait of Tami Oladipo"
+            widths={[480, 800, 1200, 1600].filter((w) => w <= portrait.width)}
+            sizes="(min-width: 960px) 50vw, 100vw"
+            loading="eager"
+            fetchpriority="high"
+          />
+        ) : (
+          <div class="portrait" aria-hidden="true"><span>{home.portraitLabel}</span></div>
+        )
       }
-    </ol>
+      <div class="panel-top">
+        <h1 class="name">{site.name}</h1>
+        <nav aria-label="Main">
+          <ul role="list">
+            {
+              nav.map((item) => (
+                <li>
+                  <a href={item.href} {...(item.external && { target: '_blank', rel: 'noopener' })}>
+                    {item.external ? 'Writing portfolio' : item.label}
+                    {item.external && <span aria-hidden="true"> ↗</span>}
+                    {item.external && <span class="visually-hidden"> (opens in a new tab)</span>}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </div>
+      <ul class="socials" role="list" aria-label="Elsewhere">
+        {socials.map((s) => <li><a href={s.href} rel="me noopener">{s.label}</a></li>)}
+      </ul>
+    </section>
+
+    <section class="intro grain" aria-labelledby="intro-title">
+      <p class="eyebrow">{home.eyebrow}</p>
+      <Headline as="h2" id="intro-title" class="intro-title" text={home.headline} />
+      <p class="lead">{home.intro}</p>
+
+      <ul class="cards" role="list">
+        {
+          home.cards.map((card) => (
+            <li style={`--tilt:${card.tilt}deg`}>
+              <a
+                class:list={['card', card.tone]}
+                href={card.href}
+                {...(card.external && { target: '_blank', rel: 'noopener' })}
+              >
+                <span class="card-top">
+                  <span class="eyebrow card-num">{card.num}</span>
+                  {card.external ? (
+                    <span class="card-arrow" aria-hidden="true">↗</span>
+                  ) : (
+                    <span class="card-photo" aria-hidden="true">photo</span>
+                  )}
+                </span>
+                <span class="card-bottom">
+                  <span class="serif card-title">{card.title}</span>
+                  <span class="card-text">{card.text}</span>
+                  {card.external && <span class="visually-hidden"> (opens in a new tab)</span>}
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+
+  <section class="brands band grain-strong" aria-label="Brands and contact">
+    <div class="brands-inner">
+      <div class="brands-list">
+        <p class="eyebrow">{home.brandsHeading}</p>
+        <ul role="list">
+          {home.brands.map((b) => <li>{b}</li>)}
+        </ul>
+      </div>
+      <div class="hello">
+        <Headline as="h2" class="hello-title" text="Say _hello_" />
+        <a href={emailHref()}>{emailText()} ›</a>
+      </div>
+    </div>
   </section>
-</BaseLayout>
+</Base>
 
 <style>
-  .hero {
-    display: grid;
-    gap: var(--space-l);
-    padding-block: var(--space-xl);
-    align-items: end;
-  }
-  @media (min-width: 56rem) {
-    .hero { grid-template-columns: 1.15fr 1fr; gap: var(--space-xl); }
-  }
-  .hero h1 {
-    margin-block: var(--space-s) var(--space-m);
-    font-size: var(--step-4);
-    font-variation-settings: 'opsz' 144;
-  }
-  .intro { color: var(--color-text-muted); }
-  .aside-hand { margin-top: var(--space-m); transform: rotate(-3deg); transform-origin: left; }
+  .split { display: flex; flex-wrap: wrap; }
 
-  .hero-image {
+  /* Left: dark panel with portrait */
+  .panel {
+    flex: 1 1 480px;
+    min-height: min(900px, 100svh);
+    background: var(--ink);
+    color: var(--paper);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 3rem;
+    padding: 40px 44px;
+    overflow: hidden;
+  }
+  .portrait {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
     display: grid;
     place-items: center;
-    aspect-ratio: 4 / 5;
-    background: var(--color-surface);
-    border: 1px solid var(--color-rule);
+  }
+  .portrait span {
+    font-size: var(--text-sm);
+    letter-spacing: var(--tracking);
+    text-transform: uppercase;
+    color: var(--sand);
+    border: 1.5px dashed var(--muted);
+    padding: 10px 16px;
+  }
+  .portrait-img {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 30%;
+  }
+  /* Darken the top and bottom so the name, nav and socials stay readable over the photo */
+  .panel:has(.portrait-img)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(rgb(30 26 23 / 0.75), rgb(30 26 23 / 0.1) 35%, rgb(30 26 23 / 0.1) 70%, rgb(30 26 23 / 0.75));
+  }
+  .panel-top { display: flex; flex-direction: column; gap: 22px; }
+  .name {
+    font-weight: 300;
+    font-size: clamp(3rem, 2rem + 4vw, 4.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+  .panel ul { display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+  .panel .socials { gap: 4px; font-size: var(--text-sm); }
+  .panel a { color: var(--paper); text-decoration: none; }
+  .panel a:hover { text-decoration: underline; }
+
+  /* Right: intro and cards */
+  .intro {
+    flex: 1 1 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    padding: 56px var(--gutter) 64px;
+    overflow: hidden;
+  }
+  .intro :global(.intro-title) {
+    font-size: clamp(2.375rem, 1.6rem + 2.6vw, 3.625rem);
+    line-height: 1.06;
   }
 
-  .doors ol {
+  .cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
-    padding: 0;
-    list-style: none;
-    border-top: 1px solid var(--color-text);
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
   }
-  .doors li { border-bottom: 1px solid var(--color-rule); }
-  .doors a {
-    display: grid;
-    align-content: start;
-    gap: var(--space-2xs);
+  .card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 28px;
     height: 100%;
-    padding: var(--space-m) var(--space-s) var(--space-l) 0;
-    color: var(--color-text);
+    min-height: 230px;
+    padding: 18px;
+    border: var(--rule);
+    color: var(--ink);
     text-decoration: none;
+    transform: rotate(var(--tilt));
+    transition: transform 0.25s ease;
   }
-  .door-title {
-    font-family: var(--font-display);
-    font-size: var(--step-2);
-    line-height: var(--leading-tight);
+  .card:hover { color: var(--ink); transform: rotate(0deg) translateY(-3px); }
+  .paper { background: var(--paper); }
+  .periwinkle { background: var(--periwinkle); }
+  .periwinkle .card-num { color: var(--ink); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .card-num { font-size: 11px; }
+  .card-photo {
+    width: 58px; height: 70px;
+    display: grid; place-items: center;
+    font-size: 9px;
+    background: var(--sand);
+    border: 1.5px dashed var(--muted);
+    color: var(--muted);
   }
-  .doors a:hover .door-title { color: var(--color-accent); }
-  .door-desc { font-size: var(--step--1); color: var(--color-text-muted); }
+  .periwinkle .card-photo { background: var(--periwinkle-deep); border-color: var(--ink); color: var(--ink); }
+  .card-arrow {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    border: 1.5px solid var(--blue);
+    color: var(--blue);
+  }
+  .card-bottom { display: flex; flex-direction: column; gap: 6px; }
+  .card-title { font-size: var(--card-title); line-height: 1; }
+  .card-text { font-size: var(--text-sm); line-height: 1.4; }
+
+  /* Brands band */
+  .brands { background: var(--periwinkle-deep); --script: var(--paper); }
+  .brands-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    align-items: flex-end;
+    justify-content: space-between;
+    max-width: 75rem;
+    margin-inline: auto;
+  }
+  .brands-list { flex: 1 1 420px; display: flex; flex-direction: column; gap: 16px; }
+  .brands-list .eyebrow { color: var(--ink); }
+  .brands-list ul { display: flex; flex-wrap: wrap; gap: 12px; }
+  .brands-list li {
+    flex: 1 1 120px;
+    height: 56px;
+    display: grid;
+    place-items: center;
+    border: 1.5px dashed var(--ink);
+    font-size: var(--text-xs);
+  }
+  .hello { flex: 0 1 360px; display: flex; flex-direction: column; gap: 10px; }
+  .hello :global(.hello-title) { font-size: var(--display-xs); line-height: 1.1; }
+  .hello a { color: var(--ink); }
 </style>

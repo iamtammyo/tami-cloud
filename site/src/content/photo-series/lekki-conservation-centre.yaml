@@ -1,0 +1,16 @@
+order: 1
+status: public
+title: Lekki Conservation Centre
+place: Lagos
+year: "[Year]"
+camera: "[Camera]"
+lead:
+  label: "[Lead image, landscape, full width]"
+pair:
+  - label: "[Portrait image]"
+    caption: "[Caption: what was happening, in a sentence]"
+  - label: "[Portrait image]"
+    caption: "[Caption]"
+note: "[A short note on this series. One or two sentences in your voice, the way the Sky Fields template used its pull quotes.]"
+detail:
+  label: "[Detail shot]"

@@ -1,6 +1,6 @@
 {
   "name": "tami-oladipo-site",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,10 +14,10 @@
     "contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/dm-sans": "^5.3.0",
-    "@fontsource-variable/fraunces": "^5.3.0",
-    "@fontsource/caveat": "^5.3.0",
-    "astro": "^7.3.5"
+    "@fontsource-variable/hanken-grotesk": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/mrs-saint-delafield": "^5.3.0",
+    "astro": "^7.3.8"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

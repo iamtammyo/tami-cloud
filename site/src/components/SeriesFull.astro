@@ -1,0 +1,104 @@
+---
+/* One photo series in the full editorial layout: lead, staggered pair, note and detail. */
+import type { CollectionEntry } from 'astro:content';
+import Slot from './Slot.astro';
+import { seriesMeta } from '~/lib/photo';
+
+interface Props {
+  series: CollectionEntry<'photoSeries'>;
+  headingLevel?: 'h1' | 'h2';
+}
+const { series, headingLevel: H = 'h2' } = Astro.props;
+const d = series.data;
+const meta = seriesMeta(d);
+---
+
+<section id={series.id} class="series" aria-labelledby={`${series.id}-title`}>
+  <div class="series-head">
+    <H id={`${series.id}-title`} class="serif display-s">{d.title}</H>
+    {meta && <p class="eyebrow">{meta}</p>}
+  </div>
+
+  <div class="grid">
+    <figure class="lead-photo">
+      <Slot image={d.lead.image} alt={d.lead.alt} label={d.lead.label} height="clamp(18rem, 48vw, 38.75rem)" />
+      {d.lead.caption && <figcaption>{d.lead.caption}</figcaption>}
+    </figure>
+    {
+      d.pair.map((p, i) => (
+        <figure class:list={['pair', { offset: i === 1 }]}>
+          <Slot
+            image={p.image}
+            alt={p.alt}
+            label={p.label}
+            height={i === 1 ? 'clamp(20rem, 34vw, 27.5rem)' : 'clamp(22rem, 40vw, 32.5rem)'}
+            sizes="(min-width: 760px) 50vw, 100vw"
+          />
+          {p.caption && <figcaption>{p.caption}</figcaption>}
+        </figure>
+      ))
+    }
+  </div>
+
+  {
+    (d.note || d.detail) && (
+      <div class="note-row">
+        {d.note && <p class="note serif">{d.note}</p>}
+        {d.detail && (
+          <figure class="detail">
+            <Slot image={d.detail.image} alt={d.detail.alt} label={d.detail.label} height="300px" sizes="(min-width: 760px) 45vw, 100vw" />
+            {d.detail.caption && <figcaption>{d.detail.caption}</figcaption>}
+          </figure>
+        )}
+      </div>
+    )
+  }
+
+  {
+    d.more.length > 0 && (
+      <div class="more">
+        {d.more.map((p) => (
+          <figure>
+            <Slot image={p.image} alt={p.alt} label={p.label} ratio="4 / 5" sizes="(min-width: 760px) 25vw, 50vw" />
+            {p.caption && <figcaption>{p.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .series { display: flex; flex-direction: column; gap: 32px; }
+  .series-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 40px;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 16px;
+  }
+  figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  .lead-photo { grid-column: 1 / -1; }
+  .offset { padding-top: 80px; }
+  @media (max-width: 40rem) { .offset { padding-top: 0; } }
+  figcaption { font-size: var(--text-sm); line-height: 1.45; }
+  .note-row { display: flex; flex-wrap: wrap; gap: 32px; align-items: center; }
+  .note {
+    flex: 1 1 420px;
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+    line-height: 1.3;
+  }
+  .detail { flex: 1 1 360px; }
+  .more {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 16px;
+  }
+</style>

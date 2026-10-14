@@ -1,0 +1,10 @@
+order: 3
+status: public
+title: "[Series name]"
+lead:
+  label: "[Lead image]"
+more:
+  - label: "[Image]"
+  - label: "[Image]"
+  - label: "[Image]"
+  - label: "[Image]"

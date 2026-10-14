@@ -1,0 +1,18 @@
+export const about = {
+  photoLabel: '[One of your own photographs, full bleed]',
+  hello: "I'm Tami, and I live in Lagos",
+  headline: 'I write, take photos and help people get _seen_ for their work.',
+  paragraphs: [
+    '[Two short paragraphs, in your own voice. The day job, how The Remote Path started, and why access to global and remote work is the thread through all of it.]',
+    "[Where photography fits now, and what you're working toward with it.]",
+  ],
+  workingOn: [
+    {
+      name: 'Buffer',
+      text: 'Senior content creator. I write long-form, tell stories with original data and lead the State of Social Media Engagement report.',
+    },
+    { name: 'Obeere', text: '[One line on your lifestyle Substack]' },
+  ],
+  contactIntro: 'For brand partnerships, the media kit is the quickest place to start. For anything else, the form works, or email me at',
+  topics: ['Brand partnership', 'Photography or prints', 'Speaking or a podcast', 'Something else'],
+};

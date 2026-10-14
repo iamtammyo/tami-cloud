@@ -1,0 +1,63 @@
+---
+/*
+  An image, or a labelled placeholder box until the image exists.
+  Pass `image` (imported or from a content collection) to show the real thing.
+*/
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  label: string;
+  image?: ImageMetadata;
+  alt?: string;
+  /** CSS aspect-ratio, e.g. "3 / 2". Ignored when height is set. */
+  ratio?: string;
+  height?: string;
+  tone?: 'sand' | 'wine';
+  sizes?: string;
+  eager?: boolean;
+  class?: string;
+}
+const {
+  label,
+  image,
+  alt = '',
+  ratio = '4 / 3',
+  height,
+  tone = 'sand',
+  sizes = '(min-width: 1280px) 1168px, 100vw',
+  eager = false,
+  class: className,
+} = Astro.props;
+const style = height ? `height:${height}` : `aspect-ratio:${ratio}`;
+---
+
+{
+  image ? (
+    <Image
+      src={image}
+      alt={alt}
+      sizes={sizes}
+      widths={[480, 800, 1200, 1600, 2400].filter((w) => w <= image.width)}
+      loading={eager ? 'eager' : 'lazy'}
+      class:list={['slot-img', className]}
+    />
+  ) : (
+    <div class:list={['slot', tone, className]} style={style} role="img" aria-label={`Placeholder: ${label}`}>
+      <span>{label}</span>
+    </div>
+  )
+}
+
+<style>
+  .slot {
+    display: flex;
+    align-items: flex-end;
+    padding: 16px 20px;
+    font-size: var(--text-xs);
+    width: 100%;
+  }
+  .sand { background: var(--sand); color: var(--muted); }
+  .wine { background: var(--wine-soft); color: var(--cream); }
+  .slot-img { width: 100%; height: auto; }
+</style>

@@ -1,8 +1,111 @@
 ---
-import BaseLayout from '~/layouts/BaseLayout.astro';
-import Placeholder from '~/components/Placeholder.astro';
+import Base from '~/layouts/Base.astro';
+import Headline from '~/components/Headline.astro';
+import Slot from '~/components/Slot.astro';
+import SeriesFull from '~/components/SeriesFull.astro';
+import PhotoFooter from '~/components/PhotoFooter.astro';
+import { photography } from '~/data/photography';
+import { publicSeries } from '~/lib/photo';
+
+const series = await publicSeries();
+const [featured, ...rest] = series;
 ---
 
-<BaseLayout title="Photography" variant="quiet">
-  <Placeholder label="Photography" index={3} title="Photography" phase={4} />
-</BaseLayout>
+<Base title="Photography" theme="photo" description="Photography by Tami Oladipo: series from Lagos and the places she passes through.">
+  <section class="hero band grain-strong" aria-labelledby="photo-title">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow">Photography</p>
+        <Headline as="h1" id="photo-title" class="display-xl upper" text={photography.headline} />
+        <p class="lead">{photography.statement}</p>
+      </div>
+      {
+        series.length > 0 && (
+          <nav class="series-nav" aria-label="Series">
+            <ol role="list">
+              {series.map((s, i) => (
+                <li>
+                  <a href={i === 0 ? `#${s.id}` : `/photography/${s.id}`}>
+                    <span>{s.data.title}</span>
+                    <span>{String(i + 1).padStart(2, '0')}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )
+      }
+    </div>
+  </section>
+
+  <div class="wrap body">
+    {featured && <SeriesFull series={featured} />}
+
+    {
+      rest.map((s) => {
+        const images = [s.data.lead, ...s.data.more].slice(0, 4);
+        return (
+          <section class="strip" aria-labelledby={`${s.id}-title`}>
+            <div class="strip-head">
+              <h2 id={`${s.id}-title`} class="serif display-s">{s.data.title}</h2>
+              <a href={`/photography/${s.id}`}>
+                View the series<span class="visually-hidden">: {s.data.title}</span> ›
+              </a>
+            </div>
+            <div class="strip-grid">
+              {images.map((p) => (
+                <Slot image={p.image} alt={p.alt} label={p.label} height="300px" sizes="(min-width: 760px) 25vw, 50vw" />
+              ))}
+            </div>
+          </section>
+        );
+      })
+    }
+  </div>
+
+  <PhotoFooter slot="footer" />
+</Base>
+
+<style>
+  .hero { background: var(--terracotta); padding-block: 72px 64px; }
+  .hero-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    align-items: flex-end;
+    justify-content: space-between;
+    max-width: 75rem;
+    margin-inline: auto;
+  }
+  .hero .eyebrow { color: var(--ink); }
+  .hero-copy { flex: 1 1 520px; display: flex; flex-direction: column; gap: 24px; }
+  .series-nav { flex: 0 1 340px; width: 100%; }
+  .series-nav ol { border-top: var(--rule); }
+  .series-nav a {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: var(--rule);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .series-nav a:hover { text-decoration: underline; }
+
+  .body { display: flex; flex-direction: column; gap: 40px; padding-block: 80px 96px; }
+  .strip { display: flex; flex-direction: column; gap: 24px; }
+  .strip-head {
+    border-top: var(--rule);
+    padding-top: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 40px;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .strip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 16px;
+  }
+</style>

@@ -1,62 +1,53 @@
 /*
-  Design tokens. Every colour, font, size and space value lives here.
-  Starting values derived from DFE Brand Kit 001; swap in the exact kit
-  values when Tami provides them, then run `npm run contrast`.
+  Design tokens, taken from the Figma-to-ReadyMag redesign boards.
+  Two colours were nudged to pass WCAG AA (see BRIEF.md, "Contrast").
+  Run `npm run contrast` after changing any colour.
 */
 :root {
-  /* Colour */
-  --color-bg: #f5f0e6;            /* cream */
-  --color-surface: #ece5d6;       /* slightly deeper cream for panels */
-  --color-text: #1a1a1a;          /* near-black */
-  --color-text-muted: #5c5850;
-  --color-rule: #d6cdbb;
-  --color-accent: #2e6a97;        /* blue for links and emphasis (5.1:1 on cream) */
-  --color-accent-light: #9cc9e8;  /* kit light blue: decorative only, fails as text on cream */
-  --color-accent-muted: #56768f;  /* dusty blue: large text and UI only */
-  --color-warm: #7a4e30;          /* warm brown */
-  --color-focus: #2e6a97;
+  /* Neutrals */
+  --ink: #1e1a17;
+  --cream: #f2ebdd;        /* page background */
+  --paper: #fbf6ec;        /* cards, inputs, light text on dark */
+  --sand: #e2d7c2;         /* image placeholders, soft rules */
+  --muted: #6a5a44;        /* secondary text */
 
-  /* Type families */
-  --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
-  --font-body: 'DM Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-label: var(--font-body);
-  --font-accent: 'Caveat', 'Bradley Hand', cursive;
+  /* Home and About */
+  --blue: #34428a;         /* eyebrows, links, script on cream */
+  --periwinkle: #8e9bd3;   /* cards with ink text */
+  --periwinkle-deep: #7887c4; /* bands with cream script (design had #8e9bd3, 2.5:1) */
 
-  /* Type scale (fluid, 360px to 1280px viewport) */
-  --step--1: clamp(0.8rem, 0.78rem + 0.1vw, 0.875rem);
-  --step-0: clamp(1.0625rem, 1.02rem + 0.2vw, 1.1875rem);
-  --step-1: clamp(1.25rem, 1.17rem + 0.4vw, 1.5rem);
-  --step-2: clamp(1.5rem, 1.33rem + 0.8vw, 2rem);
-  --step-3: clamp(1.875rem, 1.55rem + 1.5vw, 2.875rem);
-  --step-4: clamp(2.375rem, 1.8rem + 2.6vw, 4.25rem);
-  --step-5: clamp(2.875rem, 1.9rem + 4.4vw, 6.25rem);
+  /* Photography */
+  --terracotta: #c86a42;   /* design had #b4552f, ink on it was 3.5:1 */
+  --rust: #8e3f20;         /* links and meta on cream */
 
-  --leading-tight: 1.08;
-  --leading-body: 1.6;
-  --tracking-label: 0.14em;
-  --measure: 66ch;                /* 60 to 75 characters */
+  /* Partnerships */
+  --wine: #4a1f27;
+  --wine-soft: #63303a;
+  --sky: #9cc3e6;          /* script and eyebrows on wine */
+
+  /* Type */
+  --font-sans: 'Hanken Grotesk Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-script: 'Mrs Saint Delafield', cursive;
+
+  --text-xs: 0.8125rem;    /* 13px eyebrows, captions */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;     /* 18px lead paragraphs */
+
+  --display-xl: clamp(2.75rem, 1.6rem + 4.6vw, 4.75rem);  /* 76px */
+  --display-l: clamp(2.5rem, 1.6rem + 3.4vw, 4rem);       /* 64px */
+  --display-m: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);    /* 56px */
+  --display-s: clamp(2rem, 1.5rem + 2vw, 3rem);           /* 48px */
+  --display-xs: clamp(1.625rem, 1.3rem + 1.2vw, 2.125rem);/* 34px */
+  --card-title: clamp(1.5rem, 1.3rem + 0.7vw, 1.875rem);  /* 30px */
+
+  --tracking: 0.14em;
 
   /* Space */
-  --space-3xs: 0.25rem;
-  --space-2xs: 0.5rem;
-  --space-xs: 0.75rem;
-  --space-s: 1rem;
-  --space-m: 1.5rem;
-  --space-l: 2.5rem;
-  --space-xl: 4rem;
-  --space-2xl: 6.5rem;
-
-  /* Layout */
-  --page-max: 82rem;
-  --gutter: clamp(1rem, 0.5rem + 2.5vw, 2.5rem);
-
-  /* Motion */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --duration: 400ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --duration: 0ms;
-  }
+  --gutter: clamp(1.25rem, 0.5rem + 3.6vw, 3.5rem);       /* 56px */
+  --section: clamp(3.5rem, 2rem + 4.5vw, 5.5rem);         /* 80 to 88px */
+  --max: 80rem;            /* 1280px */
+  --max-inner: 73rem;      /* 1168px */
+  --rule: 1.5px solid var(--ink);
 }

@@ -1,0 +1,32 @@
+---
+import Base from '~/layouts/Base.astro';
+import SeriesFull from '~/components/SeriesFull.astro';
+import PhotoFooter from '~/components/PhotoFooter.astro';
+import { publicSeries } from '~/lib/photo';
+
+export async function getStaticPaths() {
+  const series = await publicSeries();
+  return series.map((s, i) => ({
+    params: { slug: s.id },
+    props: { series: s, next: series[(i + 1) % series.length] },
+  }));
+}
+
+const { series, next } = Astro.props;
+---
+
+<Base title={series.data.title} theme="photo">
+  <div class="wrap page">
+    <a class="back small" href="/photography">‹ All photography</a>
+    <SeriesFull series={series} headingLevel="h1" />
+    {next.id !== series.id && (
+      <p class="next"><a href={`/photography/${next.id}`}>Next: {next.data.title} ›</a></p>
+    )}
+  </div>
+  <PhotoFooter slot="footer" />
+</Base>
+
+<style>
+  .page { display: flex; flex-direction: column; gap: 32px; padding-block: 56px 96px; }
+  .next { border-top: var(--rule); padding-top: 24px; }
+</style>

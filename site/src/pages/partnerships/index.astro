@@ -1,8 +1,232 @@
 ---
-import BaseLayout from '~/layouts/BaseLayout.astro';
-import Placeholder from '~/components/Placeholder.astro';
+import Base from '~/layouts/Base.astro';
+import Headline from '~/components/Headline.astro';
+import Slot from '~/components/Slot.astro';
+import { partnerships as p } from '~/data/partnerships';
+import { emailHref, emailText, site } from '~/data/site';
+import { caseStudies } from '~/lib/cases';
+
+const cases = await caseStudies();
+// Keep the three-up grid looking complete until there are three real case studies.
+const fillers = Math.max(0, 3 - cases.length);
 ---
 
-<BaseLayout title="Partnerships">
-  <Placeholder label="Partnerships" index={6} title="For brands" phase={3} />
-</BaseLayout>
+<Base
+  title="Partner with me"
+  theme="partner"
+  description="Media kit, rates and past brand work. Tami Oladipo creates for early-to-mid career professionals building global careers."
+>
+  <section class="hero" aria-labelledby="partner-title">
+    <div class="hero-photo grain-strong">
+      <Slot label={p.heroLabel} tone="wine" height="100%" />
+    </div>
+    <div class="hero-copy grain-strong">
+      <p class="eyebrow">{p.eyebrow}</p>
+      <Headline as="h1" id="partner-title" class="display-l upper" text={p.headline} />
+      <p class="lead">{p.intro}</p>
+      <div class="actions">
+        <a class="btn on-wine" href={site.mediaKitPdf}>Download the media kit (PDF)</a>
+        <a class="btn btn-outline on-wine" href="#contact">Email me</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap numbers" aria-labelledby="numbers-title">
+    <h2 id="numbers-title" class="eyebrow">The numbers · updated {p.updated}</h2>
+    <dl class="stats">
+      {
+        p.numbers.map((n) => (
+          <div>
+            <dd class="serif stat-value">{n.value}</dd>
+            <dt>{n.label}</dt>
+            <dd class="muted small-note">{n.note}</dd>
+          </div>
+        ))
+      }
+    </dl>
+    <p class="muted small-note">{p.numbersNote}</p>
+  </section>
+
+  <section class="wrap audience" aria-labelledby="audience-title">
+    <Headline id="audience-title" class="display-s" text="Who's _listening_" />
+    <ul class="boxes" role="list">
+      {
+        p.audience.map((a) => (
+          <li>
+            <span class="eyebrow">{a.label}</span>
+            <span>{a.text}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="make band grain-strong" aria-labelledby="make-title">
+    <div class="inner stack make-inner">
+      <Headline id="make-title" class="display-m upper" text="What I _make_" />
+      <ul class="offers" role="list">
+        {
+          p.offers.map((o) => (
+            <li>
+              <h3 class="serif offer-title">{o.title}</h3>
+              <p>{o.text}</p>
+              <p class="price">{o.price}</p>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="usage">
+        <h3 class="eyebrow">Usage rights</h3>
+        <dl>
+          {p.usage.map((u) => <div><dt>{u.label}</dt><dd>{u.price}</dd></div>)}
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap past" aria-labelledby="past-title">
+    <Headline id="past-title" class="display-s" text="Past _work_" />
+    <ul class="cases" role="list">
+      {
+        cases.map((c) => (
+          <li>
+            <a class="case" href={`/partnerships/${c.id}`}>
+              <Slot
+                image={c.data.card.image}
+                alt={c.data.card.imageAlt}
+                label={c.data.card.imageLabel}
+                height="300px"
+                sizes="(min-width: 1000px) 33vw, 100vw"
+              />
+              <span class="eyebrow">{c.data.card.eyebrow}</span>
+              <span class="serif case-title">{c.data.card.title}</span>
+              <span class="case-more">Read the case study ›</span>
+            </a>
+          </li>
+        ))
+      }
+      {
+        Array.from({ length: fillers }, () => (
+          <li class="case" aria-hidden="true">
+            <Slot label="[Post screenshot]" height="300px" />
+            <span class="eyebrow">[Brand] · [format]</span>
+            <span class="serif case-title">[Campaign title]</span>
+          </li>
+        ))
+      }
+    </ul>
+    <figure class="quote">
+      <blockquote class="serif">{p.quote.text}</blockquote>
+      <figcaption class="small">{p.quote.by}</figcaption>
+    </figure>
+  </section>
+
+  <section class="wrap process" aria-labelledby="process-title">
+    <h2 id="process-title" class="eyebrow">How a partnership runs</h2>
+    <ol role="list">
+      {p.process.map((step, i) => <li><span class="serif step-num">{i + 1}</span><span>{step}</span></li>)}
+    </ol>
+  </section>
+
+  <section id="contact" class="contact band grain-strong" aria-labelledby="contact-title">
+    <div class="inner contact-inner">
+      <Headline id="contact-title" class="display-m upper contact-title" text={p.cta} />
+      <div class="contact-actions">
+        <a class="btn on-wine" href={emailHref()}>{emailText()}</a>
+        <a class="btn btn-outline on-wine" href={site.mediaKitPdf}>Download the media kit (PDF)</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .muted { color: var(--muted); }
+  .small-note { font-size: var(--text-xs); }
+
+  /* Hero */
+  .hero { display: flex; flex-wrap: wrap; min-height: 640px; }
+  .hero-photo { flex: 1 1 420px; min-height: 480px; display: flex; }
+  .hero-copy {
+    flex: 1.3 1 520px;
+    background: var(--wine);
+    color: var(--cream);
+    --eyebrow: var(--sky);
+    --script: var(--sky);
+    padding: 64px var(--gutter);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+    overflow: hidden;
+  }
+  .hero-copy .lead { max-width: 35rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .on-wine { --btn-bg: var(--cream); --btn-fg: var(--cream); --btn-text: var(--wine); }
+
+  /* Numbers */
+  .numbers { display: flex; flex-direction: column; gap: 28px; padding-block: 72px; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    border-top: var(--rule);
+  }
+  .stats > div { padding: 24px 20px 24px 0; display: flex; flex-direction: column; gap: 8px; }
+  .stats dd { margin: 0; }
+  .stat-value { font-size: var(--display-l); line-height: 1; order: -1; }
+  .stats dt { font-size: 15px; }
+
+  /* Audience */
+  .audience { display: flex; flex-direction: column; gap: 24px; padding-bottom: 72px; }
+  .boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; }
+  .boxes li {
+    background: var(--paper);
+    border: var(--rule);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* What I make */
+  .make { background: var(--wine); color: var(--cream); --script: var(--sky); --eyebrow: var(--sky); }
+  .make-inner { gap: 32px; }
+  .offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 16px; }
+  .offers li { border: 1.5px solid var(--cream); padding: 24px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+  .offer-title { font-size: clamp(1.5rem, 1.3rem + 0.6vw, 1.75rem); line-height: 1.1; }
+  .price { font-weight: 600; color: var(--sky); }
+  .usage { border-top: 1.5px solid var(--cream); }
+  .usage h3 { font-weight: 400; padding: 16px 0 8px; }
+  .usage dl > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 24px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--wine-soft);
+  }
+  .usage dl > div:last-child { border-bottom: 0; }
+  .usage dd { margin: 0; }
+
+  /* Past work */
+  .past { display: flex; flex-direction: column; gap: 28px; padding-block: 80px; }
+  .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; }
+  .case { display: flex; flex-direction: column; gap: 14px; color: var(--ink); text-decoration: none; }
+  .case:hover .case-title { text-decoration: underline; text-decoration-thickness: 1px; }
+  .case-title { font-size: clamp(1.5rem, 1.3rem + 0.6vw, 1.75rem); line-height: 1.15; }
+  .case-more { font-size: 15px; }
+  .quote { margin: 24px 0 0; padding-top: 32px; border-top: var(--rule); max-width: 54rem; display: flex; flex-direction: column; gap: 14px; }
+  .quote blockquote { font-style: italic; font-weight: 400; font-size: var(--display-xs); line-height: 1.3; }
+
+  /* Process */
+  .process { display: flex; flex-direction: column; gap: 24px; padding-bottom: 80px; }
+  .process ol { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; }
+  .process li { border-top: var(--rule); padding-top: 16px; display: flex; flex-direction: column; gap: 8px; line-height: 1.5; }
+  .step-num { font-size: 2.5rem; line-height: 1; font-weight: 400; }
+
+  /* Contact */
+  .contact { background: var(--wine); color: var(--cream); --script: var(--sky); }
+  .contact-inner { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-end; justify-content: space-between; }
+  .contact-inner :global(.contact-title) { flex: 1 1 520px; }
+  .contact-actions { flex: 0 1 360px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .contact-actions .btn { min-height: 52px; font-size: 16px; }
+</style>
