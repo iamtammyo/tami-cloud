@@ -1,41 +1,62 @@
-order: 1
 brand: Slate
+order: 1
+draft: false
 headline: Two videos, one _guardrail_
 card:
   eyebrow: Slate · two-video campaign
   title: Guardrails are underrated, and I'm not a designer (that's fine)
-  imageLabel: "[Video still]"
+  alt: ''
 hero:
-  label: "[Hero still from the campaign]"
+  alt: ''
 facts:
-  - { label: Brand, value: "Slate, via Creatorbuzz" }
-  - { label: Format, value: Two sponsored videos }
-  - { label: Channel, value: "[LinkedIn / Instagram]" }
-  - { label: When, value: "May and June [year]" }
-brief: "[Two or three sentences on what Slate wanted and who they wanted to reach. Keep it in your voice, context first.]"
+  - label: Brand
+    value: Slate, via Creatorbuzz
+  - label: Format
+    value: Two sponsored videos
+  - label: Channel
+    value: '[LinkedIn / Instagram]'
+  - label: When
+    value: May and June [year]
+brief: >-
+  [Two or three sentences on what Slate wanted and who they wanted to reach.
+  Keep it in your voice, context first.]
+anglesHeading: The two angles
 angles:
-  heading: The two angles
-  items:
-    - eyebrow: Video 1 · social team view
-      title: Guardrails are underrated
-      body: Speed is the job on a social team, but speed without guardrails is how a brand drifts. Slate's Brand Hub makes off-brand content hard to ship in the first place.
-      label: "[Video 1 embed]"
-    - eyebrow: Video 2 · my own view
-      title: I'm not a designer, and that's fine
-      body: Tools should protect the creative effort, not use it up. This one leaned on Long to Shorts, Slate's AI for cutting long videos into short clips.
-      label: "[Video 2 embed]"
-system:
-  headline: The creative _system_
-  body: "Both videos share one visual language, so they read as a pair: a recurring guardrail motif, on-screen text in my brand font, and quick meme cuts like highway barriers and bumper bowling. I sent a moodboard for each video so approval took one round."
-  images:
-    - label: "[Moodboard]"
-    - label: "[Frame with text overlay]"
-    - label: "[Meme cut frame]"
+  - eyebrow: Video 1 · social team view
+    title: Guardrails are underrated
+    body: >-
+      Speed is the job on a social team, but speed without guardrails is how a
+      brand drifts. Slate's Brand Hub makes off-brand content hard to ship in
+      the first place.
+    videoUrl: ''
+    poster:
+      alt: ''
+  - eyebrow: Video 2 · my own view
+    title: I'm not a designer, and that's fine
+    body: >-
+      Tools should protect the creative effort, not use it up. This one leaned
+      on Long to Shorts, Slate's AI for cutting long videos into short clips.
+    videoUrl: ''
+    poster:
+      alt: ''
+systemHeadline: The creative _system_
+systemBody: >-
+  Both videos share one visual language, so they read as a pair: a recurring
+  guardrail motif, on-screen text in my brand font, and quick meme cuts like
+  highway barriers and bumper bowling. I sent a moodboard for each video so
+  approval took one round.
+systemImages:
+  - alt: ''
+  - alt: ''
+  - alt: ''
 results:
-  - { value: "[X]", label: views }
-  - { value: "[X]", label: comments }
-  - { value: "[X]", label: saves and shares }
-  - { value: "[X]", label: link clicks }
-quote:
-  text: "[What the Slate team said about working together]"
-  by: "[Name, role, Slate]"
+  - value: '[X]'
+    label: views
+  - value: '[X]'
+    label: comments
+  - value: '[X]'
+    label: saves and shares
+  - value: '[X]'
+    label: link clicks
+quote: '[What the Slate team said about working together]'
+quoteBy: '[Name, role, Slate]'

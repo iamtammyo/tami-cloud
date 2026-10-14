@@ -14,14 +14,22 @@
     "contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
+    "@astrojs/react": "^7.0.1",
+    "@astrojs/vercel": "^11.0.14",
     "@fontsource-variable/hanken-grotesk": "^5.3.0",
     "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/mrs-saint-delafield": "^5.3.0",
-    "astro": "^7.3.8"
+    "@keystatic/astro": "^6.0.0",
+    "@keystatic/core": "^0.6.9",
+    "astro": "^7.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "typescript": "^6.0.3"
   }
 }

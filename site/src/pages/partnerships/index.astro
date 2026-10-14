@@ -2,13 +2,18 @@
 import Base from '~/layouts/Base.astro';
 import Headline from '~/components/Headline.astro';
 import Slot from '~/components/Slot.astro';
-import { partnerships as p } from '~/data/partnerships';
-import { emailHref, emailText, site } from '~/data/site';
+import SetupNote from '~/components/SetupNote.astro';
+import { getPage, getSite } from '~/lib/content';
 import { caseStudies } from '~/lib/cases';
+import { bufferNote, bufferSummary } from '~/lib/buffer';
 
+const site = await getSite();
+const p = await getPage('partnerships');
 const cases = await caseStudies();
 // Keep the three-up grid looking complete until there are three real case studies.
 const fillers = Math.max(0, 3 - cases.length);
+const usesBuffer = p.numbers.some((n) => n.buffer !== 'none');
+const numbersNote = [p.numbersNote, usesBuffer ? bufferSummary : ''].filter(Boolean).join(' ');
 ---
 
 <Base
@@ -18,14 +23,14 @@ const fillers = Math.max(0, 3 - cases.length);
 >
   <section class="hero" aria-labelledby="partner-title">
     <div class="hero-photo grain-strong">
-      <Slot label={p.heroLabel} tone="wine" height="100%" />
+      <Slot image={p.hero.image} alt={p.hero.alt} label="[Photo of you mid-shoot, or a still from a brand video]" tone="wine" height="100%" eager sizes="(min-width: 960px) 43vw, 100vw" />
     </div>
     <div class="hero-copy grain-strong">
       <p class="eyebrow">{p.eyebrow}</p>
       <Headline as="h1" id="partner-title" class="display-l upper" text={p.headline} />
       <p class="lead">{p.intro}</p>
       <div class="actions">
-        <a class="btn on-wine" href={site.mediaKitPdf}>Download the media kit (PDF)</a>
+        {site.mediaKitHref && <a class="btn on-wine" href={site.mediaKitHref}>Download the media kit (PDF)</a>}
         <a class="btn btn-outline on-wine" href="#contact">Email me</a>
       </div>
     </div>
@@ -37,14 +42,14 @@ const fillers = Math.max(0, 3 - cases.length);
       {
         p.numbers.map((n) => (
           <div>
-            <dd class="serif stat-value">{n.value}</dd>
             <dt>{n.label}</dt>
-            <dd class="muted small-note">{n.note}</dd>
+            <dd class="serif stat-value">{n.value}</dd>
+            <dd class="muted small-note">{(n.buffer !== 'none' && bufferNote(n.buffer)) || n.note}</dd>
           </div>
         ))
       }
     </dl>
-    <p class="muted small-note">{p.numbersNote}</p>
+    {numbersNote && <p class="muted small-note">{numbersNote}</p>}
   </section>
 
   <section class="wrap audience" aria-labelledby="audience-title">
@@ -93,8 +98,8 @@ const fillers = Math.max(0, 3 - cases.length);
             <a class="case" href={`/partnerships/${c.id}`}>
               <Slot
                 image={c.data.card.image}
-                alt={c.data.card.imageAlt}
-                label={c.data.card.imageLabel}
+                alt={c.data.card.alt}
+                label="[Video still or post screenshot]"
                 height="300px"
                 sizes="(min-width: 1000px) 33vw, 100vw"
               />
@@ -115,10 +120,14 @@ const fillers = Math.max(0, 3 - cases.length);
         ))
       }
     </ul>
-    <figure class="quote">
-      <blockquote class="serif">{p.quote.text}</blockquote>
-      <figcaption class="small">{p.quote.by}</figcaption>
-    </figure>
+    {
+      p.quote && (
+        <figure class="quote">
+          <blockquote class="serif">{p.quote}</blockquote>
+          {p.quoteBy && <figcaption class="small">{p.quoteBy}</figcaption>}
+        </figure>
+      )
+    }
   </section>
 
   <section class="wrap process" aria-labelledby="process-title">
@@ -132,8 +141,9 @@ const fillers = Math.max(0, 3 - cases.length);
     <div class="inner contact-inner">
       <Headline id="contact-title" class="display-m upper contact-title" text={p.cta} />
       <div class="contact-actions">
-        <a class="btn on-wine" href={emailHref()}>{emailText()}</a>
-        <a class="btn btn-outline on-wine" href={site.mediaKitPdf}>Download the media kit (PDF)</a>
+        <a class="btn on-wine" href={site.emailHref}>{site.emailText}</a>
+        {site.mediaKitHref && <a class="btn btn-outline on-wine" href={site.mediaKitHref}>Download the media kit (PDF)</a>}
+        {!site.mediaKitHref && <SetupNote text="upload the media kit PDF in Site settings to show the download buttons." />}
       </div>
     </div>
   </section>

@@ -1,12 +1,14 @@
 ---
-import { nav, site } from '~/data/site';
+import { getSite, SITE_NAME } from '~/lib/content';
+
+const { nav } = await getSite();
 
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const current = (href: string) => path === href || path.startsWith(`${href}/`);
 ---
 
 <header class="header">
-  <a class="name" href="/">{site.name}</a>
+  <a class="name" href="/">{SITE_NAME}</a>
   <nav aria-label="Main">
     <ul role="list">
       {

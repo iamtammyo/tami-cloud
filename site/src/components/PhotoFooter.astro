@@ -1,13 +1,16 @@
 ---
-import { emailHref, emailText, social } from '~/data/site';
-import { photography } from '~/data/photography';
+import { getPage, getSite } from '~/lib/content';
+
+const site = await getSite();
+const { footerLabel } = await getPage('photography');
+const instagram = site.photographyInstagram || site.social('Instagram');
 ---
 
 <footer class="photo-footer grain-strong">
-  <span>{photography.footer}: <a href={emailHref()}>{emailText()}</a></span>
+  <span>{footerLabel}: <a href={site.emailHref}>{site.emailText}</a></span>
   <span class="links">
-    <a href={social('Instagram').href} rel="me noopener">Instagram</a>
-    <a href={social('LinkedIn').href} rel="me noopener">LinkedIn</a>
+    {instagram && <a href={instagram} rel="me noopener">Instagram</a>}
+    {site.social('LinkedIn') && <a href={site.social('LinkedIn')} rel="me noopener">LinkedIn</a>}
   </span>
 </footer>
 

@@ -9,7 +9,7 @@ import Slot from './Slot.astro';
 
 interface Props {
   url?: string;
-  poster?: ImageMetadata;
+  poster?: ImageMetadata | null;
   posterAlt?: string;
   label: string;
   title: string;
@@ -20,7 +20,7 @@ const yt = url?.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\
 
 {
   !url ? (
-    <Slot label={label} tone="wine" ratio="4 / 5" image={poster} alt={posterAlt} />
+    <Slot label={label} tone="wine" ratio="4 / 5" image={poster} alt={posterAlt} sizes="(min-width: 760px) 50vw, 100vw" />
   ) : yt ? (
     <div class="video" data-yt={yt} data-title={title}>
       {poster ? <Image src={poster} alt={posterAlt} class="poster" /> : <div class="poster blank" />}

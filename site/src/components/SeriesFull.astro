@@ -21,7 +21,7 @@ const meta = seriesMeta(d);
 
   <div class="grid">
     <figure class="lead-photo">
-      <Slot image={d.lead.image} alt={d.lead.alt} label={d.lead.label} height="clamp(18rem, 48vw, 38.75rem)" />
+      <Slot image={d.lead.image} alt={d.lead.alt} label="[Lead image, landscape, full width]" height="clamp(18rem, 48vw, 38.75rem)" />
       {d.lead.caption && <figcaption>{d.lead.caption}</figcaption>}
     </figure>
     {
@@ -30,7 +30,7 @@ const meta = seriesMeta(d);
           <Slot
             image={p.image}
             alt={p.alt}
-            label={p.label}
+            label="[Portrait image]"
             height={i === 1 ? 'clamp(20rem, 34vw, 27.5rem)' : 'clamp(22rem, 40vw, 32.5rem)'}
             sizes="(min-width: 760px) 50vw, 100vw"
           />
@@ -41,12 +41,12 @@ const meta = seriesMeta(d);
   </div>
 
   {
-    (d.note || d.detail) && (
+    (d.note || d.detail.image) && (
       <div class="note-row">
         {d.note && <p class="note serif">{d.note}</p>}
-        {d.detail && (
+        {(d.detail.image || d.note) && (
           <figure class="detail">
-            <Slot image={d.detail.image} alt={d.detail.alt} label={d.detail.label} height="300px" sizes="(min-width: 760px) 45vw, 100vw" />
+            <Slot image={d.detail.image} alt={d.detail.alt} label="[Detail shot]" height="300px" sizes="(min-width: 760px) 45vw, 100vw" />
             {d.detail.caption && <figcaption>{d.detail.caption}</figcaption>}
           </figure>
         )}
@@ -59,7 +59,7 @@ const meta = seriesMeta(d);
       <div class="more">
         {d.more.map((p) => (
           <figure>
-            <Slot image={p.image} alt={p.alt} label={p.label} ratio="4 / 5" sizes="(min-width: 760px) 25vw, 50vw" />
+            <Slot image={p.image} alt={p.alt} label="[Image]" ratio="4 / 5" sizes="(min-width: 760px) 25vw, 50vw" />
             {p.caption && <figcaption>{p.caption}</figcaption>}
           </figure>
         ))}

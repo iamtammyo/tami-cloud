@@ -23,6 +23,10 @@ Nav: Photography, Partner with me, About, Writing ↗ (external portfolio).
 - Grain is an inline SVG noise texture, so there's no image request.
 - Content lives in data files and YAML collections, so a CMS (Keystatic or similar) can sit on top later without restructuring.
 - YouTube videos load only on click, through youtube-nocookie.com.
+- Admin: Keystatic at `/keystatic`. Every page, photo, series and case study is editable. Local files in dev, GitHub commits in production. The site is static apart from the admin route, which runs on Vercel through `@astrojs/vercel`.
+- Photos without alt text fail the build. Links with nowhere to go (writing, media kit, forms) hide themselves.
+- Media kit engagement lines come from Buffer (`src/data/buffer-stats.json`). Follower counts stay manual, since Buffer's API doesn't expose them.
+- SEO: sitemap.xml, robots.txt (admin disallowed), Person structured data on Home and About, 301 redirects from the old Squarespace URLs.
 
 ## Open questions for Tami
 

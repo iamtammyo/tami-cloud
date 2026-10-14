@@ -1,13 +1,23 @@
 ---
+import { Image } from 'astro:assets';
 import Base from '~/layouts/Base.astro';
 import Headline from '~/components/Headline.astro';
-import { home } from '~/data/home';
-import { Image } from 'astro:assets';
-import { emailHref, emailText, nav, site, socials } from '~/data/site';
-import { portrait } from '~/lib/assets';
+import { getPage, getSite, SITE_NAME } from '~/lib/content';
+
+const site = await getSite();
+const home = await getPage('home');
+const tilts = [-1.2, 0.8, -0.4];
+// An external card with no link of its own points at the writing portfolio; cards with nowhere to go are hidden.
+const cards = home.cards
+  .map((card) => {
+    const href = card.link || (card.external ? site.writingUrl : '');
+    return { ...card, href, external: card.external || /^https?:/.test(href) };
+  })
+  .filter((card) => card.href);
+const portrait = home.portrait.image;
 ---
 
-<Base header={false}>
+<Base header={false} person>
   <div class="split">
     <section class="panel grain-strong" aria-label="Introduction">
       {
@@ -15,22 +25,22 @@ import { portrait } from '~/lib/assets';
           <Image
             class="portrait-img"
             src={portrait}
-            alt="Portrait of Tami Oladipo"
+            alt={home.portrait.alt}
             widths={[480, 800, 1200, 1600].filter((w) => w <= portrait.width)}
             sizes="(min-width: 960px) 50vw, 100vw"
             loading="eager"
             fetchpriority="high"
           />
         ) : (
-          <div class="portrait" aria-hidden="true"><span>{home.portraitLabel}</span></div>
+          <div class="portrait" aria-hidden="true"><span>[Your portrait, full bleed]</span></div>
         )
       }
       <div class="panel-top">
-        <h1 class="name">{site.name}</h1>
+        <h1 class="name">{SITE_NAME}</h1>
         <nav aria-label="Main">
           <ul role="list">
             {
-              nav.map((item) => (
+              site.nav.map((item) => (
                 <li>
                   <a href={item.href} {...(item.external && { target: '_blank', rel: 'noopener' })}>
                     {item.external ? 'Writing portfolio' : item.label}
@@ -44,7 +54,7 @@ import { portrait } from '~/lib/assets';
         </nav>
       </div>
       <ul class="socials" role="list" aria-label="Elsewhere">
-        {socials.map((s) => <li><a href={s.href} rel="me noopener">{s.label}</a></li>)}
+        {site.socials.map((s) => <li><a href={s.url} rel="me noopener">{s.platform}</a></li>)}
       </ul>
     </section>
 
@@ -55,29 +65,30 @@ import { portrait } from '~/lib/assets';
 
       <ul class="cards" role="list">
         {
-          home.cards.map((card) => (
-            <li style={`--tilt:${card.tilt}deg`}>
-              <a
-                class:list={['card', card.tone]}
-                href={card.href}
-                {...(card.external && { target: '_blank', rel: 'noopener' })}
-              >
-                <span class="card-top">
-                  <span class="eyebrow card-num">{card.num}</span>
-                  {card.external ? (
-                    <span class="card-arrow" aria-hidden="true">↗</span>
-                  ) : (
-                    <span class="card-photo" aria-hidden="true">photo</span>
-                  )}
-                </span>
-                <span class="card-bottom">
-                  <span class="serif card-title">{card.title}</span>
-                  <span class="card-text">{card.text}</span>
-                  {card.external && <span class="visually-hidden"> (opens in a new tab)</span>}
-                </span>
-              </a>
-            </li>
-          ))
+          cards.map((card, i) => {
+            const { href, external } = card;
+            return (
+              <li style={`--tilt:${tilts[i % tilts.length]}deg`}>
+                <a class:list={['card', card.colour]} href={href} {...(external && { target: '_blank', rel: 'noopener' })}>
+                  <span class="card-top">
+                    <span class="eyebrow card-num">{String(i + 1).padStart(2, '0')}</span>
+                    {card.photo.image ? (
+                      <Image class="card-img" src={card.photo.image} alt={card.photo.alt} width={116} height={140} />
+                    ) : external ? (
+                      <span class="card-arrow" aria-hidden="true">↗</span>
+                    ) : (
+                      <span class="card-photo" aria-hidden="true">photo</span>
+                    )}
+                  </span>
+                  <span class="card-bottom">
+                    <span class="serif card-title">{card.title}</span>
+                    <span class="card-text">{card.text}</span>
+                    {external && <span class="visually-hidden"> (opens in a new tab)</span>}
+                  </span>
+                </a>
+              </li>
+            );
+          })
         }
       </ul>
     </section>
@@ -88,12 +99,16 @@ import { portrait } from '~/lib/assets';
       <div class="brands-list">
         <p class="eyebrow">{home.brandsHeading}</p>
         <ul role="list">
-          {home.brands.map((b) => <li>{b}</li>)}
+          {
+            home.brands.map((b) => (
+              <li>{b.logo ? <Image class="logo" src={b.logo} alt={b.name} height={32} /> : <span>{b.name}</span>}</li>
+            ))
+          }
         </ul>
       </div>
       <div class="hello">
         <Headline as="h2" class="hello-title" text="Say _hello_" />
-        <a href={emailHref()}>{emailText()} ›</a>
+        <a href={site.emailHref}>{site.emailText} ›</a>
       </div>
     </div>
   </section>
@@ -208,6 +223,7 @@ import { portrait } from '~/lib/assets';
     color: var(--muted);
   }
   .periwinkle .card-photo { background: var(--periwinkle-deep); border-color: var(--ink); color: var(--ink); }
+  .card-img { width: 58px; height: 70px; object-fit: cover; border: 1.5px solid var(--ink); }
   .card-arrow {
     width: 44px; height: 44px;
     display: grid; place-items: center;
@@ -239,8 +255,10 @@ import { portrait } from '~/lib/assets';
     display: grid;
     place-items: center;
     border: 1.5px dashed var(--ink);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
+    padding: 8px;
   }
+  .brands-list :global(.logo) { width: auto; max-height: 32px; }
   .hello { flex: 0 1 360px; display: flex; flex-direction: column; gap: 10px; }
   .hello :global(.hello-title) { font-size: var(--display-xs); line-height: 1.1; }
   .hello a { color: var(--ink); }

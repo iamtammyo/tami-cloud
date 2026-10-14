@@ -8,7 +8,7 @@ import type { ImageMetadata } from 'astro';
 
 interface Props {
   label: string;
-  image?: ImageMetadata;
+  image?: ImageMetadata | null;
   alt?: string;
   /** CSS aspect-ratio, e.g. "3 / 2". Ignored when height is set. */
   ratio?: string;

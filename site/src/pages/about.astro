@@ -1,16 +1,24 @@
 ---
+import { Image } from 'astro:assets';
 import Base from '~/layouts/Base.astro';
 import Headline from '~/components/Headline.astro';
-import { about } from '~/data/about';
-import { emailHref, emailText, site, socials } from '~/data/site';
+import SetupNote from '~/components/SetupNote.astro';
+import { getPage, getSite, SITE_NAME, SITE_PLACE } from '~/lib/content';
 
+const site = await getSite();
+const about = await getPage('about');
 const contactAction = site.contactAction || (site.email ? `mailto:${site.email}` : '');
 ---
 
-<Base title="About and contact" description="About Tami Oladipo, writer and photographer in Lagos, and how to get in touch.">
+<Base person title="About and contact" description="About Tami Oladipo, writer and photographer in Lagos, and how to get in touch.">
   <section class="hello grain-strong" aria-label="Hello">
-    <!-- Replace with one of Tami's photographs as a full-bleed background -->
-    <span class="photo-label">{about.photoLabel}</span>
+    {
+      about.hero.image ? (
+        <Image class="hello-img" src={about.hero.image} alt={about.hero.alt} widths={[800, 1600, 2400].filter((w) => w <= about.hero.image!.width)} sizes="100vw" loading="eager" />
+      ) : (
+        <span class="photo-label">[One of your own photographs, full bleed]</span>
+      )
+    }
     <div class="note">
       <span class="note-script" aria-hidden="true">hello</span>
       <span class="note-text">{about.hello}</span>
@@ -34,20 +42,25 @@ const contactAction = site.contactAction || (site.email ? `mailto:${site.email}`
     <div class="inner contact-inner">
       <div class="contact-copy">
         <Headline id="contact-title" class="display-m upper" text="Get in _touch_" />
-        <p>{about.contactIntro} <a href={emailHref()}>{emailText()}</a>.</p>
+        <p>{about.contactIntro} <a href={site.emailHref}>{site.emailText}</a>.</p>
 
-        <form class="newsletter" action={site.newsletter.action || undefined} method="post">
-          <label class="eyebrow" for="news-email">{site.newsletter.name} newsletter</label>
+        {!site.newsletterAction && <SetupNote text="add the newsletter form action in Site settings to show the signup." />}
+        {site.newsletterAction && (
+        <form class="newsletter" action={site.newsletterAction} method="post">
+          <label class="eyebrow" for="news-email">{site.newsletterName} newsletter</label>
           <div class="news-row">
             <input class="input" id="news-email" name="email" type="email" autocomplete="email" placeholder="you@email.com" required />
             <button class="btn" type="submit">Subscribe</button>
           </div>
         </form>
+        )}
       </div>
 
+      {!contactAction && <SetupNote text="add your email or a contact form endpoint in Site settings to show the form." />}
+      {contactAction && (
       <form
         class="contact-form"
-        action={contactAction || undefined}
+        action={contactAction}
         method="post"
         enctype={contactAction.startsWith('mailto:') ? 'text/plain' : undefined}
       >
@@ -71,12 +84,13 @@ const contactAction = site.contactAction || (site.email ? `mailto:${site.email}`
         </div>
         <button class="btn send" type="submit">Send</button>
       </form>
+      )}
     </div>
   </section>
 
   <footer slot="footer" class="footer">
-    <span>{site.name} · {site.place}</span>
-    <ul role="list">{socials.map((s) => <li><a href={s.href} rel="me noopener">{s.label}</a></li>)}</ul>
+    <span>{SITE_NAME} · {SITE_PLACE}</span>
+    <ul role="list">{site.socials.map((s) => <li><a href={s.url} rel="me noopener">{s.platform}</a></li>)}</ul>
   </footer>
 </Base>
 
@@ -89,6 +103,7 @@ const contactAction = site.contactAction || (site.email ? `mailto:${site.email}`
     padding: 40px;
     overflow: hidden;
   }
+  .hello-img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
   .photo-label { position: absolute; left: 28px; bottom: 24px; font-size: var(--text-xs); }
   .note {
     width: min(400px, 100%);

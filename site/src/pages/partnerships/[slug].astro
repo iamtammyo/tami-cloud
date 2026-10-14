@@ -22,7 +22,7 @@ const d = cs.data;
 >
   <section class="hero" aria-labelledby="cs-title">
     <div class="hero-photo grain-strong">
-      <Slot image={d.hero.image} alt={d.hero.alt} label={d.hero.label} tone="wine" height="100%" eager />
+      <Slot image={d.hero.image} alt={d.hero.alt} label="[Hero still from the campaign]" tone="wine" height="100%" eager sizes="(min-width: 960px) 50vw, 100vw" />
     </div>
     <div class="hero-copy">
       <a class="small" href="/partnerships">‹ All partnerships</a>
@@ -41,12 +41,12 @@ const d = cs.data;
 
   <section class="angles band grain-strong" aria-labelledby="angles-title">
     <div class="inner stack angles-inner">
-      <h2 id="angles-title" class="eyebrow">{d.angles.heading}</h2>
+      <h2 id="angles-title" class="eyebrow">{d.anglesHeading || 'The videos'}</h2>
       <div class="angle-grid">
         {
-          d.angles.items.map((a) => (
+          d.angles.map((a, i) => (
             <article class="angle">
-              <Video url={a.videoUrl} poster={a.poster} posterAlt={a.posterAlt} label={a.label} title={a.title} />
+              <Video url={a.videoUrl} poster={a.poster.image} posterAlt={a.poster.alt} label={`[Video ${i + 1}]`} title={a.title} />
               <p class="eyebrow">{a.eyebrow}</p>
               <h3 class="serif angle-title">{a.title}</h3>
               <p>{a.body}</p>
@@ -58,11 +58,11 @@ const d = cs.data;
   </section>
 
   <section class="wrap system" aria-labelledby="system-title">
-    <Headline id="system-title" class="display-s" text={d.system.headline} />
-    <p class="lead system-body">{d.system.body}</p>
+    <Headline id="system-title" class="display-s" text={d.systemHeadline} />
+    <p class="lead system-body">{d.systemBody}</p>
     <div class="system-grid">
-      {d.system.images.map((img) => (
-        <Slot image={img.image} alt={img.alt} label={img.label} height="260px" sizes="(min-width: 1000px) 33vw, 100vw" />
+      {d.systemImages.map((img, i) => (
+        <Slot image={img.image} alt={img.alt} label={`[Image ${i + 1}]`} height="260px" sizes="(min-width: 1000px) 33vw, 100vw" />
       ))}
     </div>
   </section>
@@ -70,13 +70,13 @@ const d = cs.data;
   <section class="wrap results" aria-labelledby="results-title">
     <h2 id="results-title" class="eyebrow">What happened</h2>
     <dl class="stats">
-      {d.results.map((r) => <div><dd class="serif stat-value">{r.value}</dd><dt>{r.label}</dt></div>)}
+      {d.results.map((r) => <div><dt>{r.label}</dt><dd class="serif stat-value">{r.value}</dd></div>)}
     </dl>
     {
       d.quote && (
         <figure class="quote">
-          <blockquote class="serif">{d.quote.text}</blockquote>
-          <figcaption class="small">{d.quote.by}</figcaption>
+          <blockquote class="serif">{d.quote}</blockquote>
+          {d.quoteBy && <figcaption class="small">{d.quoteBy}</figcaption>}
         </figure>
       )
     }

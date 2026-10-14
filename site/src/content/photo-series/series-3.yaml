@@ -1,10 +1,18 @@
-order: 3
+title: '[Series name]'
 status: public
-title: "[Series name]"
+order: 3
+place: ''
+year: ''
+camera: ''
 lead:
-  label: "[Lead image]"
+  alt: ''
+  caption: ''
+pair: []
+note: ''
+detail:
+  alt: ''
+  caption: ''
 more:
-  - label: "[Image]"
-  - label: "[Image]"
-  - label: "[Image]"
-  - label: "[Image]"
+  - { alt: '', caption: '' }
+  - { alt: '', caption: '' }
+  - { alt: '', caption: '' }

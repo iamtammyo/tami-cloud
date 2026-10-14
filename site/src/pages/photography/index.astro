@@ -4,9 +4,10 @@ import Headline from '~/components/Headline.astro';
 import Slot from '~/components/Slot.astro';
 import SeriesFull from '~/components/SeriesFull.astro';
 import PhotoFooter from '~/components/PhotoFooter.astro';
-import { photography } from '~/data/photography';
+import { getPage } from '~/lib/content';
 import { publicSeries } from '~/lib/photo';
 
+const photography = await getPage('photography');
 const series = await publicSeries();
 const [featured, ...rest] = series;
 ---
@@ -54,7 +55,7 @@ const [featured, ...rest] = series;
             </div>
             <div class="strip-grid">
               {images.map((p) => (
-                <Slot image={p.image} alt={p.alt} label={p.label} height="300px" sizes="(min-width: 760px) 25vw, 50vw" />
+                <Slot image={p.image} alt={p.alt} label="[Image]" height="300px" sizes="(min-width: 760px) 25vw, 50vw" />
               ))}
             </div>
           </section>
