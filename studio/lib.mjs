@@ -31,23 +31,36 @@ export function decodeAudio(file) {
   return new Float32Array(buf.buffer, buf.byteOffset, buf.byteLength / 4);
 }
 
-// Words [{w, s, e}] -> caption segments of a few words each, broken at
-// sentence ends, pauses, or a word budget.
-export function wordsToSegments(words, { maxWords = 6, maxDur = 3.2, gap = 0.45 } = {}) {
-  const segs = [];
+// Words [{w, s, e}] -> caption segments of a few words each. Breaks at
+// sentence ends, then commas and pauses, then splits long phrases into even
+// chunks so no caption is left holding one stray word.
+export function wordsToSegments(words, { maxWords = 6, gap = 0.45 } = {}) {
+  const phrases = [];
   let cur = [];
-  const flush = () => {
-    if (!cur.length) return;
-    segs.push({ start: cur[0].s, end: cur[cur.length - 1].e, text: cur.map((w) => w.w).join(" "), words: cur.map(({ s, e }) => ({ s, e })) });
-    cur = [];
-  };
   words.forEach((w, i) => {
-    const prev = words[i - 1];
-    if (cur.length && (cur.length >= maxWords || w.e - cur[0].s > maxDur || (prev && w.s - prev.e > gap))) flush();
+    const next = words[i + 1];
     cur.push(w);
-    if (/[.!?]$/.test(w.w)) flush();
+    const end = /[.!?]$/.test(w.w);
+    const soft = /[,;:]$/.test(w.w) && cur.length >= 3;
+    const pause = next && next.s - w.e > gap && cur.length >= 2;
+    if (!next || end || soft || pause) { phrases.push(cur); cur = []; }
   });
-  flush();
+  // Fold one- and two-word scraps into the phrase before when it stays short.
+  const merged = [];
+  phrases.forEach((p) => {
+    const prev = merged[merged.length - 1];
+    if (prev && p.length <= 2 && prev.length + p.length <= maxWords + 1 && !/[.!?]$/.test(prev[prev.length - 1].w)) prev.push(...p);
+    else merged.push(p);
+  });
+  const segs = [];
+  merged.forEach((p) => {
+    const k = p.length <= maxWords + 2 ? 1 : Math.ceil(p.length / maxWords);
+    const size = Math.ceil(p.length / k);
+    for (let i = 0; i < p.length; i += size) {
+      const part = p.slice(i, i + size);
+      segs.push({ start: part[0].s, end: part[part.length - 1].e, text: part.map((w) => w.w).join(" "), words: part.map(({ s, e }) => ({ s, e })) });
+    }
+  });
   // Hold each caption until the next one starts (short gaps only), so text
   // doesn't flicker off between phrases.
   segs.forEach((s, i) => {

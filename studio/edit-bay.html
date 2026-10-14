@@ -319,13 +319,13 @@ textarea, input[type=text] { width: 100%; background: var(--panel-2); border: 1p
     return null;
   }
   function duration() {
-    if (demo) return 10;
+    if (demo) return segs.length ? segs[segs.length - 1].end + 0.5 : 10;
     var m = mainClip();
     return avid.duration || (m && m.duration) || (project && project.video && project.video.duration) || 0;
   }
   function now() { return demo ? demoT : avid.currentTime; }
   function liveSegs() {
-    if (demo) return EXAMPLE;
+    if (demo && !segs.length) return EXAMPLE;
     return segs.map(function (s) {
       var p = pending[s.id]; if (!p) return s;
       var o = Object.assign({}, s);
@@ -403,7 +403,7 @@ textarea, input[type=text] { width: 100%; background: var(--panel-2); border: 1p
     if (!playing) return;
     if (demo) {
       var dt = lastFrameAt ? (ts - lastFrameAt) / 1000 : 0;
-      demoT += dt; if (demoT >= 10) demoT = 0;
+      demoT += dt; if (demoT >= duration()) demoT = 0;
     }
     lastFrameAt = ts;
     var t = now();
@@ -448,7 +448,7 @@ textarea, input[type=text] { width: 100%; background: var(--panel-2); border: 1p
   $("viewSel").onchange = function () { applySource(); };
 
   function applySource() {
-    var src = null, label = "Example";
+    var src = null, label = segs.length ? "Captions only · add your video" : "Example";
     if (!demo) {
       if (showingRender() && renders[0]) { src = blob(renders[0].assetId); label = "Render"; }
       else { src = mainSrc(); label = "Live preview"; }
@@ -465,6 +465,7 @@ textarea, input[type=text] { width: 100%; background: var(--panel-2); border: 1p
     var d = duration() || 10, list = liveSegs();
     var pct = function (x) { return (100 * x / d) + "%"; };
     var cap = $("laneCap"), lb = $("laneB"), la = $("laneA");
+    cap.parentNode.style.minWidth = Math.max(560, Math.round(d * 22)) + "px"; // ~22px per second keeps short captions clickable
     cap.replaceChildren(); lb.replaceChildren(); la.replaceChildren();
     list.forEach(function (s) {
       var b = document.createElement("button"); b.className = "blk cap" + (s.id === activeId ? " sel" : "");
@@ -484,9 +485,9 @@ textarea, input[type=text] { width: 100%; background: var(--panel-2); border: 1p
       lb.appendChild(b);
     });
     var m = mainClip();
-    if (!demo) {
+    if (!demo || segs.length) {
       var a = document.createElement("div"); a.className = "blk ar"; a.style.left = "0"; a.style.width = "calc(100% - 2px)";
-      a.textContent = m ? m.name : (project && project.source ? project.source.name : "Main clip");
+      a.textContent = m ? m.name : (project && project.source ? project.source.name : demo ? "Video not added yet" : "Main clip");
       la.appendChild(a);
     } else {
       var ex = document.createElement("div"); ex.className = "blk ar"; ex.style.left = "0"; ex.style.width = "calc(100% - 2px)"; ex.textContent = "Example";
@@ -544,13 +545,19 @@ textarea, input[type=text] { width: 100%; background: var(--panel-2); border: 1p
   }
 
   function captionsView() {
-    if (!hasMain()) return startView();
+    if (!hasMain() && !segs.length) return startView();
     if (!segs.length) {
       var p = document.createElement("div"); p.className = "panel";
       p.innerHTML = '<h2>Clips are in. Captions are next.</h2><p>Tell Claude in chat: <b>“prep my clips”</b>. Claude transcribes your A-roll into caption cards, describes each B-roll clip, and suggests where it fits. Meanwhile you can scrub the footage on the monitor or sort clips in Media.</p>';
       return p;
     }
     var wrap = document.createElement("div");
+    if (!hasMain()) {
+      var add = dropZone("Your captions are ready. Add the video to see them on it.");
+      add.style.marginBottom = "14px";
+      add.querySelector("p").textContent = "Upload a copy of the same video under 20 MB (a 720p export works). Until then the monitor plays your captions over a placeholder.";
+      wrap.appendChild(add);
+    }
     var head = document.createElement("div"); head.className = "list-head";
     var p2 = document.createElement("p"); p2.textContent = "Click a card to jump there. Changes show on the monitor right away.";
     var all = document.createElement("button"); all.className = "btn small"; all.textContent = "Apply selected look to all";
@@ -970,7 +977,8 @@ textarea, input[type=text] { width: 100%; background: var(--panel-2); border: 1p
   function updateStatus() {
     var pill = $("statusPill"), txt = $("statusText");
     pill.className = "pill";
-    if (demo) { txt.textContent = "Waiting for a clip"; }
+    if (demo && segs.length) { txt.textContent = "Captions ready · add the video"; }
+    else if (demo) { txt.textContent = "Waiting for a clip"; }
     else if (!segs.length) { txt.textContent = "Waiting for captions"; }
     else if (project && project.render && project.render.status === "rendering") { txt.textContent = "Rendering…"; }
     else {
@@ -980,7 +988,7 @@ textarea, input[type=text] { width: 100%; background: var(--panel-2); border: 1p
     }
     $("renderBtn").disabled = demo || !segs.length || !canWrite || !!(project && project.render && /requested|rendering/.test(project.render.status));
     var m = mainClip();
-    $("clipName").textContent = m ? m.name : project && project.source ? project.source.name : "No clip yet";
+    $("clipName").textContent = m ? m.name : project && project.source ? project.source.name : project && project.descript ? project.descript.clip : "No clip yet";
   }
 
   // ---------- Data ----------
