@@ -1,0 +1,81 @@
+name: Appointment monitor
+
+on:
+  schedule:
+    # Every 2 hours (offset from the top of the hour — GitHub delays/drops
+    # exactly-on-the-hour crons more often).
+    - cron: '23 */2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: appointment-monitor
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: monitor
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Persist last-known status between runs so you only get notified on
+      # changes (and always when slots open up).
+      - name: Restore monitor state
+        uses: actions/cache/restore@v4
+        with:
+          path: monitor/.state
+          key: monitor-state-${{ github.run_id }}
+          restore-keys: monitor-state-
+
+      - name: Check appointment availability
+        env:
+          VFS_EMAIL: ${{ secrets.VFS_EMAIL }}
+          VFS_PASSWORD: ${{ secrets.VFS_PASSWORD }}
+          VFS_CENTRE: ${{ vars.VFS_CENTRE }}
+          VFS_CATEGORY: ${{ vars.VFS_CATEGORY }}
+          VFS_SUBCATEGORY: ${{ vars.VFS_SUBCATEGORY }}
+          BLS_EMAIL: ${{ secrets.BLS_EMAIL }}
+          BLS_PASSWORD: ${{ secrets.BLS_PASSWORD }}
+          BLS_VISA_TYPE: ${{ vars.BLS_VISA_TYPE }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          NOTIFY_TO: ${{ secrets.NOTIFY_TO }}
+          PROXY_SERVER: ${{ secrets.PROXY_SERVER }}
+          PROXY_USERNAME: ${{ secrets.PROXY_USERNAME }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+        run: npm run check
+
+      - name: Save monitor state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: monitor/.state
+          key: monitor-state-${{ github.run_id }}
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ github.run_id }}
+          path: monitor/artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
