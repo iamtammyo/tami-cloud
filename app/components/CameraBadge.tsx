@@ -8,27 +8,23 @@ type Props = {
   onClick: () => void;
 };
 
+// Lives on the metallic top plate, so it uses fixed dark ink rather than
+// theme tokens.
 export default function CameraBadge({ profile, onClick }: Props) {
   const camera = findCamera(profile?.cameraId ?? null);
-  const label =
-    camera?.fullName ??
-    profile?.customCameraName ??
-    "No camera set";
-  const isSet = !!camera || !!profile?.customCameraName;
+  const name = camera?.model ?? profile?.customCameraName ?? null;
 
   return (
     <button
       onClick={onClick}
       title="Camera profile"
-      className="plate-cream flex items-center gap-2 rounded-sm px-2 py-1"
+      className="flex items-center gap-2 rounded-full border border-black/15 px-3 py-1.5 text-[12px] text-[#17171a] transition-colors hover:bg-black/5"
     >
-      <span className={`h-2 w-2 rounded-full ${isSet ? "led-green" : "port"}`} />
-      <span className="text-left">
-        <span className="engrave-cream block text-[8px]">CAMERA</span>
-        <span className="block max-w-[160px] truncate font-mono text-[11px]">
-          {label}
-        </span>
-      </span>
+      <span
+        className={`dot ${name ? "dot-ok" : ""}`}
+        style={name ? undefined : { background: "rgba(0,0,0,0.3)" }}
+      />
+      <span className="font-mono">{name ?? "Set camera"}</span>
     </button>
   );
 }

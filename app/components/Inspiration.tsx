@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PHOTOGRAPHERS } from "../lib/photographers";
 import { loadCustomPhotographers, saveCustomPhotographers } from "../lib/storage";
 import { initials, usePhotographerWiki } from "../lib/wiki";
@@ -20,7 +20,9 @@ export default function Inspiration() {
   const [custom, setCustom] = useState<Photographer[]>([]);
   const [query, setQuery] = useState("");
   const [styleFilter, setStyleFilter] = useState<GenreTag | "all">("all");
-  const [sort, setSort] = useState<Sort>("style");
+  // Flat grid by default: grouping by style leaves most genres with one or
+  // two cards and a lot of dead space. Grouping stays available in the menu.
+  const [sort, setSort] = useState<Sort>("name");
   const [openId, setOpenId] = useState<string | null>(null);
 
   const [researchName, setResearchName] = useState("");
@@ -75,9 +77,7 @@ export default function Inspiration() {
     const name = researchName.trim();
     if (!name) return;
 
-    const dupe = library.find(
-      (p) => p.name.toLowerCase() === name.toLowerCase(),
-    );
+    const dupe = library.find((p) => p.name.toLowerCase() === name.toLowerCase());
     if (dupe) {
       setResearchError(`${dupe.name} is already in your library.`);
       return;
@@ -91,18 +91,12 @@ export default function Inspiration() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
-      const data = (await res.json()) as {
-        photographer?: Photographer;
-        error?: string;
-      };
+      const data = (await res.json()) as { photographer?: Photographer; error?: string };
       if (!res.ok || !data.photographer) {
         throw new Error(data.error ?? `Research failed (${res.status})`);
       }
 
-      const entry: Photographer = {
-        ...data.photographer,
-        addedAt: Date.now(),
-      };
+      const entry: Photographer = { ...data.photographer, addedAt: Date.now() };
       // Guard against an id collision with a built-in entry.
       if (library.some((p) => p.id === entry.id)) {
         entry.id = `${entry.id}-${Date.now().toString(36)}`;
@@ -130,16 +124,11 @@ export default function Inspiration() {
     saveCustomPhotographers(next);
   }
 
+  const onOpen = (id: string) => setOpenId((cur) => (cur === id ? null : id));
+
   return (
-    <div>
-      {/* Research deck */}
-      <div className="plate-black mb-4 rounded-md p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <span className="led-green h-2.5 w-2.5" />
-          <span className="engrave-cream text-[10px]">
-            RESEARCH · ADD A PHOTOGRAPHER TO YOUR LIBRARY
-          </span>
-        </div>
+    <div className="space-y-8">
+      <section className="space-y-2">
         <div className="flex flex-wrap gap-2">
           <input
             value={researchName}
@@ -150,107 +139,93 @@ export default function Inspiration() {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !researching) research();
             }}
-            placeholder="Type a photographer's name — e.g. Ming Smith"
-            className="input-port min-w-[240px] flex-1 px-3 py-2 text-sm"
+            placeholder="Add a photographer — e.g. Ming Smith"
+            className="input min-w-[240px] flex-1"
             disabled={researching}
           />
-          <button
-            onClick={research}
-            disabled={researching || !researchName.trim()}
-            className="btn-chrome px-5 py-2"
-          >
-            <span className="engrave text-[11px]">
-              {researching ? "Researching…" : "Research"}
-            </span>
+          <button onClick={research} disabled={researching || !researchName.trim()} className="btn">
+            {researching ? "Researching…" : "Research"}
           </button>
         </div>
         {researching && (
-          <div className="mt-2 flex items-center gap-2">
-            <span className="led-red h-2 w-2 animate-pulse" />
-            <span className="text-[11px] text-stone-400">
-              Searching galleries, magazines, and archives… (10–30s)
-            </span>
-          </div>
-        )}
-        {researchError && (
-          <p className="mt-2 text-[11px] text-red-300">{researchError}</p>
-        )}
-        {!researching && !researchError && (
-          <p className="mt-2 text-[10px] text-stone-500">
-            Searches the web and prefers museums, galleries, the
-            photographer&apos;s own site, and photography press. Every card lists
-            the pages it read — open &ldquo;Read more&rdquo; to check them.
+          <p className="flex items-center gap-2 text-[12px] text-fg3">
+            <span className="dot dot-accent animate-pulse" />
+            Searching galleries, magazines, and archives… (10–30s)
           </p>
         )}
-      </div>
+        {researchError && (
+          <p className="text-[12px]" style={{ color: "var(--accent)" }}>
+            {researchError}
+          </p>
+        )}
+        {!researching && !researchError && (
+          <p className="text-[12px] text-fg3">
+            Searches the web and prefers museums, galleries, the photographer&apos;s own site,
+            and photography press. Every card lists the pages it read.
+          </p>
+        )}
+      </section>
 
-      {/* Filter deck */}
-      <div className="plate-black mb-8 rounded-md p-4">
-        <div className="mb-3 flex items-center gap-3">
-          <span className="port h-3 w-3" />
-          <span className="engrave-cream text-[10px]">
-            REFERENCE INDEX · {library.length.toString().padStart(3, "0")}{" "}
-            PHOTOGRAPHERS ON FILE
-            {custom.length > 0 && ` · ${custom.length} YOURS`}
-          </span>
+      <div className="flex flex-wrap items-end gap-3 border-b border-hair pb-5">
+        <div className="min-w-[200px] flex-1">
+          <Label>Search</Label>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Name, country, style…"
+            className="input mt-1.5 w-full"
+          />
         </div>
-        <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-          <div>
-            <Label>Search</Label>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Name · country · style…"
-              className="input-port mt-1 w-full px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <Label>Genre</Label>
-            <select
-              value={styleFilter}
-              onChange={(e) => setStyleFilter(e.target.value as GenreTag | "all")}
-              className="input-port mt-1 px-3 py-2 text-sm"
-            >
-              <option value="all">All</option>
-              {allStyles.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <Label>Group by</Label>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as Sort)}
-              className="input-port mt-1 px-3 py-2 text-sm"
-            >
-              <option value="style">Style</option>
-              <option value="name">Name</option>
-              <option value="era">Era</option>
-            </select>
-          </div>
+        <div>
+          <Label>Genre</Label>
+          <select
+            value={styleFilter}
+            onChange={(e) => setStyleFilter(e.target.value as GenreTag | "all")}
+            className="input mt-1.5"
+          >
+            <option value="all">All</option>
+            {allStyles.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </div>
+        <div>
+          <Label>Arrange</Label>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as Sort)}
+            className="input mt-1.5"
+          >
+            <option value="name">By name</option>
+            <option value="era">By era</option>
+            <option value="style">Grouped by style</option>
+          </select>
+        </div>
+        <span className="ml-auto self-center font-mono text-[11px] text-fg3">
+          {library.length} on file
+          {custom.length > 0 && ` · ${custom.length} yours`}
+        </span>
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-sm text-stone-400">No photographers match those filters.</p>
+        <p className="text-[14px] text-fg2">No photographers match those filters.</p>
       )}
 
       {sort === "style" && grouped ? (
-        <div className="space-y-10">
+        <div className="space-y-12">
           {grouped.map(([style, list]) => (
             <section key={style}>
-              <div className="plate-chrome mb-4 inline-flex items-center gap-3 rounded-sm px-3 py-1">
-                <span className="led-red h-1.5 w-1.5" />
-                <h2 className="engrave text-[11px]">CHANNEL · {style}</h2>
+              <div className="mb-4 flex items-center gap-3">
+                <span className="label">{style}</span>
+                <span className="h-px flex-1 bg-hair" />
               </div>
               <CardGrid
                 list={list}
                 openId={openId}
                 justAddedId={justAddedId}
-                onOpen={(id) => setOpenId((cur) => (cur === id ? null : id))}
+                onOpen={onOpen}
                 onDelete={removeCustom}
               />
             </section>
@@ -261,7 +236,7 @@ export default function Inspiration() {
           list={filtered}
           openId={openId}
           justAddedId={justAddedId}
-          onOpen={(id) => setOpenId((cur) => (cur === id ? null : id))}
+          onOpen={onOpen}
           onDelete={removeCustom}
         />
       )}
@@ -269,8 +244,8 @@ export default function Inspiration() {
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
-  return <span className="engrave-cream text-[10px]">{children}</span>;
+function Label({ children }: { children: ReactNode }) {
+  return <span className="label block">{children}</span>;
 }
 
 function CardGrid({
@@ -287,7 +262,7 @@ function CardGrid({
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
       {list.map((p) => (
         <Card
           key={p.id}
@@ -317,92 +292,79 @@ function Card({
 }) {
   const { info, loading } = usePhotographerWiki(photographer.wikipediaTitle);
 
+  // Phones get a row (portrait left, text right); wider screens a column.
   return (
-    <div
-      className={`plate-black overflow-hidden rounded-md ${
-        highlight ? "ring-2 ring-amber-300/60" : ""
-      }`}
+    <article
+      className="card flex overflow-hidden sm:flex-col"
+      style={highlight ? { borderColor: "var(--accent)" } : undefined}
     >
-      <div className="relative bg-black p-3">
-        <span className="screw absolute left-1.5 top-1.5" />
-        <span className="screw absolute right-1.5 top-1.5" />
-        <span className="screw absolute bottom-1.5 left-1.5" />
-        <span className="screw absolute bottom-1.5 right-1.5" />
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-sm bg-stone-900">
-          {loading ? (
-            <div className="absolute inset-0 flex items-center justify-center text-[10px] uppercase tracking-wider text-stone-500">
-              Loading portrait…
-            </div>
-          ) : info?.imageUrl ? (
-            <img
-              src={info.imageUrl}
-              alt={`Portrait of ${photographer.name}`}
-              className="h-full w-full object-cover"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-stone-800 text-3xl font-light tracking-widest text-stone-400">
-              {initials(photographer.name)}
-            </div>
-          )}
-          {photographer.custom && (
-            <div className="pointer-events-none absolute left-2 top-2 rounded-sm bg-amber-200/90 px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-wider text-stone-900">
-              Researched
-            </div>
-          )}
-          <div className="pointer-events-none absolute right-2 top-2 rounded-sm bg-black/60 px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-stone-300">
-            Wikimedia
+      <div className="relative w-[104px] shrink-0 self-stretch bg-elev2 sm:aspect-[4/3] sm:w-auto sm:self-auto">
+        {loading ? (
+          <div className="absolute inset-0 grid place-items-center text-[11px] text-fg3">
+            Loading…
+          </div>
+        ) : info?.imageUrl ? (
+          <img
+            src={info.imageUrl}
+            alt={`Portrait of ${photographer.name}`}
+            className="fade-in absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center font-display text-[28px] text-fg3 sm:text-[40px]">
+            {initials(photographer.name)}
+          </div>
+        )}
+        {photographer.custom && (
+          <span
+            className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-hair px-2 py-0.5 text-[10px] font-medium text-fg"
+            style={{ background: "var(--bg-elev)" }}
+          >
+            <span className="dot dot-accent" />
+            Researched
+          </span>
+        )}
+      </div>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-3 p-4">
+        <div>
+          <h3 className="font-display text-[20px] leading-tight text-fg sm:text-[22px]">
+            {photographer.name}
+          </h3>
+          <div className="mt-1 font-mono text-[11px] text-fg3">
+            {photographer.era} · {photographer.country}
           </div>
         </div>
-      </div>
-
-      <div className="plate-chrome flex items-baseline justify-between gap-2 px-4 py-2">
-        <h3 className="wordmark text-base engrave-deep">{photographer.name}</h3>
-        <span className="engrave text-[10px]">{photographer.era}</span>
-      </div>
-
-      <div className="p-4">
-        <div className="engrave-cream text-[10px]">{photographer.country}</div>
-        <p className="mt-2 text-sm text-stone-300">{photographer.signature}</p>
-
+        <p className="text-[13px] leading-relaxed text-fg2">{photographer.signature}</p>
         {photographer.quote && (
-          <blockquote className="mt-3 border-l-2 border-stone-600 pl-3 text-sm italic text-stone-400">
+          <p className="hidden font-display text-[15px] italic leading-snug text-fg3 sm:block">
             “{photographer.quote}”
-          </blockquote>
+          </p>
         )}
-
         {photographer.note && (
-          <p className="mt-3 rounded-sm border border-amber-700/40 bg-amber-950/20 px-2 py-1 text-[11px] text-amber-200/90">
+          <p
+            className="rounded-md px-2.5 py-1.5 text-[12px] text-fg"
+            style={{ background: "var(--accent-soft)" }}
+          >
             {photographer.note}
           </p>
         )}
-
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {photographer.styles.map((s) => (
-            <span
-              key={s}
-              className="rounded-full border border-stone-700 bg-stone-950/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-stone-300"
-            >
+            <span key={s} className="chip py-0.5 text-[11px]">
               {s}
             </span>
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <button
-            onClick={onToggle}
-            className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-stone-300 hover:text-stone-100"
-          >
-            <span className={`port h-2 w-2 ${expanded ? "led-red" : ""}`} />
-            {expanded ? "Hide bio" : "Read more"}
+        <div className="mt-auto flex items-center justify-between pt-2 text-[12px]">
+          <button onClick={onToggle} className="text-fg2 transition-colors hover:text-fg">
+            {expanded ? "Less" : "Read more"}
           </button>
           <div className="flex items-center gap-3">
             {photographer.custom && (
-              <button
-                onClick={onDelete}
-                className="text-[10px] uppercase tracking-[0.18em] text-stone-500 hover:text-red-400"
-              >
+              <button onClick={onDelete} className="text-fg3 transition-colors hover:text-accent">
                 Remove
               </button>
             )}
@@ -411,7 +373,7 @@ function Card({
                 href={info.contentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] uppercase tracking-[0.18em] text-stone-400 hover:text-stone-100"
+                className="text-fg3 transition-colors hover:text-fg"
               >
                 Wikipedia ↗
               </a>
@@ -420,54 +382,50 @@ function Card({
         </div>
 
         {expanded && (
-          <>
-            <p className="mt-3 text-sm leading-relaxed text-stone-300">
-              {photographer.bio}
-            </p>
+          <div className="space-y-4 border-t border-hair pt-4">
+            <p className="text-[14px] leading-relaxed text-fg">{photographer.bio}</p>
 
             {photographer.website && (
               <a
                 href={photographer.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-block text-[11px] text-stone-300 underline decoration-stone-600 underline-offset-2 hover:text-stone-100"
+                className="inline-block text-[12px] text-fg2 underline decoration-hairs underline-offset-4 hover:text-fg"
               >
                 Their own site ↗
               </a>
             )}
 
             {photographer.sources && photographer.sources.length > 0 && (
-              <div className="mt-4 border-t border-stone-800 pt-3">
-                <div className="engrave-cream text-[10px]">
-                  SOURCES
+              <div>
+                <div className="label">
+                  Sources
                   {typeof photographer.searchCount === "number" &&
                     photographer.searchCount > 0 &&
-                    ` · ${photographer.searchCount} SEARCH${
-                      photographer.searchCount === 1 ? "" : "ES"
+                    ` · ${photographer.searchCount} search${
+                      photographer.searchCount === 1 ? "" : "es"
                     }`}
                 </div>
                 <ul className="mt-2 space-y-1.5">
                   {photographer.sources.map((s) => (
-                    <li key={s.url} className="text-[11px] leading-snug">
+                    <li key={s.url} className="text-[12px] leading-snug">
                       <a
                         href={s.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-stone-300 underline decoration-stone-700 underline-offset-2 hover:text-stone-100"
+                        className="text-fg2 underline decoration-hairs underline-offset-4 hover:text-fg"
                       >
                         {s.title}
                       </a>
-                      <span className="ml-1.5 text-stone-500">
-                        {TIER_LABEL[s.tier]}
-                      </span>
+                      <span className="ml-1.5 text-fg3">{TIER_LABEL[s.tier]}</span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }
