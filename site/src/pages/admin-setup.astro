@@ -1,0 +1,57 @@
+---
+/* Shown when someone tries to sign in to /keystatic before the GitHub App settings are in Vercel. */
+import Base from '~/layouts/Base.astro';
+import Headline from '~/components/Headline.astro';
+---
+
+<Base title="Admin setup" noindex>
+  <section class="band grain-strong setup">
+    <div class="inner setup-inner">
+      <div class="stack intro">
+        <p class="eyebrow">Admin · not connected yet</p>
+        <Headline as="h1" class="display-m upper" text="Almost _ready_" />
+        <p class="lead">
+          The editor at /keystatic signs you in with a GitHub App. The app exists, but the site doesn't have its
+          Client ID and client secret yet, so sign-in can't finish.
+        </p>
+      </div>
+      <ol class="steps" role="list">
+        <li>
+          <strong>Open the app on GitHub</strong>
+          <span>Go to <a href="https://github.com/settings/apps">github.com/settings/apps</a> and choose <em>tamioladipo-site-admin</em>.</span>
+        </li>
+        <li>
+          <strong>Copy two values</strong>
+          <span>The Client ID near the top, then select Generate a new client secret and copy it straight away. GitHub shows it once.</span>
+        </li>
+        <li>
+          <strong>Add them in Vercel</strong>
+          <span>Project <em>tamioladipo</em> → Settings → Environment Variables: <code>KEYSTATIC_GITHUB_CLIENT_ID</code> and <code>KEYSTATIC_GITHUB_CLIENT_SECRET</code>, for Production and Preview.</span>
+        </li>
+        <li>
+          <strong>Redeploy, then sign in</strong>
+          <span>Redeploy the latest production build, then open <a href="/keystatic">/keystatic</a> and sign in with GitHub.</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .setup { background: var(--periwinkle-deep); --script: var(--paper); --eyebrow: var(--ink); --link: var(--ink); }
+  .setup-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 48px; align-items: start; }
+  @media (max-width: 52rem) { .setup-inner { grid-template-columns: minmax(0, 1fr); } }
+  .intro { gap: 24px; }
+  .steps { counter-reset: s; }
+  .steps li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 18px 0 20px;
+    border-top: var(--rule);
+  }
+  .steps li::before { content: counter(s); font: 500 2.25rem/1 var(--font-serif); grid-row: span 2; }
+  .steps span { grid-column: 2; line-height: 1.5; }
+  code { font-size: 0.9em; background: var(--paper); padding: 1px 5px; overflow-wrap: anywhere; }
+</style>
