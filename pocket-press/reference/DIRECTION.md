@@ -1,5 +1,7 @@
 # Visual direction: the mix for v1
 
+> **Approved 27 Oct 2026:** all five proposals below (cover proportions, outlines, caption grouping, `trio`, Yellowtail for Park day). BRIEF.md is updated to match.
+
 There are two families in these references:
 
 - **The colour zines** (01–03: Manila, Lisbon, Amsterdam): loud pack-colour covers, a big title in a script or fat display font, one photo in a rounded frame with a thin dark outline. Inside: full-bleed photos, photo grids on pack colour, and big chatty text pages.

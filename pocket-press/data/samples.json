@@ -1,0 +1,106 @@
+[
+  {
+    "id": "sample:lanterns",
+    "file": "/samples/lanterns.jpg",
+    "name": "lanterns",
+    "width": 1200,
+    "height": 1800,
+    "luma": {
+      "top": 0.147,
+      "bottom": 0.137
+    },
+    "place": "Minh An, Hoi An",
+    "date": "15.03.26"
+  },
+  {
+    "id": "sample:facades",
+    "file": "/samples/facades.jpg",
+    "name": "facades",
+    "width": 1200,
+    "height": 1600,
+    "luma": {
+      "top": 0.616,
+      "bottom": 0.634
+    },
+    "place": "Minh An, Hoi An",
+    "date": "15.03.26"
+  },
+  {
+    "id": "sample:hills",
+    "file": "/samples/hills.jpg",
+    "name": "hills",
+    "width": 1800,
+    "height": 1200,
+    "luma": {
+      "top": 0.668,
+      "bottom": 0.312
+    },
+    "place": "Cam Thanh, Hoi An",
+    "date": "16.03.26"
+  },
+  {
+    "id": "sample:trees",
+    "file": "/samples/trees.jpg",
+    "name": "trees",
+    "width": 1200,
+    "height": 1600,
+    "luma": {
+      "top": 0.399,
+      "bottom": 0.657
+    },
+    "place": "Cam Thanh, Hoi An",
+    "date": "16.03.26"
+  },
+  {
+    "id": "sample:market",
+    "file": "/samples/market.jpg",
+    "name": "market",
+    "width": 1500,
+    "height": 1500,
+    "luma": {
+      "top": 0.473,
+      "bottom": 0.474
+    },
+    "place": "Hoi An Market",
+    "date": "17.03.26"
+  },
+  {
+    "id": "sample:river",
+    "file": "/samples/river.jpg",
+    "name": "river",
+    "width": 1800,
+    "height": 1200,
+    "luma": {
+      "top": 0.782,
+      "bottom": 0.409
+    },
+    "place": "Thu Bon River",
+    "date": "17.03.26"
+  },
+  {
+    "id": "sample:beach",
+    "file": "/samples/beach.jpg",
+    "name": "beach",
+    "width": 1920,
+    "height": 1080,
+    "luma": {
+      "top": 0.763,
+      "bottom": 0.843
+    },
+    "place": "An Bang, Hoi An",
+    "date": "18.03.26"
+  },
+  {
+    "id": "sample:stools",
+    "file": "/samples/stools.jpg",
+    "name": "stools",
+    "width": 1600,
+    "height": 1200,
+    "luma": {
+      "top": 0.581,
+      "bottom": 0.581
+    },
+    "place": "An Hoi, Hoi An",
+    "date": "19.03.26"
+  }
+]

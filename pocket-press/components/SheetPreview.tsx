@@ -1,3 +1,5 @@
+"use client";
+
 import type { FoldSpec } from "@/lib/folds";
 import { outerEdges, panelRect, sheetGeometry, slotMatrix } from "@/lib/imposition";
 import { PT_PER_MM, type Paper } from "@/lib/paper";
@@ -12,12 +14,14 @@ export function SheetPreview({
   renderPage,
   cutLine,
   foldGuides,
+  showPanels = true,
 }: {
   fold: FoldSpec;
   paper: Paper;
   renderPage: PageRenderer;
   cutLine: boolean;
   foldGuides: boolean;
+  showPanels?: boolean;
 }) {
   const g = sheetGeometry(fold, paper);
   return (
@@ -38,7 +42,9 @@ export function SheetPreview({
               />
             </g>
             {/* Panel edges are preview-only, to show where the folds fall. */}
-            <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="none" stroke="#E8E8E8" strokeWidth={0.75} />
+            {showPanels ? (
+              <rect x={r.x} y={r.y} width={r.w} height={r.h} fill="none" stroke="#E8E8E8" strokeWidth={0.75} />
+            ) : null}
           </g>
         );
       })}

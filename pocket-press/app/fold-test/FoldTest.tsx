@@ -5,7 +5,7 @@ import { SheetPreview } from "@/components/SheetPreview";
 import { Button, SegmentedControl, Switch } from "@/components/ui";
 import { FOLDS } from "@/lib/folds";
 import { PAPER_IDS, PAPERS } from "@/lib/paper";
-import { downloadBytes, exportTestSheet } from "@/lib/pdf/exportClient";
+import { downloadBytes, exportSheet } from "@/lib/pdf/exportClient";
 import { printFileName } from "@/lib/pdf/fileName";
 import { renderTestPage } from "@/lib/render/testPage";
 import type { PaperId } from "@/lib/types";
@@ -36,7 +36,7 @@ export function FoldTest() {
     setBusy(true);
     setError(null);
     try {
-      const bytes = await exportTestSheet({ paper: paperId, cutLine, foldGuides });
+      const bytes = await exportSheet({ kind: "test", paper: paperId, cutLine, foldGuides });
       downloadBytes(bytes, printFileName("Fold test", paper));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong building the PDF.");
@@ -47,12 +47,8 @@ export function FoldTest() {
 
   return (
     <div className="mx-auto max-w-content px-4 pb-24 sm:px-8">
-      <header className="flex h-16 items-center justify-between border-b border-line">
-        <span className="text-[17px] font-semibold tracking-[-0.02em]">pocket press</span>
-        <span className="font-mono text-[13px] text-muted">step 1 · fold test</span>
-      </header>
-
-      <section className="pb-10 pt-12 sm:pt-16">
+      <p className="pt-8 font-mono text-[13px] text-muted">Fold test</p>
+      <section className="pb-10 pt-4">
         <h1 className="max-w-[16ch] text-[40px] font-semibold leading-[1.04] tracking-[-0.035em] sm:text-[52px]">
           Print a test sheet before anything else.
         </h1>
@@ -104,7 +100,7 @@ export function FoldTest() {
               {busy ? "Building PDF…" : "Download test PDF"}
             </Button>
             {error ? (
-              <p role="alert" className="text-[13px] text-accent">
+              <p role="alert" className="text-[13px] text-fg underline decoration-accent decoration-2">
                 {error}
               </p>
             ) : null}

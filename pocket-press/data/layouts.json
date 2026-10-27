@@ -1,0 +1,64 @@
+{
+  "_units": "Every number is a percentage of the page (panel) width for x/w and height for y/h. Caption y is the top of the caption row. Frame r is the corner radius as % of page width (default 3).",
+  "cover": {
+    "name": "Cover", "background": "pack", "pickable": false,
+    "frames": [{ "x": 5, "y": 23, "w": 90, "h": 70 }],
+    "captions": [],
+    "title": { "x": 5, "y": 3.5, "w": 90, "h": 18, "align": "left", "valign": "bottom", "maxLines": 2 }
+  },
+  "cover_solid": {
+    "name": "Solid cover", "background": "pack", "pickable": false,
+    "frames": [],
+    "captions": [{ "x": 10, "w": 80, "y": 93 }],
+    "title": { "x": 12, "y": 34, "w": 76, "h": 26, "align": "center", "valign": "middle", "maxLines": 3, "scale": 0.7 }
+  },
+  "cover_type": {
+    "name": "Type cover", "background": "pack", "pickable": false,
+    "frames": [],
+    "captions": [{ "x": 8, "w": 84, "y": 93 }],
+    "title": { "x": 8, "y": 8, "w": 84, "h": 80, "align": "left", "valign": "top", "maxLines": 7, "uppercase": true, "fill": true }
+  },
+  "land_top": {
+    "name": "Landscape, top", "background": "white", "pickable": true,
+    "frames": [{ "x": 7, "y": 10, "w": 86, "h": 44 }],
+    "captions": [{ "x": 7, "w": 86, "y": 56 }]
+  },
+  "land_low": {
+    "name": "Landscape, low", "background": "white", "pickable": true,
+    "frames": [{ "x": 7, "y": 38, "w": 86, "h": 44 }],
+    "captions": [{ "x": 7, "w": 86, "y": 84 }]
+  },
+  "portrait": {
+    "name": "Portrait", "background": "white", "pickable": true,
+    "frames": [{ "x": 7, "y": 10, "w": 86, "h": 76 }],
+    "captions": [{ "x": 7, "w": 86, "y": 88 }]
+  },
+  "full": {
+    "name": "Full bleed", "background": "white", "pickable": true,
+    "frames": [{ "x": 0, "y": 0, "w": 100, "h": 100, "r": 0 }],
+    "captions": [{ "x": 7, "w": 86, "y": 3.5, "onPhoto": true }, { "x": 7, "w": 86, "y": 94, "onPhoto": true }]
+  },
+  "trio": {
+    "name": "Trio", "background": "white", "pickable": true,
+    "frames": [
+      { "x": 7, "y": 8, "w": 86, "h": 26 },
+      { "x": 7, "y": 37, "w": 86, "h": 26 },
+      { "x": 7, "y": 66, "w": 86, "h": 26 }
+    ],
+    "captions": []
+  },
+  "note": {
+    "name": "Note", "background": "pack", "pickable": false,
+    "frames": [],
+    "captions": [{ "x": 10, "w": 80, "y": 93 }],
+    "body": { "x": 10, "y": 12, "w": 80, "h": 76, "uppercase": true }
+  },
+  "back": {
+    "name": "Back", "background": "pack", "pickable": false,
+    "frames": [],
+    "captions": [],
+    "title": { "x": 10, "y": 34, "w": 80, "h": 16, "align": "center", "valign": "bottom", "maxLines": 2, "scale": 0.7 },
+    "dateRange": { "y": 55 },
+    "madeWith": { "y": 90 }
+  }
+}

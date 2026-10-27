@@ -1,5 +1,7 @@
 # Pocket Press: Claude Code build brief
 
+> Updated 27 Oct 2026 with the approved visual direction (see reference/DIRECTION.md): bigger cover photo, frame outlines on coloured pages, grouped caption row, the `trio` layout (pages hold a `photos` array), and Yellowtail for Park day.
+
 26 Oct 2026 · Tamilore Oladipo
 
 ## What we're building
@@ -146,10 +148,7 @@ type Page = {
   index: number;                  // 1-8, reading order
   layout: LayoutId;
   bgColor?: string;               // overrides the pack default
-  photo?: {
-    assetId: string;              // key into IndexedDB
-    crop: { x: number; y: number; scale: number }; // pan + zoom inside the frame
-  };
+  photos?: (PagePhoto | null)[]; // one entry per photo frame in the layout (trio has 3)
   title?: string;                 // cover and note pages
   body?: string;                  // note page
   caption?: {
@@ -158,6 +157,11 @@ type Page = {
     date: string;                 // "15.03.26"
     auto: boolean;                // false once the user edits it
   };
+};
+
+type PagePhoto = {
+  assetId: string;                // key into IndexedDB
+  crop: { x: number; y: number; scale: number }; // pan (0-1, 0.5 = centred) + zoom (>= 1)
 };
 
 type Asset = {
@@ -185,7 +189,7 @@ type TypePack = {
 **Default page layouts for a new mini8 zine:**
 
 - Page 1: `cover`
-- Pages 2 to 6: `land_top`, `portrait`, `full`, `land_low`, `land_top`
+- Pages 2 to 6: `land_top`, `portrait`, `full`, `land_low`, `trio`
 - Page 7: `note`
 - Page 8: `back`
 
@@ -203,16 +207,18 @@ All values are percentages of the panel (page) width and height, so the same lay
 | `land_low` | 7%, 38%, 86%, 44%        | 84%             | Same frame, pushed down |
 | `portrait` | 7%, 10%, 86%, 76%        | 88%             | Tall photo, caption tucked under it |
 | `full`     | 0%, 0%, 100%, 100%       | 3.5% and 94%    | Full bleed; caption text switches to the pack's light or dark colour for contrast |
-| `cover`    | 7%, 30%, 86%, 58%        | 93%             | Big title in the top 25%, set in the pack's title font |
+| `cover`    | 5%, 23%, 90%, 70%        | none            | Big title in the band above the photo, set in the pack's title font |
 | `note`     | none                     | 93%             | Solid pack colour, a short block of large text from 12% down, max width 80% |
 | `back`     | none                     | none            | Centred zine title, date range, and a tiny "made with pocket press" line |
+| `trio`     | 7%, 8% / 37% / 66%, 86%, 26% | none        | Three photos stacked, as in the HCMC sheet |
 
 **Shared rules for every layout:**
 
 - **Photo frames:** rounded corners at 3% of panel width. Photos fill the frame (cover-fit), and the user can pan and zoom them.
-- **Caption row:** three items spread across the frame width with `justify-content: space-between`: [02], location, date (DD.MM.YY). The caption font is set at about 7pt on A6 and scales with the panel size.
+- **Photo outline:** a thin stroke (0.75pt on A6, scaled) in the pack's text colour around photo frames, only when the page background is coloured. White pages stay clean.
+- **Caption row:** [02] and the location grouped on the left, the date (DD.MM.YY) on the right, across the frame width. The caption font is set at about 7pt on A6 and scales with the panel size.
 - **Page numbers:** the [NN] number comes from the page index, so it updates when pages are reordered.
-- **Layout picker:** in the editor, it offers `land_top`, `land_low`, `portrait` and `full` for pages 2 to 6. Pages 1, 7 and 8 have fixed layouts in the MVP.
+- **Layout picker:** in the editor, it offers `land_top`, `land_low`, `portrait`, `full` and `trio` for pages 2 to 6. Pages 1, 7 and 8 have fixed layouts in the MVP.
 
 ### Type packs
 
@@ -221,7 +227,7 @@ Each pack is one loud title font, one quiet caption font, and the colours they w
 | Pack        | Title font                  | Caption font      | Background | Text    | Category    |
 | ----------- | --------------------------- | ----------------- | ---------- | ------- | ----------- |
 | Postcard    | Imperial Script             | Space Mono 700    | #E9A99C    | #1E1A17 | Script      |
-| Park day    | Shrikhand (rotated −5°)     | Space Grotesk 700 | #59B4E6    | #1E1A17 | Display     |
+| Park day    | Yellowtail (rotated −5°)    | Space Grotesk 700 | #59B4E6    | #1E1A17 | Display     |
 | Market      | Bagel Fat One               | Space Grotesk 700 | #F6D836    | #1E1A17 | Display     |
 | Field diary | Archivo Black               | Space Mono 700    | #5A3214    | #A8D4F0 | Display     |
 | Note to self| Archivo Black               | Space Grotesk 700 | #F2B33D    | #1E1A17 | Display     |
@@ -264,6 +270,7 @@ Use CSS variables on `:root` with `[data-theme="dark"]` and a `prefers-color-sch
 
 ### Type
 
+- **Note page text** is set uppercase in the pack's title font.
 - **Interface font:** Geist 400/500/600, with tight tracking on headings (−0.02em to −0.035em).
 - **Mono:** Geist Mono for labels, step numbers ("01 Fold") and counts.
 - **Scale:** H1 52px/1.04, H2 22px, body 15 to 18px, labels 13px.

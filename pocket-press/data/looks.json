@@ -1,0 +1,8 @@
+[
+  { "id": "postcard", "name": "Postcard", "packId": "postcard", "coverLayout": "cover" },
+  { "id": "park-day", "name": "Park day", "packId": "park-day", "coverLayout": "cover" },
+  { "id": "market", "name": "Market", "packId": "market", "coverLayout": "cover" },
+  { "id": "field-diary", "name": "Field diary", "packId": "field-diary", "coverLayout": "cover" },
+  { "id": "solid-cover", "name": "Solid cover", "packId": "postmark", "coverLayout": "cover_solid" },
+  { "id": "note-page", "name": "Note page", "packId": "note-to-self", "coverLayout": "cover_type" }
+]

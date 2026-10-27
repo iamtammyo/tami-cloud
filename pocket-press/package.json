@@ -10,11 +10,19 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "dexie": "^4.4.7",
+    "exifr": "^7.1.3",
     "geist": "^1.3.1",
+    "heic-to": "^1.6.6",
     "next": "14.2.35",
     "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

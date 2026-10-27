@@ -1,3 +1,4 @@
+import { measure } from "../fonts";
 import type { DrawOp, RenderContext } from "./ops";
 
 // Step 1 placeholder pages for the paper test. Each page shows its number,
@@ -8,6 +9,7 @@ import type { DrawOp, RenderContext } from "./ops";
 const INK = "#0A0A0A";
 const SOFT = "#6E6E73";
 const GUIDE = "#BDBDBD";
+const BOLD = "space-grotesk-700";
 
 /** Captions and key content stay this far from any edge that touches the sheet edge. */
 export const SAFE_OUTER_MM = 6;
@@ -30,7 +32,7 @@ export function renderTestPage(pageNumber: number, ctx: RenderContext): DrawOp[]
   const arrowTop = safe.top + h * 0.04;
   const arrowH = arrowW * 0.8;
 
-  return [
+  const ops: DrawOp[] = [
     {
       kind: "rect",
       x: safe.left,
@@ -53,9 +55,10 @@ export function renderTestPage(pageNumber: number, ctx: RenderContext): DrawOp[]
       y: arrowTop + arrowH + w * 0.055,
       text: "TOP",
       size: w * 0.04,
-      font: "sans-bold",
+      font: BOLD,
       color: INK,
       anchor: "middle",
+      width: 0,
     },
     {
       kind: "text",
@@ -63,9 +66,10 @@ export function renderTestPage(pageNumber: number, ctx: RenderContext): DrawOp[]
       y: h * 0.38,
       text: label,
       size: w * 0.055,
-      font: "sans-bold",
+      font: BOLD,
       color: SOFT,
       anchor: "middle",
+      width: 0,
     },
     {
       kind: "text",
@@ -73,9 +77,10 @@ export function renderTestPage(pageNumber: number, ctx: RenderContext): DrawOp[]
       y: h * 0.66,
       text: String(pageNumber),
       size: w * 0.5,
-      font: "sans-bold",
+      font: BOLD,
       color: INK,
       anchor: "middle",
+      width: 0,
     },
     {
       kind: "text",
@@ -83,9 +88,11 @@ export function renderTestPage(pageNumber: number, ctx: RenderContext): DrawOp[]
       y: h - safe.bottom - h * 0.025,
       text: `pocket press fold test  ${pageNumber} / 8`,
       size: w * 0.032,
-      font: "sans",
+      font: BOLD,
       color: SOFT,
       anchor: "middle",
+      width: 0,
     },
   ];
+  return ops.map((op) => (op.kind === "text" ? { ...op, width: measure(op.font, op.text, op.size) } : op));
 }

@@ -1,7 +1,11 @@
-import { redirect } from "next/navigation";
+import { SiteHeader } from "@/components/SiteHeader";
+import { StartScreen } from "./StartScreen";
 
-// Step 1 of the build: the fold test is the whole app for now.
-// The Start screen replaces this in step 6.
 export default function Home() {
-  redirect("/fold-test");
+  return (
+    <>
+      <SiteHeader />
+      <StartScreen />
+    </>
+  );
 }

@@ -5,7 +5,9 @@ import type { Edges } from "../imposition";
 // SVG for the editor / thumbnails / sheet preview, pdf-lib for the print PDF.
 // That's what keeps every view of a page identical.
 
-export type FontRef = "sans" | "sans-bold";
+export type FontRef = string; // a font id from data/fonts.json
+
+export type Crop = { x: number; y: number; scale: number };
 
 export type DrawOp =
   | {
@@ -48,6 +50,26 @@ export type DrawOp =
       font: FontRef;
       color: string;
       anchor: "start" | "middle" | "end";
+      /** Measured advance width, so both backends lay the line out identically. */
+      width: number;
+      tracking?: number;
+      /** Degrees, positive = clockwise on screen, around (x, y). */
+      rotate?: number;
+    }
+  | {
+      /** A photo cover-fitted into a frame, clipped to a rounded rectangle. */
+      kind: "image";
+      assetId: string;
+      x: number;
+      y: number;
+      w: number;
+      h: number;
+      r: number;
+      imgW: number;
+      imgH: number;
+      crop: Crop;
+      stroke?: string;
+      strokeWidth?: number;
     };
 
 export type RenderContext = {
@@ -76,4 +98,22 @@ export function rectPath(x: number, y: number, w: number, h: number, r = 0): str
     `A ${k} ${k} 0 0 1 ${x + k} ${y}`,
     "Z",
   ].join(" ");
+}
+
+/**
+ * Where a cover-fitted image lands for a frame and crop: the drawn image rect
+ * (may overflow the frame) and the matching source rect in image pixels.
+ */
+export function coverPlacement(imgW: number, imgH: number, frame: { x: number; y: number; w: number; h: number }, crop: Crop) {
+  const s = Math.max(frame.w / imgW, frame.h / imgH) * Math.max(1, crop.scale);
+  const dw = imgW * s;
+  const dh = imgH * s;
+  const cx = Math.min(1, Math.max(0, crop.x));
+  const cy = Math.min(1, Math.max(0, crop.y));
+  const dx = frame.x - (dw - frame.w) * cx;
+  const dy = frame.y - (dh - frame.h) * cy;
+  return {
+    draw: { x: dx, y: dy, w: dw, h: dh },
+    source: { x: (frame.x - dx) / s, y: (frame.y - dy) / s, w: frame.w / s, h: frame.h / s },
+  };
 }

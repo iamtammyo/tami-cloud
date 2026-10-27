@@ -1,0 +1,13 @@
+[
+  { "id": "imperial-script", "family": "Imperial Script", "weight": 400, "style": "normal", "file": "ImperialScript-Regular.ttf", "roles": ["title"] },
+  { "id": "yellowtail", "family": "Yellowtail", "weight": 400, "style": "normal", "file": "Yellowtail-Regular.ttf", "roles": ["title"] },
+  { "id": "bagel-fat-one", "family": "Bagel Fat One", "weight": 400, "style": "normal", "file": "BagelFatOne-Regular.ttf", "roles": ["title"] },
+  { "id": "archivo-black", "family": "Archivo Black", "weight": 400, "style": "normal", "file": "ArchivoBlack-Regular.ttf", "roles": ["title"] },
+  { "id": "instrument-serif-italic", "family": "Instrument Serif", "weight": 400, "style": "italic", "file": "InstrumentSerif-Italic.ttf", "roles": ["title"] },
+  { "id": "syne-800", "family": "Syne", "weight": 800, "style": "normal", "file": "Syne-ExtraBold.ttf", "roles": ["title"] },
+  { "id": "gochi-hand", "family": "Gochi Hand", "weight": 400, "style": "normal", "file": "GochiHand-Regular.ttf", "roles": ["title"] },
+  { "id": "bricolage-800", "family": "Bricolage Grotesque", "weight": 800, "style": "normal", "file": "BricolageGrotesque-ExtraBold.ttf", "roles": ["title"] },
+  { "id": "space-mono-700", "family": "Space Mono", "weight": 700, "style": "normal", "file": "SpaceMono-Bold.ttf", "roles": ["caption"] },
+  { "id": "space-grotesk-700", "family": "Space Grotesk", "weight": 700, "style": "normal", "file": "SpaceGrotesk-Bold.ttf", "roles": ["caption"] },
+  { "id": "geist-mono-700", "family": "Geist Mono", "weight": 700, "style": "normal", "file": "GeistMono-Bold.ttf", "roles": ["caption"] }
+]
